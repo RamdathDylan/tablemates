@@ -11,6 +11,7 @@ import type {
   MapPlacesQuery,
   Me,
   NotificationItem,
+  NotificationSettings,
   NotificationSummary,
   Page,
   PlaceResult,
@@ -170,6 +171,12 @@ export const api = {
   markNotificationsRead: (ids: string[]) => request<void>('POST', '/notifications/read', { ids }),
   notifications: (cursor?: string) => request<Page<NotificationItem>>('GET', `/notifications${qs({ cursor })}`),
   readAllNotifications: () => request<void>('POST', '/notifications/read-all'),
+  registerPushToken: (token: string, platform: 'ios' | 'android') =>
+    request<void>('POST', '/me/push-tokens', { token, platform }),
+  unregisterPushToken: (token: string) => request<void>('DELETE', `/me/push-tokens/${encodeURIComponent(token)}`),
+  notificationSettings: () => request<NotificationSettings>('GET', '/me/notification-settings'),
+  updateNotificationSettings: (settings: NotificationSettings) =>
+    request<NotificationSettings>('PATCH', '/me/notification-settings', settings),
 
   searchPlaces: (q: string, near?: { lat: number; lng: number } | null) =>
     request<PlaceResult[]>('GET', `/places/search${qs({ q, lat: near?.lat, lng: near?.lng })}`),

@@ -1,0 +1,112 @@
+import { and, eq, gt, inArray, isNull } from 'drizzle-orm';
+
+import type { Db } from '../db/client';
+import { notifications, pushTokens, restaurants, users } from '../db/schema';
+import type { PushMessage, PushProvider } from './types';
+
+/** Alerts older than this when first seen are skipped rather than pushed late. */
+const MAX_AGE_MS = 60 * 60 * 1000;
+
+type Row = {
+  id: string;
+  userId: string;
+  type: (typeof notifications.$inferSelect)['type'];
+  actorName: string;
+  actorUsername: string;
+  restaurantId: string | null;
+  restaurantName: string | null;
+};
+
+/** Notification copy. Kept short: lock screens truncate. */
+export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'> {
+  switch (n.type) {
+    case 'friend_request':
+      return { title: 'New friend request', body: `${n.actorName} wants to be friends`, data: { type: n.type, username: n.actorUsername } };
+    case 'friend_accepted':
+      return { title: 'You have a new friend', body: `${n.actorName} accepted your friend request`, data: { type: n.type, username: n.actorUsername } };
+    case 'saved_place_reviewed':
+      return {
+        title: n.restaurantName ?? 'A place you saved',
+        body: `${n.actorName} just reviewed it`,
+        data: { type: n.type, restaurantId: n.restaurantId ?? '' },
+      };
+  }
+}
+
+/**
+ * Outbox worker: sends pushes for notifications that committed, then marks
+ * them pushed. Running after commit means a rolled-back change never pushes.
+ */
+export class PushWorker {
+  private timer?: ReturnType<typeof setInterval>;
+
+  constructor(
+    private db: Db,
+    private provider: PushProvider,
+    private log: { error: (obj: unknown, msg?: string) => void } = console,
+  ) {}
+
+  start(intervalMs = 2000) {
+    this.timer = setInterval(() => void this.runOnce().catch((e) => this.log.error(e, 'push worker')), intervalMs);
+  }
+
+  stop() {
+    clearInterval(this.timer);
+  }
+
+  /** Processes one batch. Returns how many messages were sent. */
+  async runOnce(): Promise<number> {
+    const pending: Row[] = await this.db
+      .select({
+        id: notifications.id,
+        userId: notifications.userId,
+        type: notifications.type,
+        actorName: users.displayName,
+        actorUsername: users.username,
+        restaurantId: notifications.restaurantId,
+        restaurantName: restaurants.name,
+      })
+      .from(notifications)
+      .innerJoin(users, eq(notifications.actorId, users.id))
+      .leftJoin(restaurants, eq(notifications.restaurantId, restaurants.id))
+      .where(and(isNull(notifications.pushedAt), gt(notifications.createdAt, new Date(Date.now() - MAX_AGE_MS))))
+      .limit(500);
+    if (!pending.length) return 0;
+
+    // Claim the batch first so a second worker can't double-send.
+    const claimed = await this.db
+      .update(notifications)
+      .set({ pushedAt: new Date() })
+      .where(and(inArray(notifications.id, pending.map((p) => p.id)), isNull(notifications.pushedAt)))
+      .returning({ id: notifications.id });
+    const claimedIds = new Set(claimed.map((c) => c.id));
+    const batch = pending.filter((p) => claimedIds.has(p.id));
+
+    const recipients = [...new Set(batch.map((p) => p.userId))];
+    const [tokens, muted] = await Promise.all([
+      this.db.select().from(pushTokens).where(inArray(pushTokens.userId, recipients)),
+      this.db.select({ id: users.id, muted: users.mutedPushTypes }).from(users).where(inArray(users.id, recipients)),
+    ]);
+    const mutedBy = new Map(muted.map((m) => [m.id, new Set(m.muted)]));
+
+    const messages: PushMessage[] = [];
+    for (const n of batch) {
+      if (mutedBy.get(n.userId)?.has(n.type)) continue;
+      for (const t of tokens.filter((t) => t.userId === n.userId)) {
+        messages.push({ to: t.token, ...pushContent(n) });
+      }
+    }
+    if (!messages.length) return 0;
+
+    const results = await this.provider.send(messages);
+    const gone = messages.filter((_, i) => {
+      const r = results[i];
+      return r && !r.ok && r.deviceGone;
+    });
+    if (gone.length) {
+      await this.db.delete(pushTokens).where(inArray(pushTokens.token, gone.map((m) => m.to)));
+    }
+    return messages.length;
+  }
+}
+

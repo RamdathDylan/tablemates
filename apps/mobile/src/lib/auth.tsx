@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { api, refreshSession, setSessionExpiredHandler } from './api';
+import { unregisterPush } from './push';
 
 type AuthState =
   | { status: 'loading'; user: null }
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ status: 'signedIn', user, onboarding: true });
       },
       signOut: async () => {
+        await unregisterPush();
         await api.logout();
         signedOut();
       },

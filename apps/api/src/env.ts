@@ -24,6 +24,8 @@ export const env = {
     .map((o) => o.trim())
     .filter(Boolean),
   isProduction: process.env.NODE_ENV === 'production',
+  /** Optional: required only if "enhanced push security" is turned on for the Expo project. */
+  expoAccessToken: process.env.EXPO_ACCESS_TOKEN || undefined,
   mail: {
     provider: (process.env.MAIL_PROVIDER ?? 'mailpit') as 'mailpit' | 'resend',
     mailpitUrl: process.env.MAILPIT_URL ?? 'http://localhost:8025',

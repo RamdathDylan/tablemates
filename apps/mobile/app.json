@@ -39,6 +39,12 @@
         {
           "locationWhenInUsePermission": "TableMates uses your location to center the map and find restaurants near you."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C23A22"
+        }
       ]
     ],
     "experiments": {
