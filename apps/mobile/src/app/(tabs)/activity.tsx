@@ -38,6 +38,7 @@ const icons: Record<NotificationItem['type'], IconName> = {
   badge: 'ribbon',
   story_reaction: 'happy',
   plate_prompt: 'camera',
+  table_invite: 'restaurant',
 };
 
 function message(n: NotificationItem) {
@@ -59,6 +60,8 @@ function message(n: NotificationItem) {
       return `${who} invited you to “${n.excerpt ?? 'a dinner plan'}”`;
     case 'plan_decided':
       return `“${n.excerpt ?? 'Your plan'}” is happening at ${n.restaurant?.name ?? 'the winning spot'}`;
+    case 'table_invite':
+      return `${who} added you to their table ${n.excerpt ?? ''}`.trimEnd();
     case 'plate_prompt':
       return '📸 Plate check! Show your friends what you’re eating';
     case 'story_reaction':
@@ -75,6 +78,7 @@ function message(n: NotificationItem) {
 function open(n: NotificationItem) {
   if (n.type === 'tagged' || n.type === 'badge') return router.navigate('/profile');
   if (n.type === 'ask_reply' || n.type === 'story_reaction' || n.type === 'plate_prompt') return router.navigate('/');
+  if (n.tableId) return router.push({ pathname: '/table/[id]', params: { id: n.tableId } });
   if (n.planId) return router.push({ pathname: '/plan/[id]', params: { id: n.planId } });
   if (n.type !== 'friend_request' && n.type !== 'friend_accepted' && n.restaurant) {
     router.push({ pathname: '/restaurant/[id]', params: { id: n.restaurant.id } });

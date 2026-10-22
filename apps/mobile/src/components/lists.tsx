@@ -28,7 +28,13 @@ export function ListRow({ list }: { list: ListSummary }) {
   const { colors } = useTheme();
   const meta = [
     `${list.itemCount} place${list.itemCount === 1 ? '' : 's'}`,
-    list.isOwner ? (list.audience === 'private' ? 'Only you' : 'Friends') : `by ${list.owner.displayName}`,
+    list.table
+      ? `${list.table.emoji} ${list.table.name}`
+      : list.isOwner
+        ? list.audience === 'private'
+          ? 'Only you'
+          : 'Friends'
+        : `by ${list.owner.displayName}`,
   ].join(' · ');
   return (
     <Pressable
@@ -50,7 +56,7 @@ export function ListRow({ list }: { list: ListSummary }) {
       ]}>
       <View
         style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={list.audience === 'private' ? 'lock-closed' : 'list'} color="onAccentSoft" />
+        <Icon name={list.table ? 'people' : list.audience === 'private' ? 'lock-closed' : 'list'} color="onAccentSoft" />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text variant="bodyStrong" numberOfLines={1}>
@@ -104,16 +110,22 @@ export function UserListsSection({ username }: { username: string }) {
   );
 }
 
-/** Create a list, or edit one when `list` is given. Optionally adds a restaurant right away. */
+/**
+ * Create a list, or edit one when `list` is given. Optionally adds a restaurant
+ * right away. With `table`, it's that Table's shared list: members see and edit it.
+ */
 export function ListSheet({
   list,
   addRestaurantId,
+  table,
   onClose,
 }: {
   list?: ListSummary;
   addRestaurantId?: string;
+  table?: { id: string; name: string };
   onClose: () => void;
 }) {
+  const forTable = table ?? list?.table ?? undefined;
   const toast = useToast();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState(list?.title ?? '');
@@ -121,14 +133,15 @@ export function ListSheet({
   const [audience, setAudience] = useState<'friends' | 'private'>(list?.audience ?? 'friends');
   const save = useMutation({
     mutationFn: async () => {
-      if (list) return api.updateList(list.id, { title, description, audience });
-      const created = await api.createList({ title, description, audience });
+      if (list) return api.updateList(list.id, forTable ? { title, description } : { title, description, audience });
+      const created = await api.createList({ title, description, audience, tableId: table?.id });
       if (addRestaurantId) await api.addToList(created.id, addRestaurantId);
       return created;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lists'] });
       if (list) queryClient.invalidateQueries({ queryKey: qk.list(list.id) });
+      if (forTable) queryClient.invalidateQueries({ queryKey: qk.table(forTable.id) });
       toast(list ? 'List updated' : addRestaurantId ? `Added to ${title}` : `Created ${title}`, 'success');
       onClose();
     },
@@ -138,17 +151,23 @@ export function ListSheet({
     <Sheet
       visible
       onClose={onClose}
-      title={list ? 'Edit list' : 'New list'}
+      title={list ? 'Edit list' : forTable ? `New list for ${forTable.name}` : 'New list'}
       footer={<Button title={list ? 'Save' : 'Create list'} fullWidth size="lg" disabled={!title.trim()} loading={save.isPending} onPress={() => save.mutate()} />}>
       <Input label="Name" placeholder="Best tacos" value={title} onChangeText={setTitle} maxLength={60} />
       <TextArea label="Description (optional)" value={description} onChangeText={setDescription} maxLength={280} placeholder="What ties these places together?" />
-      <View style={{ gap: space[2] }}>
-        <Text variant="label">Who can see it</Text>
-        <View style={{ flexDirection: 'row', gap: space[2] }}>
-          <Chip label="Friends" icon="people" selected={audience === 'friends'} onPress={() => setAudience('friends')} />
-          <Chip label="Only me" icon="lock-closed" selected={audience === 'private'} onPress={() => setAudience('private')} />
+      {forTable ? (
+        <Text variant="caption" tone="muted">
+          Everyone at {forTable.name} can see this list and add places to it.
+        </Text>
+      ) : (
+        <View style={{ gap: space[2] }}>
+          <Text variant="label">Who can see it</Text>
+          <View style={{ flexDirection: 'row', gap: space[2] }}>
+            <Chip label="Friends" icon="people" selected={audience === 'friends'} onPress={() => setAudience('friends')} />
+            <Chip label="Only me" icon="lock-closed" selected={audience === 'private'} onPress={() => setAudience('private')} />
+          </View>
         </View>
-      </View>
+      )}
     </Sheet>
   );
 }
@@ -174,6 +193,17 @@ export function AddToListSheet({ restaurant, onClose }: { restaurant: { id: stri
     <Sheet visible onClose={onClose} title={`Add ${restaurant.name} to a list`}>
       {(lists.data?.mine ?? []).map((l) => (
         <Button key={l.id} title={l.title} icon={l.audience === 'private' ? 'lock-closed' : 'list'} variant="secondary" fullWidth onPress={() => add.mutate(l)} />
+      ))}
+      {(lists.data?.tables ?? []).map((l) => (
+        <Button
+          key={l.id}
+          title={`${l.title} · ${l.table?.emoji ?? ''} ${l.table?.name ?? ''}`}
+          accessibilityLabel={`${l.title}, shared with ${l.table?.name ?? 'your table'}`}
+          icon="people"
+          variant="secondary"
+          fullWidth
+          onPress={() => add.mutate(l)}
+        />
       ))}
       <Button title="New list" icon="add" variant="ghost" fullWidth onPress={() => setCreating(true)} />
     </Sheet>

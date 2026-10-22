@@ -16,6 +16,7 @@ import { mapRoutes } from './routes/map';
 import { notificationRoutes } from './routes/notifications';
 import { savedRoutes } from './routes/saved';
 import { storyRoutes } from './routes/stories';
+import { tableRoutes } from './routes/tables';
 import { avatarRoute, photoRoutes } from './routes/photos';
 import { placeRoutes } from './routes/places';
 import { plateRoutes } from './routes/plates';
@@ -106,6 +107,7 @@ export async function buildApp({
     askRoutes(authed, deps);
     planRoutes(authed, deps);
     listRoutes(authed, deps);
+    tableRoutes(authed, deps);
     wrappedRoutes(authed, deps);
     photoRoutes(authed, deps);
     storyRoutes(authed, deps);

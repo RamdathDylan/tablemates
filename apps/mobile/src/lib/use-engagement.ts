@@ -15,6 +15,7 @@ export function useReaction() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: qk.feed });
       queryClient.invalidateQueries({ queryKey: ['restaurant'] });
+      queryClient.invalidateQueries({ queryKey: qk.tables });
     },
     onError: (err) => toast(err instanceof ApiError ? err.message : "Couldn't react. Try again.", 'danger'),
   });

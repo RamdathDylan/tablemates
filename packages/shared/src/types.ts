@@ -102,7 +102,8 @@ export type NotificationType =
   | 'plan_decided'
   | 'badge'
   | 'story_reaction'
-  | 'plate_prompt';
+  | 'plate_prompt'
+  | 'table_invite';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -144,6 +145,7 @@ export interface NotificationItem {
   /** For comment notifications: the start of the comment. For ask replies: the question. For plans: the title. */
   excerpt: string | null;
   planId: string | null;
+  tableId: string | null;
   /** For badge notifications. */
   badge: { key: string; title: string } | null;
   /** For story reactions. */
@@ -351,6 +353,20 @@ export interface Plan extends PlanSummary {
   isCreator: boolean;
 }
 
+export interface TableSummary {
+  id: string;
+  name: string;
+  emoji: string;
+  members: PublicUser[];
+  isOwner: boolean;
+}
+
+export interface TableDetail extends TableSummary {
+  owner: PublicUser;
+  lists: ListSummary[];
+  plans: PlanSummary[];
+}
+
 export interface ListSummary {
   id: string;
   title: string;
@@ -362,6 +378,10 @@ export interface ListSummary {
   preview: string[];
   isOwner: boolean;
   following: boolean;
+  /** Set for a Table's shared list. */
+  table: { id: string; name: string; emoji: string } | null;
+  /** The viewer may add and remove places (owner, or any member of the list's table). */
+  canEdit: boolean;
 }
 
 export interface ListItem {

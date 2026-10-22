@@ -56,6 +56,8 @@ All reads of visits and reviews filter authors through `apps/api/src/lib/visibil
 
 Each visit also has an audience: **Friends** (the default), **Close friends** (only people you've starred), or **Only me**. The shared filters `friendVisitFilter`, `visibleVisitFilter`, and `visitsOfFilter` apply both rules, and `apps/api/test/privacy.test.ts` checks each audience everywhere a review can appear.
 
+**Tables** (friend groups) never widen that. A table's feed shows members' reviews only where the viewer could already see them, and only the owner's friends can be seated. Table lists are visible to current members only. `apps/api/test/tables.test.ts` covers these cases.
+
 A pending request grants nothing, and unfriending hides reviews again right away (and clears close-friend status). `apps/api/test/visibility.test.ts` covers these cases.
 
 ## Auth

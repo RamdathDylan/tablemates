@@ -1,7 +1,7 @@
 import { and, eq, gt, inArray, isNull } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
-import { notifications, plans, pushTokens, restaurants, users } from '../db/schema';
+import { notifications, plans, pushTokens, restaurants, tables, users } from '../db/schema';
 import { badgeTitle } from '../lib/badges';
 import type { PushMessage, PushProvider } from './types';
 
@@ -18,6 +18,8 @@ type Row = {
   restaurantName: string | null;
   planId: string | null;
   planTitle: string | null;
+  tableId: string | null;
+  tableName: string | null;
   badgeKey: string | null;
   emoji: string | null;
 };
@@ -65,6 +67,12 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         body: `It's ${n.restaurantName ?? 'decided'}!`,
         data: { type: n.type, planId: n.planId ?? '' },
       };
+    case 'table_invite':
+      return {
+        title: n.tableName ?? 'New table',
+        body: `${n.actorName} added you to their table`,
+        data: { type: n.type, tableId: n.tableId ?? '' },
+      };
     case 'badge':
       return { title: 'New badge!', body: `You earned ${badgeTitle(n.badgeKey ?? '')}`, data: { type: n.type, screen: 'passport' } };
     case 'story_reaction':
@@ -104,6 +112,8 @@ export class PushWorker {
         restaurantName: restaurants.name,
         planId: notifications.planId,
         planTitle: plans.title,
+        tableId: notifications.tableId,
+        tableName: tables.name,
         badgeKey: notifications.badgeKey,
         emoji: notifications.emoji,
       })
@@ -111,6 +121,7 @@ export class PushWorker {
       .innerJoin(users, eq(notifications.actorId, users.id))
       .leftJoin(restaurants, eq(notifications.restaurantId, restaurants.id))
       .leftJoin(plans, eq(notifications.planId, plans.id))
+      .leftJoin(tables, eq(notifications.tableId, tables.id))
       .where(and(isNull(notifications.pushedAt), gt(notifications.createdAt, new Date(Date.now() - MAX_AGE_MS))))
       .limit(500);
     if (!pending.length) return 0;

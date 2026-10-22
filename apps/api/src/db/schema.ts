@@ -104,6 +104,7 @@ export const notificationType = pgEnum('notification_type', [
   'badge',
   'story_reaction',
   'plate_prompt',
+  'table_invite',
 ]);
 
 /**
@@ -130,6 +131,7 @@ export const notifications = pgTable(
     visitId: uuid('visit_id').references(() => visits.id, { onDelete: 'cascade' }),
     askId: uuid('ask_id').references(() => asks.id, { onDelete: 'cascade' }),
     planId: uuid('plan_id').references(() => plans.id, { onDelete: 'cascade' }),
+    tableId: uuid('table_id').references(() => tables.id, { onDelete: 'cascade' }),
     badgeKey: text('badge_key'),
     /** Emoji for story reactions. */
     emoji: text('emoji'),
@@ -270,6 +272,34 @@ export const visitCompanions = pgTable(
   (t) => [primaryKey({ columns: [t.visitId, t.userId] }), index('visit_companions_user_idx').on(t.userId)],
 );
 
+export const tableRole = pgEnum('table_role', ['owner', 'member']);
+
+/** A "Table": a small friend group with its own feed, shared lists, and plans. */
+export const tables = pgTable('tables', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  emoji: text('emoji').notNull().default('🍽️'),
+  ownerId: uuid('owner_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamptz('created_at').notNull().defaultNow(),
+});
+
+export const tableMembers = pgTable(
+  'table_members',
+  {
+    tableId: uuid('table_id')
+      .notNull()
+      .references(() => tables.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: tableRole('role').notNull().default('member'),
+    joinedAt: timestamptz('joined_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.tableId, t.userId] }), index('table_members_user_idx').on(t.userId)],
+);
+
 export const planStatus = pgEnum('plan_status', ['open', 'decided']);
 
 /** A group dinner: friends suggest places, vote, and the creator picks the winner. */
@@ -282,6 +312,8 @@ export const plans = pgTable('plans', {
   startsAt: timestamptz('starts_at'),
   status: planStatus('status').notNull().default('open'),
   decidedOptionId: uuid('decided_option_id'),
+  /** Set when the plan was made for a Table; members come from the table. */
+  tableId: uuid('table_id').references(() => tables.id, { onDelete: 'set null' }),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
 });
 
@@ -395,6 +427,8 @@ export const lists = pgTable(
     title: text('title').notNull(),
     description: text('description').notNull().default(''),
     audience: listAudience('audience').notNull().default('friends'),
+    /** A Table's shared list: visible to and editable by its members. */
+    tableId: uuid('table_id').references(() => tables.id, { onDelete: 'cascade' }),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },

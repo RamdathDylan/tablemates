@@ -67,7 +67,16 @@ export const notificationTypes = [
   'badge',
   'story_reaction',
   'plate_prompt',
+  'table_invite',
 ] as const;
+
+export const tableInput = z.object({
+  name: z.string().trim().min(1, 'Name your table').max(40),
+  emoji: z.string().trim().min(1).max(8).default('🍽️'),
+  memberIds: z.array(z.uuid()).min(1, 'Invite at least one friend').max(30),
+});
+
+export const tableMembersInput = z.object({ userIds: z.array(z.uuid()).min(1).max(30) });
 
 export const plateInput = z.object({
   photoId: z.uuid(),
@@ -87,11 +96,15 @@ export const storyInput = z.object({
 
 export const storyReactionInput = z.object({ emoji: z.enum(storyReactions) });
 
-export const createPlanInput = z.object({
-  title: z.string().trim().min(1, 'Name the plan').max(80),
-  startsAt: z.iso.datetime({ offset: true }).optional(),
-  memberIds: z.array(z.uuid()).min(1, 'Invite at least one friend').max(20),
-});
+export const createPlanInput = z
+  .object({
+    title: z.string().trim().min(1, 'Name the plan').max(80),
+    startsAt: z.iso.datetime({ offset: true }).optional(),
+    memberIds: z.array(z.uuid()).max(20).default([]),
+    /** A Table plan includes every member of the table. */
+    tableId: z.uuid().optional(),
+  })
+  .refine((p) => p.tableId || p.memberIds.length > 0, { message: 'Invite at least one friend', path: ['memberIds'] });
 
 export const planOptionInput = z
   .object({ restaurantId: z.uuid().optional(), googlePlaceId: z.string().min(1).max(300).optional() })
@@ -247,6 +260,8 @@ export const listInput = z.object({
   title: z.string().trim().min(1, 'Name the list').max(60),
   description: z.string().trim().max(280).default(''),
   audience: z.enum(['friends', 'private']).default('friends'),
+  /** Makes it a Table's shared list. */
+  tableId: z.uuid().optional(),
 });
 
 export const updateListInput = z.object({
