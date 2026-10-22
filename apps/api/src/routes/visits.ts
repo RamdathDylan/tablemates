@@ -17,7 +17,7 @@ import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
-import { evaluateBadges } from '../lib/badges';
+import { evaluateBadges, recommendersAmongFriends } from '../lib/badges';
 import { checkGoalReached } from '../lib/goals';
 import { watchMayorship } from '../lib/mayors';
 import { dishesFor, setDishes } from '../lib/dishes';
@@ -267,7 +267,8 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
       }
       return { visit: visit!, review };
     });
-    await evaluateBadges(db, [req.userId]);
+    // A visit can also move friends who recommended this place toward Tastemaker.
+    await evaluateBadges(db, [req.userId, ...(await recommendersAmongFriends(db, req.userId, restaurant.id))]);
     await checkGoalReached(db, req.userId, result.visit.visitedAt);
     await afterMayorship();
     reply.status(201);

@@ -46,7 +46,16 @@ describe('badges and passport', () => {
     expect(await earned(alice!)).toContain('trailblazer');
   });
 
-  it('awards Tastemaker when friends save 10 places you recommended', async () => {
+  it("ignores friends' reviews you can't see, so Trailblazer never reveals a private review", async () => {
+    const [alice, bob] = await Promise.all(['alice', 'bob'].map((n) => signup(ctx.app, n)));
+    await befriend(ctx.app, alice!, bob!);
+    ctx.places.add('hidden', 'Hidden Gem');
+    await as(ctx.app, bob!).post('/visits', { googlePlaceId: 'hidden', visitedAt: '2026-09-01', audience: 'private', review: { rating: 5, recommends: true } });
+    await log(alice!, 'hidden', { rating: 4, recommends: true });
+    expect(await earned(alice!)).toContain('trailblazer');
+  });
+
+  it('awards Tastemaker when friends visit 10 places you recommended, counting only visits you can see', async () => {
     const [alice, bob, carol] = await Promise.all(['alice', 'bob', 'carol'].map((n) => signup(ctx.app, n)));
     await befriend(ctx.app, alice!, bob!);
     await befriend(ctx.app, alice!, carol!);
@@ -55,9 +64,19 @@ describe('badges and passport', () => {
       ctx.places.add(`r${i}`, `Rec ${i}`);
       ids.push((await log(alice!, `r${i}`, { rating: 5, recommends: true })).json().restaurant.id);
     }
+    // Saves are private to the saver, so they no longer count.
     for (const id of ids) await as(ctx.app, bob!).put(`/restaurants/${id}/save`);
-    expect(await earned(alice!)).not.toContain('tastemaker');
     for (const id of ids) await as(ctx.app, carol!).put(`/restaurants/${id}/save`);
+    expect(await earned(alice!)).not.toContain('tastemaker');
+
+    for (let i = 0; i < 5; i++) await log(bob!, `r${i}`);
+    // Carol's private visits stay hidden from alice, so they don't count either.
+    for (let i = 0; i < 5; i++) await as(ctx.app, carol!).post('/visits', { googlePlaceId: `r${i}`, visitedAt: '2026-10-02', audience: 'private' });
+    expect(await earned(alice!)).not.toContain('tastemaker');
+    expect((await passport(alice!, 'alice')).find((b) => b.key === 'tastemaker')!.progress).toEqual({ current: 5, target: 10 });
+
+    // Her last visits were private, so set the audience: it otherwise defaults to the last one used.
+    for (let i = 0; i < 5; i++) await as(ctx.app, carol!).post('/visits', { googlePlaceId: `r${i}`, visitedAt: '2026-10-03', audience: 'friends' });
     expect(await earned(alice!)).toContain('tastemaker');
   });
 
