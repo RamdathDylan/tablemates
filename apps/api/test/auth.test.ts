@@ -84,7 +84,7 @@ describe('auth', () => {
   });
 
   it('allows browser preflight for every method the client uses', async () => {
-    for (const method of ['PATCH', 'DELETE']) {
+    for (const method of ['PUT', 'PATCH', 'DELETE']) {
       const res = await ctx.app.inject({
         method: 'OPTIONS',
         url: '/me',

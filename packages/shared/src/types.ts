@@ -97,6 +97,8 @@ export interface FeedItem {
   visitedAt: string;
   author: PublicUser;
   restaurant: Restaurant;
+  /** Whether the viewer has this restaurant on their want-to-try list. */
+  saved: boolean;
 }
 
 export interface Page<T> {
@@ -109,6 +111,12 @@ export interface RestaurantDetail {
   /** Reviews by the viewer and the viewer's friends only. */
   reviews: FeedItem[];
   friendStats: { visits: number; recommends: number; averageRating: number | null };
+  saved: boolean;
+}
+
+export interface SavedPlace {
+  restaurant: Restaurant;
+  savedAt: string;
 }
 
 export interface MapVisitor {
@@ -138,6 +146,8 @@ export interface MapPlace {
   latestReview: { author: PublicUser; rating: number; body: string; recommends: boolean; visitedAt: string } | null;
   /** Present when the request included a location. */
   distanceKm: number | null;
+  /** On the viewer's want-to-try list. Saved places appear even before anyone visits. */
+  saved: boolean;
 }
 
 export interface ApiError {

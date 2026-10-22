@@ -96,7 +96,7 @@ export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
 
   beforeEach(async () => {
     await ctx.db.execute(
-      sql`truncate users, friendships, notifications, email_verification_codes, restaurants, visits, reviews, refresh_tokens cascade`,
+      sql`truncate users, friendships, notifications, email_verification_codes, saved_places, restaurants, visits, reviews, refresh_tokens cascade`,
     );
     ctx.places.places.clear();
     ctx.places.getCalls = 0;
@@ -148,9 +148,9 @@ export async function signup(
 }
 
 export function as(app: FastifyInstance, user: TestUser) {
-  const call = (method: 'GET' | 'POST' | 'PATCH' | 'DELETE') => (url: string, payload?: object) =>
+  const call = (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE') => (url: string, payload?: object) =>
     app.inject({ method, url, payload, headers: { authorization: `Bearer ${user.token}` } });
-  return { get: call('GET'), post: call('POST'), patch: call('PATCH'), delete: call('DELETE') };
+  return { get: call('GET'), post: call('POST'), put: call('PUT'), patch: call('PATCH'), delete: call('DELETE') };
 }
 
 export async function befriend(app: FastifyInstance, a: TestUser, b: TestUser) {

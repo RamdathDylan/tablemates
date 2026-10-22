@@ -20,6 +20,7 @@ export function mappable(places: MapPlace[]) {
 }
 
 export function pinKind(place: MapPlace): MapPinKind {
+  if (!place.me && place.friends.count === 0) return 'saved';
   if (place.me && place.friends.count > 0) return 'both';
   return place.me ? 'mine' : 'friends';
 }
@@ -31,5 +32,6 @@ export function pinLabel(place: MapPlace) {
   if (place.summary.recommends) parts.push(`${place.summary.recommends} recommend`);
   if (place.me) parts.push("you've been");
   if (place.friends.count) parts.push(`${place.friends.count} friend${place.friends.count === 1 ? '' : 's'} visited`);
+  if (place.saved) parts.push('on your want-to-try list');
   return parts.join(', ');
 }

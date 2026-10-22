@@ -11,6 +11,7 @@ import { feedRoutes } from './routes/feed';
 import { friendRoutes } from './routes/friends';
 import { mapRoutes } from './routes/map';
 import { notificationRoutes } from './routes/notifications';
+import { savedRoutes } from './routes/saved';
 import { placeRoutes } from './routes/places';
 import { userRoutes } from './routes/users';
 import { visitRoutes } from './routes/visits';
@@ -37,7 +38,7 @@ export async function buildApp({
     origin: corsOrigins,
     credentials: true,
     // The plugin only allows GET/HEAD/POST by default; profile edits and removals need the rest.
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   });
   await app.register(cookie);
   // Opt-in per route (see routes/auth.ts) rather than limiting every request.
@@ -92,6 +93,7 @@ export async function buildApp({
     visitRoutes(authed, deps);
     feedRoutes(authed, deps);
     mapRoutes(authed, deps);
+    savedRoutes(authed, deps);
   });
 
   return app;

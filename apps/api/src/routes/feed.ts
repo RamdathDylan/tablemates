@@ -4,7 +4,7 @@ import { and, avg, count, desc, eq, sql, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
-import { restaurants, reviews, users, visits } from '../db/schema';
+import { restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
 import { notFound, parse } from '../lib/errors';
@@ -12,9 +12,10 @@ import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
 import { friendAuthorFilter, visibleAuthorFilter } from '../lib/visibility';
 
-async function selectFeedItems(db: Db, where: SQL | undefined, limit: number) {
+async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
   const rows = await db
     .select({
+      saved: sql<boolean>`${savedPlaces.userId} is not null`,
       review: reviews,
       visitedAt: visits.visitedAt,
       restaurant: restaurants,
@@ -29,6 +30,7 @@ async function selectFeedItems(db: Db, where: SQL | undefined, limit: number) {
     .innerJoin(visits, eq(reviews.visitId, visits.id))
     .innerJoin(restaurants, eq(visits.restaurantId, restaurants.id))
     .innerJoin(users, eq(visits.userId, users.id))
+    .leftJoin(savedPlaces, and(eq(savedPlaces.restaurantId, restaurants.id), eq(savedPlaces.userId, viewerId)))
     .where(where)
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(limit);
@@ -40,6 +42,7 @@ const toFeedItem = (row: Awaited<ReturnType<typeof selectFeedItems>>[number]): F
   visitedAt: row.visitedAt,
   author: toPublicUser(row.author),
   restaurant: toRestaurant(row.restaurant),
+  saved: row.saved,
 });
 
 export function feedRoutes(app: FastifyInstance, { db }: Deps) {
@@ -53,7 +56,7 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
         sql`(${reviews.createdAt}, ${reviews.id}) < (${c.createdAt.toISOString()}::timestamptz, ${c.id}::uuid)`,
       );
     }
-    const rows = await selectFeedItems(db, and(...conditions), limit + 1);
+    const rows = await selectFeedItems(db, req.userId, and(...conditions), limit + 1);
     const page = rows.slice(0, limit);
     const last = page.at(-1);
     return {
@@ -72,8 +75,8 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
       eq(visits.restaurantId, id),
       visibleAuthorFilter(visits.userId, req.userId),
     );
-    const [rows, [stats]] = await Promise.all([
-      selectFeedItems(db, visible, 50),
+    const [rows, [stats], [saved]] = await Promise.all([
+      selectFeedItems(db, req.userId, visible, 50),
       db
         .select({
           visits: count(visits.id),
@@ -83,6 +86,10 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
         .from(visits)
         .leftJoin(reviews, eq(reviews.visitId, visits.id))
         .where(visible),
+      db
+        .select({ at: savedPlaces.createdAt })
+        .from(savedPlaces)
+        .where(and(eq(savedPlaces.userId, req.userId), eq(savedPlaces.restaurantId, id))),
     ]);
     return {
       restaurant: toRestaurant(restaurant),
@@ -92,6 +99,7 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
         recommends: stats?.recommends ?? 0,
         averageRating: stats?.averageRating ? Number(Number(stats.averageRating).toFixed(1)) : null,
       },
+      saved: !!saved,
     };
   });
 }

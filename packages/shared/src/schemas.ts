@@ -82,6 +82,8 @@ export const mapPlacesQuery = z
     recommended: queryBoolean.optional(),
     minRating: z.coerce.number().int().min(1).max(5).optional(),
     cuisine: z.string().trim().min(1).max(40).optional(),
+    /** Only places on the viewer's want-to-try list. */
+    saved: queryBoolean.optional(),
     sort: z.enum(mapSorts).default('recommended'),
     lat: z.coerce.number().min(-90).max(90).optional(),
     lng: z.coerce.number().min(-180).max(180).optional(),
@@ -98,6 +100,7 @@ export interface MapPlacesQuery {
   recommended?: boolean;
   minRating?: number;
   cuisine?: string;
+  saved?: boolean;
   sort?: (typeof mapSorts)[number];
   lat?: number;
   lng?: number;
