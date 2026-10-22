@@ -39,6 +39,8 @@ Required settings for production:
 | `TRUST_PROXY` | Behind a load balancer or reverse proxy: a hop count (for example `1`) or the proxy addresses or CIDR ranges. Leave it `false` when the API is exposed directly. |
 | `REDIS_URL` | Recommended with more than one instance, so rate limits are shared |
 
+**Startup guard:** with `NODE_ENV=production`, the API refuses to start if any development default from this repository is still in use. That covers the example `JWT_SECRET` (or one shorter than 32 characters), the development database password or storage keys, `MAIL_PROVIDER` other than `resend`, and localhost in `CORS_ORIGINS`. It lists every problem and exits.
+
 **Health check:** `GET /health` returns 200 and needs no authentication.
 
 **Scaling:**

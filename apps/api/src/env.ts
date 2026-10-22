@@ -66,3 +66,38 @@ export const env = {
     from: process.env.MAIL_FROM ?? 'TableMates <onboarding@resend.dev>',
   },
 };
+
+/** The public development defaults from .env.example and docker-compose.yml. */
+const DEV_DEFAULTS = {
+  jwtSecret: 'change-me-to-a-long-random-string',
+  dbPassword: ':tablemates@',
+  s3AccessKey: 'tablemates',
+  s3Secret: 'tablemates-dev',
+};
+
+export interface ProductionSettings {
+  jwtSecret: string;
+  databaseUrl: string;
+  s3: { accessKeyId: string; secretAccessKey: string };
+  mailProvider: string;
+  corsOrigins: string[];
+}
+
+/**
+ * Problems that make a configuration unsafe for production. Development
+ * defaults are published in this repository, so production must never run
+ * with them. Returns an empty list when the configuration is acceptable.
+ */
+export function productionConfigProblems(s: ProductionSettings): string[] {
+  const problems: string[] = [];
+  if (s.jwtSecret === DEV_DEFAULTS.jwtSecret || s.jwtSecret.length < 32) {
+    problems.push('JWT_SECRET must be a unique random value of at least 32 characters');
+  }
+  if (s.databaseUrl.includes(DEV_DEFAULTS.dbPassword)) problems.push('DATABASE_URL uses the development password');
+  if (s.s3.accessKeyId === DEV_DEFAULTS.s3AccessKey || s.s3.secretAccessKey === DEV_DEFAULTS.s3Secret) {
+    problems.push('S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY must not be the development keys');
+  }
+  if (s.mailProvider !== 'resend') problems.push('MAIL_PROVIDER must be "resend" in production');
+  if (s.corsOrigins.some((o) => /localhost|127\.0\.0\.1/.test(o))) problems.push('CORS_ORIGINS must not include localhost');
+  return problems;
+}
