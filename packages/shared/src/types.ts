@@ -62,7 +62,27 @@ export interface NotificationSummary {
   unreadAccepted: { id: string; user: PublicUser; createdAt: string }[];
 }
 
-export type NotificationType = 'friend_request' | 'friend_accepted' | 'saved_place_reviewed';
+export type NotificationType = 'friend_request' | 'friend_accepted' | 'saved_place_reviewed' | 'reaction' | 'comment';
+
+export type ReactionKind = 'yum' | 'going';
+
+/** How friends have responded to a review. */
+export interface Engagement {
+  yum: number;
+  going: number;
+  /** The viewer's own reactions. */
+  mine: ReactionKind[];
+  comments: number;
+}
+
+export interface Comment {
+  id: string;
+  author: PublicUser;
+  body: string;
+  createdAt: string;
+  /** The viewer may delete it (they wrote it, or it's on their review). */
+  canDelete: boolean;
+}
 
 export interface NotificationSettings {
   mutedPush: NotificationType[];
@@ -79,6 +99,10 @@ export interface NotificationItem {
   reviewId: string | null;
   /** For friend_request: the request id while it's still pending (null once resolved). */
   pendingRequestId: string | null;
+  /** For reaction notifications. */
+  reaction: ReactionKind | null;
+  /** For comment notifications: the start of the comment. */
+  excerpt: string | null;
 }
 
 export interface Restaurant {
@@ -128,6 +152,7 @@ export interface FeedItem {
   restaurant: Restaurant;
   /** Whether the viewer has this restaurant on their want-to-try list. */
   saved: boolean;
+  engagement: Engagement;
 }
 
 export interface Page<T> {

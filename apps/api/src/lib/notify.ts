@@ -16,6 +16,8 @@ export interface NotifyInput {
   friendshipId?: string;
   reviewId?: string;
   restaurantId?: string;
+  commentId?: string;
+  reaction?: 'yum' | 'going';
 }
 
 /**

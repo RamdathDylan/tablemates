@@ -41,7 +41,11 @@ export type UpdateProfileInput = z.infer<typeof updateProfileInput>;
 
 export const friendRequestInput = z.object({ username });
 
-export const notificationTypes = ['friend_request', 'friend_accepted', 'saved_place_reviewed'] as const;
+export const notificationTypes = ['friend_request', 'friend_accepted', 'saved_place_reviewed', 'reaction', 'comment'] as const;
+
+export const reactionKinds = ['yum', 'going'] as const;
+
+export const commentInput = z.object({ body: z.string().trim().min(1, 'Write something first').max(500) });
 
 export const registerPushTokenInput = z.object({
   token: z.string().regex(/^Expo(nent)?PushToken\[.+\]$/, 'Not an Expo push token').max(300),

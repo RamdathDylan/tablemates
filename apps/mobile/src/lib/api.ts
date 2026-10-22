@@ -1,5 +1,6 @@
 import type {
   ApiError as ApiErrorBody,
+  Comment,
   AuthResponse,
   CreateVisitInput,
   FeedItem,
@@ -15,6 +16,7 @@ import type {
   NotificationSummary,
   Page,
   PlaceResult,
+  ReactionKind,
   Profile,
   RestaurantDetail,
   SavedPlace,
@@ -196,4 +198,9 @@ export const api = {
     request<Review>('POST', `/visits/${visitId}/review`, input),
   updateReview: (id: string, input: UpdateReviewInput) => request<Review>('PATCH', `/reviews/${id}`, input),
   deleteReview: (id: string) => request<void>('DELETE', `/reviews/${id}`),
+  react: (reviewId: string, kind: ReactionKind) => request<void>('PUT', `/reviews/${reviewId}/reactions/${kind}`),
+  unreact: (reviewId: string, kind: ReactionKind) => request<void>('DELETE', `/reviews/${reviewId}/reactions/${kind}`),
+  comments: (reviewId: string) => request<Comment[]>('GET', `/reviews/${reviewId}/comments`),
+  addComment: (reviewId: string, body: string) => request<{ id: string }>('POST', `/reviews/${reviewId}/comments`, { body }),
+  deleteComment: (id: string) => request<void>('DELETE', `/comments/${id}`),
 };

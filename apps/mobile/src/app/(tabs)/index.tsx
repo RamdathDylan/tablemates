@@ -1,14 +1,17 @@
 import { Button, EmptyState, ReviewCard, space, Text, useBreakpoint, useTheme } from '@tablemates/ui';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 
 import { ActivityBell } from '@/components/activity-bell';
+import { CommentsSheet } from '@/components/comments-sheet';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { useContentStyle } from '@/components/screen';
 import { api } from '@/lib/api';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { qk } from '@/lib/query-keys';
+import { useReaction } from '@/lib/use-engagement';
 import { useSaveToggle } from '@/lib/use-save';
 
 export default function FeedScreen() {
@@ -17,6 +20,8 @@ export default function FeedScreen() {
   useDocumentTitle('Feed');
   const bp = useBreakpoint();
   const save = useSaveToggle();
+  const react = useReaction();
+  const [thread, setThread] = useState<{ reviewId: string; title: string } | null>(null);
   const feed = useInfiniteQuery({
     queryKey: qk.feed,
     queryFn: ({ pageParam }) => api.feed(pageParam),
@@ -26,6 +31,7 @@ export default function FeedScreen() {
   const items = feed.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
+    <>
     <FlatList
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={content}
@@ -68,6 +74,9 @@ export default function FeedScreen() {
           onPressRestaurant={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant.id } })}
           saved={item.saved}
           onToggleSave={() => save.mutate({ restaurantId: item.restaurant.id, saved: item.saved, name: item.restaurant.name })}
+          engagement={item.engagement}
+          onReact={(kind) => react.mutate({ reviewId: item.review.id, kind, on: item.engagement.mine.includes(kind) })}
+          onOpenComments={() => setThread({ reviewId: item.review.id, title: `${item.author.displayName} at ${item.restaurant.name}` })}
         />
       )}
       onEndReached={() => feed.hasNextPage && !feed.isFetchingNextPage && feed.fetchNextPage()}
@@ -84,5 +93,7 @@ export default function FeedScreen() {
         ) : undefined
       }
     />
+    {thread && <CommentsSheet reviewId={thread.reviewId} title={thread.title} onClose={() => setThread(null)} />}
+    </>
   );
 }

@@ -12,6 +12,8 @@ const labels: Record<NotificationType, string> = {
   friend_request: 'Friend requests',
   friend_accepted: 'Accepted requests',
   saved_place_reviewed: 'Reviews of places you saved',
+  reaction: 'Reactions to your reviews',
+  comment: 'Comments',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

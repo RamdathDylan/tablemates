@@ -24,6 +24,18 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
       return { title: 'New friend request', body: `${n.actorName} wants to be friends`, data: { type: n.type, username: n.actorUsername } };
     case 'friend_accepted':
       return { title: 'You have a new friend', body: `${n.actorName} accepted your friend request`, data: { type: n.type, username: n.actorUsername } };
+    case 'reaction':
+      return {
+        title: n.restaurantName ?? 'Your review',
+        body: `${n.actorName} reacted to your review`,
+        data: { type: n.type, restaurantId: n.restaurantId ?? '' },
+      };
+    case 'comment':
+      return {
+        title: n.restaurantName ?? 'New comment',
+        body: `${n.actorName} commented on a review`,
+        data: { type: n.type, restaurantId: n.restaurantId ?? '' },
+      };
     case 'saved_place_reviewed':
       return {
         title: n.restaurantName ?? 'A place you saved',

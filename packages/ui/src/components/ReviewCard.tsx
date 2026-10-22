@@ -25,6 +25,10 @@ export interface ReviewCardProps {
   /** Shows a bookmark button for the want-to-try list. */
   saved?: boolean;
   onToggleSave?: () => void;
+  /** Reaction and comment counts; shows the response bar when set. */
+  engagement?: { yum: number; going: number; mine: ('yum' | 'going')[]; comments: number };
+  onReact?: (kind: 'yum' | 'going') => void;
+  onOpenComments?: () => void;
 }
 
 export function ReviewCard({
@@ -39,6 +43,9 @@ export function ReviewCard({
   onPressRestaurant,
   saved,
   onToggleSave,
+  engagement,
+  onReact,
+  onOpenComments,
 }: ReviewCardProps) {
   const { colors } = useTheme();
 
@@ -100,6 +107,33 @@ export function ReviewCard({
           {dishes.map((d) => (
             <Chip key={d} label={d} tone="accent" />
           ))}
+        </View>
+      )}
+
+      {engagement && (
+        <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap' }}>
+          <Chip
+            label={engagement.yum ? `Yum · ${engagement.yum}` : 'Yum'}
+            icon={engagement.mine.includes('yum') ? 'heart' : 'heart-outline'}
+            selected={engagement.mine.includes('yum')}
+            accessibilityLabel={`Yum, ${engagement.yum} so far`}
+            onPress={() => onReact?.('yum')}
+          />
+          <Chip
+            label={engagement.going ? `Going · ${engagement.going}` : 'Going'}
+            icon="walk"
+            selected={engagement.mine.includes('going')}
+            accessibilityLabel={`Going, ${engagement.going} so far`}
+            onPress={() => onReact?.('going')}
+          />
+          <Chip
+            label={engagement.comments ? `${engagement.comments}` : 'Comment'}
+            icon="chatbubble-outline"
+            accessibilityLabel={
+              engagement.comments ? `${engagement.comments} comment${engagement.comments === 1 ? '' : 's'}` : 'Comment'
+            }
+            onPress={() => onOpenComments?.()}
+          />
         </View>
       )}
     </Card>
