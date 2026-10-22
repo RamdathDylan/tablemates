@@ -119,4 +119,6 @@ pnpm test        # API integration tests against Postgres, plus the design-token
 
 ## License
 
-[MIT](LICENSE) © 2026 Dylan Ramdath
+Copyright 2026 Dylan Ramdath. All rights reserved. The source is published for viewing only; see [LICENSE](LICENSE).
+
+To report a security issue, see [SECURITY.md](SECURITY.md).
