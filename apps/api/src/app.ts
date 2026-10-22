@@ -15,6 +15,7 @@ import { feedRoutes } from './routes/feed';
 import { friendRoutes } from './routes/friends';
 import { listRoutes } from './routes/lists';
 import { mapRoutes } from './routes/map';
+import { memoryRoutes } from './routes/memories';
 import { notificationRoutes } from './routes/notifications';
 import { savedRoutes } from './routes/saved';
 import { storyRoutes } from './routes/stories';
@@ -117,6 +118,7 @@ export async function buildApp({
     storyRoutes(authed, deps);
     plateRoutes(authed, deps);
     mapRoutes(authed, deps);
+    memoryRoutes(authed, deps);
     savedRoutes(authed, deps);
     pushRoutes(authed, deps);
   });

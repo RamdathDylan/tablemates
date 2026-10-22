@@ -77,6 +77,8 @@ export const notificationTypes = [
   'challenge_ended',
 ] as const;
 
+export const memoriesQuery = z.object({ date: z.iso.date().optional() });
+
 export const blendQuery = z.object({
   /** Comma-separated friend ids, 1 to 5. */
   with: z

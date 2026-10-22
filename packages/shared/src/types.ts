@@ -402,6 +402,18 @@ export interface Plan extends PlanSummary {
   isCreator: boolean;
 }
 
+/** "On this day": one of your past visits that falls on today's date. */
+export interface Memory {
+  /** e.g. "1 year ago", "6 months ago". */
+  label: string;
+  visitedAt: string;
+  restaurant: Restaurant;
+  rating: number | null;
+  recommends: boolean | null;
+  photos: Photo[];
+  companions: PublicUser[];
+}
+
 /** A Spotify-style Blend: places the group should try together. */
 export interface Blend {
   participants: PublicUser[];
