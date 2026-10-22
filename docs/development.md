@@ -78,6 +78,8 @@ Data persists in Docker volumes. To reset the database, run `docker compose down
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Yes, for photos | | Storage credentials (local defaults are in `.env.example`) |
 | `S3_REGION` | | `auto` | Region (R2 uses `auto`) |
 | `EXPO_ACCESS_TOKEN` | | | Needed only if "enhanced push security" is on for the Expo project |
+| `TRUST_PROXY` | | `false` | Proxies trusted to report the client address: `true`, a hop count, or addresses and CIDR ranges |
+| `REDIS_URL` | | | Shares rate-limit counters across instances. Unset in development. |
 
 ### App (`apps/mobile/.env`)
 
@@ -102,7 +104,7 @@ pnpm dev:mobile   # Expo dev server: w = web, i = iOS simulator, a = Android emu
   2. Make a development build with `npx expo run:ios` or `eas build --profile development`.
 
   The activity inbox works without any of this.
-- **Style guide:** in a development build, **Profile → Open style guide** shows every design token and component.
+- **Style guide:** in any development run (Expo Go, a development build or the web dev server), **Profile → Open style guide** shows every design token and component. It's hidden in production builds.
 
 ## Database changes
 

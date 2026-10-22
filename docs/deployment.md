@@ -36,13 +36,16 @@ Required settings for production:
 | `MAIL_PROVIDER=resend`, `RESEND_API_KEY`, `MAIL_FROM` | `MAIL_FROM` must be on a verified domain |
 | `S3_*` | See [Photo storage](#photo-storage) |
 | `EXPO_ACCESS_TOKEN` | Only if "enhanced push security" is enabled in Expo |
+| `TRUST_PROXY` | Behind a load balancer or reverse proxy: a hop count (for example `1`) or the proxy addresses or CIDR ranges. Leave it `false` when the API is exposed directly. |
+| `REDIS_URL` | Recommended with more than one instance, so rate limits are shared |
 
 **Health check:** `GET /health` returns 200 and needs no authentication.
 
 **Scaling:**
-- Each instance runs the job runner. Every job claims its work with conditional updates, so running several instances doesn't send duplicate notifications.
-- Rate limits are counted in memory, per instance.
-- **Known gap:** the API doesn't yet trust `X-Forwarded-For`. Behind a load balancer or reverse proxy, every client would share the proxy's IP and therefore one auth rate limit. Enable Fastify's `trustProxy` option in `buildApp` for your proxy before going live.
+- **Jobs:** each instance runs the job runner, and every job claims its work atomically, so several instances never process the same item twice. See [background jobs](architecture.md#background-jobs).
+- **Client address:** set `TRUST_PROXY` to match your proxy, so per-IP rate limits apply to the real client and not to the proxy. Trust only proxies you run; otherwise clients could spoof `X-Forwarded-For`.
+- **Shared rate limits:** set `REDIS_URL` so auth rate limits are counted once across all instances. Without it, each instance counts separately.
+- **Redis outages:** if Redis is unreachable, requests are allowed and the error is logged, so an outage can't lock everyone out of signing in.
 
 ## Photo storage
 
@@ -63,6 +66,8 @@ S3_REGION=auto
 At startup the API makes sure the bucket has a CORS rule allowing `PUT` and `GET` from `CORS_ORIGINS`. If the token isn't allowed to change bucket settings, add that rule in the R2 dashboard yourself.
 
 Clients load photos through signed URLs that expire after an hour. No public bucket access is needed.
+
+Add a **lifecycle rule** that deletes objects under `review/`, `avatar/`, `story/` and `plate/` that no row references. Cleanup jobs delete database rows before storage objects, so a crash between the two steps can leave an object with no row. A simpler option is a periodic sweep comparing bucket keys with `photos.storage_key`.
 
 ## Email
 
@@ -89,12 +94,16 @@ EXPO_PUBLIC_API_URL=https://api.example.com npx expo export --platform web
 
 Deploy the `dist/` directory to a static host, with every path rewritten to `index.html`. The host's origin must be listed in the API's `CORS_ORIGINS`.
 
+**Host the web app and the API on the same site.** On the web, the refresh token is an httpOnly cookie with `SameSite=Lax`, scoped to `/auth`. Browsers send it only to an API on the same registrable domain as the web app. For example, `app.example.com` and `api.example.com` work. A web app on `example.vercel.app` calling `api.example.com` doesn't: those users would be signed out whenever the 15-minute access token expires. Native apps aren't affected, because they keep the refresh token in the Keychain or Keystore.
+
 ## Release checklist
 
 - [ ] `pnpm typecheck` and `pnpm test` pass on the release commit
 - [ ] Database migrations reviewed and applied before the new API version takes traffic
 - [ ] Secrets are set in the platform, not committed
 - [ ] `CORS_ORIGINS` and `PUBLIC_API_URL` match the production domains
-- [ ] Behind a proxy, `trustProxy` is configured so rate limits apply per client
+- [ ] The web app and the API share a registrable domain (needed for the refresh cookie)
+- [ ] `TRUST_PROXY` matches the proxy setup, and `REDIS_URL` is set when running more than one instance
+- [ ] A bucket lifecycle rule or sweep removes orphaned photo objects
 - [ ] The `/health` check passes after deploy
 - [ ] On a real device: sign-up email, restaurant search, a photo upload and a push notification all work

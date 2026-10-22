@@ -5,7 +5,7 @@ TableMates promises that **you see recommendations only from people you've added
 ## Principles
 
 1. **Friends only.** Another person's activity is visible only to their accepted friends. A pending request grants nothing.
-2. **Per-visit audiences.** Each visit is shared with **Friends** (the default), **Close friends** (people the author has starred) or **Only me**.
+2. **Per-visit audiences.** Each visit is shared with **Friends**, **Close friends** (people the author has starred) or **Only me**. An Only me visit is seen by nobody else, so it can't have tagged friends. A new visit starts with the audience the person used last.
 3. **Enforced on the server.** Every rule is applied in SQL by the API. The app never receives data and then filters it.
 4. **Aggregates obey the same rules.** Counts, rankings and recommendations are built only from what the asking user may see, so they can't reveal a private visit indirectly.
 5. **Hidden means invisible.** For something you can't see, the API answers 404 and doesn't confirm that it exists.
@@ -13,16 +13,24 @@ TableMates promises that **you see recommendations only from people you've added
 
 ## Where the rules live
 
-[`apps/api/src/lib/visibility.ts`](../apps/api/src/lib/visibility.ts) is the only place that decides who can see whose visits. Every query that reads visits or reviews composes one of these helpers:
+[`apps/api/src/lib/visibility.ts`](../apps/api/src/lib/visibility.ts) is the only place that decides who can see visits, reviews, stories and check-ins. Every query that reads that content composes one of these helpers. A guard test in `visibility.test.ts` fails if audience comparisons or close-friend checks are written anywhere else.
+
+Lists have their own audience model: owner, friends, or a Table's members. They're checked by `canSeeList` in `routes/lists.ts`.
 
 | Helper | Returns |
 |---|---|
 | `friendIdsOf(viewer)` | Subquery of the viewer's accepted friends |
-| `audienceAdmits(viewer)` | Visits whose audience includes the viewer: Friends; Close friends when the author starred the viewer; or any visit the viewer was tagged on |
+| `friendAuthorFilter(author, viewer)` | Rows whose author is one of the viewer's friends |
+| `audienceAdmits(viewer)` | Visits whose audience includes the viewer: Friends; Close friends when the author starred the viewer; or a Friends or Close friends visit the viewer was tagged on. Only me admits nobody. |
 | `friendVisitFilter(viewer)` | Friends' visits the viewer may see (used by the feed) |
 | `visibleVisitFilter(viewer)` | The viewer's own visits plus `friendVisitFilter` (used by restaurant pages, the map, mayors, Blend, table feeds) |
 | `visitsOfFilter(owner, viewer)` | One person's visits as the viewer may see them (used by profiles, streaks, goals) |
+| `friendContentFilter(author, audience, viewer)` | Friends' stories and check-ins the viewer may see |
+| `visitVisibleTo(visitId, viewer)` | Whether one visit is visible to a user. The viewer may be a column, for example to find every saver who may see a new review. |
+| `sharedWithAllFriends()` | Friends-audience visits only, for results shown to a group |
 | `relationshipsWith`, `canSeeActivityOf` | The friendship status between users, used for checks on profiles and invitations |
+
+The viewer argument accepts a user id or a SQL column. Alerts use the column form to select "everyone who may see this" with the same rules.
 
 ## Rules by feature
 
@@ -41,7 +49,9 @@ TableMates promises that **you see recommendations only from people you've added
 | Taste match, For You, Blend | Built from ratings the viewer can see | A private review never shapes a score or a pick. Blend works only with friends. |
 | Streaks, goals | You and friends | A friend's view counts only the visits that friend can see. |
 | Mayors | Relative to the viewer's circle (you and your friends) | Strangers' visits never count. "You lost a crown" is judged from the dethroned friend's view, so a visit they can't see can never take their crown. |
-| Challenges | Members | Only visits that aren't private count toward a leaderboard. |
+| Challenges | Members | Only Friends-audience visits count toward a leaderboard. Members see each other's totals, so private and close-friends visits never appear as activity. |
+| Tagged friends | The author, and friends tagged on a Friends or Close friends visit | An Only me visit can't tag anyone. Making a tagged visit Only me requires confirming that the tags will be removed. |
+| Badges | You, and friends (earned badges only) | Computed only from data the earner can see. Trailblazer ignores friends' reviews you can't see. Tastemaker counts friends' visible visits, and never reads anyone's want-to-try list. |
 | On this day | Only you | Includes your private visits, because only you see them. Never pushed. |
 | Activity inbox | Only you | Every alert is created by `notify()`, inside the transaction that caused it. |
 
@@ -69,10 +79,12 @@ Privacy is tested as a feature in its own right. Each test builds a small world 
 |---|---|
 | Friendship and revocation | `visibility.test.ts`, `friends.test.ts` |
 | Visit audiences everywhere a review appears | `privacy.test.ts` |
+| Tagged friends and Only me | `tags.test.ts` |
+| Rules kept in one module (guard test) | `visibility.test.ts` |
 | Photos and signed URLs | `photos.test.ts` |
 | Stories, plate check, Out now | `stories.test.ts`, `plates.test.ts`, `checkins.test.ts` |
 | Lists, plans, Tables | `lists.test.ts`, `plans.test.ts`, `tables.test.ts` |
-| Aggregates | `taste.test.ts`, `blend.test.ts`, `streaks.test.ts`, `goals.test.ts`, `mayors.test.ts`, `challenges.test.ts` |
+| Aggregates | `taste.test.ts`, `blend.test.ts`, `streaks.test.ts`, `goals.test.ts`, `mayors.test.ts`, `challenges.test.ts`, `badges.test.ts` |
 | Notifications | `notifications.test.ts`, `push.test.ts` |
 
 When a feature adds a visibility rule, its tests include a **mutation check**: removing the filter from the query must make a test fail. This proves the test actually guards the rule.
@@ -83,6 +95,6 @@ Any new read of another person's data should:
 
 1. Compose a helper from `lib/visibility.ts`. Don't hand-write friendship or audience SQL.
 2. Return 404 for resources the viewer can't see.
-3. Count or rank only visits the viewer may see, or visits that aren't private when results are shown to a group.
+3. Count or rank only visits the viewer may see. When results are shown to a group, count only `sharedWithAllFriends()` visits.
 4. Create alerts only through `notify()`.
 5. Come with tests for a stranger, a friend outside the audience, and a private visit.

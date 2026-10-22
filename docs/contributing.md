@@ -4,7 +4,15 @@ This guide describes how changes get from an idea to `main`.
 
 ## Workflow
 
-1. **One change per branch.** Each feature or fix gets its own branch, named `feat/<short-name>` or `fix/<short-name>`.
+1. **One change per branch.** Each change gets its own branch, named by type:
+
+| Prefix | For |
+|---|---|
+| `feat/` | New features |
+| `fix/` | Bug fixes |
+| `docs/` | Documentation only |
+| `chore/` | Maintenance with no behavior change: dependencies, copy, tooling |
+
 2. **Separate fixes.** If you find an unrelated bug while working on something, fix it on its own `fix/` branch with its own pull request.
 3. **Small, frequent pull requests.** Open a PR as soon as one coherent piece of work is complete and passes the checks.
 4. **Stacking.** When a change depends on another that hasn't merged yet, branch from it and set the PR's base to that branch. Merge stacked PRs in order, oldest first.
@@ -45,4 +53,5 @@ A good PR description says:
 ## Commit messages
 
 - Write the summary line in the imperative ("Add food crawls", "Hide the recommend chip at zero").
+- Keep commit messages, PR descriptions, code comments and documentation professional, with no emojis.
 - Use the body to explain *why* the change was needed.
