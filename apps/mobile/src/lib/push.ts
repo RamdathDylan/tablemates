@@ -76,6 +76,8 @@ export async function unregisterPush() {
 function openFromNotification(data: Record<string, unknown> | undefined) {
   if (data?.screen === 'tagged') {
     router.navigate('/profile');
+  } else if (data?.screen === 'feed') {
+    router.navigate('/');
   } else if (typeof data?.restaurantId === 'string' && data.restaurantId) {
     router.push({ pathname: '/restaurant/[id]', params: { id: data.restaurantId } });
   } else if (typeof data?.username === 'string') {

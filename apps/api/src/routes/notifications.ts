@@ -8,7 +8,7 @@ import {
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { comments, friendships, notifications, restaurants, users } from '../db/schema';
+import { asks, comments, friendships, notifications, restaurants, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
 import { parse } from '../lib/errors';
@@ -76,13 +76,14 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         actor: { id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl },
         restaurant: { id: restaurants.id, name: restaurants.name },
         friendshipStatus: friendships.status,
-        excerpt: comments.body,
+        excerpt: sql<string | null>`coalesce(${comments.body}, ${asks.question})`,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))
       .leftJoin(restaurants, eq(notifications.restaurantId, restaurants.id))
       .leftJoin(friendships, eq(notifications.friendshipId, friendships.id))
       .leftJoin(comments, eq(notifications.commentId, comments.id))
+      .leftJoin(asks, eq(notifications.askId, asks.id))
       .where(and(...conditions))
       .orderBy(desc(notifications.createdAt), desc(notifications.id))
       .limit(limit + 1);

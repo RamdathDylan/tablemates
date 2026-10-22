@@ -32,6 +32,7 @@ const icons: Record<NotificationItem['type'], IconName> = {
   reaction: 'heart',
   comment: 'chatbubble',
   tagged: 'pricetag',
+  ask_reply: 'help-circle',
 };
 
 function message(n: NotificationItem) {
@@ -49,6 +50,8 @@ function message(n: NotificationItem) {
         : `${who} said yum to your ${n.restaurant?.name ?? ''} review`;
     case 'comment':
       return `${who} commented: “${n.excerpt ?? ''}”`;
+    case 'ask_reply':
+      return `${who} suggested ${n.restaurant?.name ?? 'a place'} for “${n.excerpt ?? 'your question'}”`;
     case 'tagged':
       return `${who} tagged you at ${n.restaurant?.name ?? 'a restaurant'}. Add your rating?`;
   }
@@ -56,6 +59,7 @@ function message(n: NotificationItem) {
 
 function open(n: NotificationItem) {
   if (n.type === 'tagged') return router.navigate('/profile');
+  if (n.type === 'ask_reply') return router.navigate('/');
   if (n.type !== 'friend_request' && n.type !== 'friend_accepted' && n.restaurant) {
     router.push({ pathname: '/restaurant/[id]', params: { id: n.restaurant.id } });
   } else {

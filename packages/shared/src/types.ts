@@ -68,7 +68,8 @@ export type NotificationType =
   | 'saved_place_reviewed'
   | 'reaction'
   | 'comment'
-  | 'tagged';
+  | 'tagged'
+  | 'ask_reply';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -107,7 +108,7 @@ export interface NotificationItem {
   pendingRequestId: string | null;
   /** For reaction notifications. */
   reaction: ReactionKind | null;
-  /** For comment notifications: the start of the comment. */
+  /** For comment notifications: the start of the comment. For ask replies: the question. */
   excerpt: string | null;
 }
 
@@ -175,6 +176,30 @@ export interface RestaurantDetail {
   reviews: FeedItem[];
   friendStats: { visits: number; recommends: number; averageRating: number | null };
   saved: boolean;
+}
+
+export interface AskReply {
+  id: string;
+  author: PublicUser;
+  restaurant: Restaurant;
+  note: string;
+  /** The replier's own latest rating there, if the viewer may see that review. */
+  rating: number | null;
+  recommends: boolean | null;
+  createdAt: string;
+  /** On the viewer's want-to-try list. */
+  saved: boolean;
+}
+
+export interface Ask {
+  id: string;
+  author: PublicUser;
+  question: string;
+  areaLabel: string | null;
+  closesAt: string;
+  createdAt: string;
+  open: boolean;
+  replies: AskReply[];
 }
 
 /** A visit a friend tagged you on that you haven't logged yourself yet. */

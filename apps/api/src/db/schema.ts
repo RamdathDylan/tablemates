@@ -91,6 +91,7 @@ export const notificationType = pgEnum('notification_type', [
   'reaction',
   'comment',
   'tagged',
+  'ask_reply',
 ]);
 
 /**
@@ -115,6 +116,7 @@ export const notifications = pgTable(
     restaurantId: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'cascade' }),
     commentId: uuid('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
     visitId: uuid('visit_id').references(() => visits.id, { onDelete: 'cascade' }),
+    askId: uuid('ask_id').references(() => asks.id, { onDelete: 'cascade' }),
     reaction: reactionKind('reaction'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),
@@ -243,6 +245,42 @@ export const visitCompanions = pgTable(
     linkedVisitId: uuid('linked_visit_id').references(() => visits.id, { onDelete: 'set null' }),
   },
   (t) => [primaryKey({ columns: [t.visitId, t.userId] }), index('visit_companions_user_idx').on(t.userId)],
+);
+
+/** "Best ramen near Union Square?": a question to your friends, open for a week by default. */
+export const asks = pgTable(
+  'asks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    question: text('question').notNull(),
+    areaLabel: text('area_label'),
+    closesAt: timestamptz('closes_at').notNull(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('asks_author_idx').on(t.authorId, t.createdAt)],
+);
+
+/** A friend's suggested restaurant for an ask. */
+export const askReplies = pgTable(
+  'ask_replies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    askId: uuid('ask_id')
+      .notNull()
+      .references(() => asks.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id')
+      .notNull()
+      .references(() => restaurants.id, { onDelete: 'cascade' }),
+    note: text('note').notNull().default(''),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('ask_replies_once_idx').on(t.askId, t.authorId, t.restaurantId)],
 );
 
 /** People a user shares close-friends-only visits with. Always a subset of their friends. */
