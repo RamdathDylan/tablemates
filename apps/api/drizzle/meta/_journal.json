@@ -155,6 +155,13 @@
       "when": 1792646975872,
       "tag": "0021_streaks",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792647506722,
+      "tag": "0022_goals",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ScrollView, Share, useWindowDimensions, View } from 'react-native';
 
+import { GoalMeter } from '@/components/goal';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen } from '@/components/screen';
 import { api } from '@/lib/api';
@@ -167,6 +168,22 @@ function Story({ data: w, yearPicker }: { data: Wrapped; yearPicker: ReactNode }
                     </Text>
                   </View>
                 ))}
+              </View>
+            ),
+          },
+        ]
+      : []),
+    ...(w.goal
+      ? [
+          {
+            key: 'goal',
+            title: w.goal.done >= w.goal.target ? 'Goal crushed' : 'Your goal',
+            body: (
+              <View style={{ gap: space[3] }}>
+                <Text variant="display" style={{ fontSize: 56, lineHeight: 64, color: colors.primary }}>
+                  {w.goal.done}/{w.goal.target}
+                </Text>
+                <GoalMeter goal={w.goal} />
               </View>
             ),
           },

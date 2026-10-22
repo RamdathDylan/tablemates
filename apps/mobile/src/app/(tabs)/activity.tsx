@@ -41,6 +41,7 @@ const icons: Record<NotificationItem['type'], IconName> = {
   table_invite: 'restaurant',
   checkin: 'location',
   streak_nudge: 'flame',
+  goal_reached: 'trophy',
 };
 
 function message(n: NotificationItem) {
@@ -62,6 +63,8 @@ function message(n: NotificationItem) {
       return `${who} invited you to “${n.excerpt ?? 'a dinner plan'}”`;
     case 'plan_decided':
       return `“${n.excerpt ?? 'Your plan'}” is happening at ${n.restaurant?.name ?? 'the winning spot'}`;
+    case 'goal_reached':
+      return n.count ? `🎯 You reached your goal: ${n.count} new places this year` : '🎯 You reached your goal';
     case 'streak_nudge':
       return n.count ? `🔥 Keep your ${n.count}-week streak: log a meal today` : '🔥 Log a meal today to keep your streak';
     case 'checkin':
@@ -82,7 +85,7 @@ function message(n: NotificationItem) {
 }
 
 function open(n: NotificationItem) {
-  if (n.type === 'tagged' || n.type === 'badge') return router.navigate('/profile');
+  if (n.type === 'tagged' || n.type === 'badge' || n.type === 'goal_reached') return router.navigate('/profile');
   if (n.type === 'streak_nudge') return router.navigate('/log');
   if (n.type === 'ask_reply' || n.type === 'story_reaction' || n.type === 'plate_prompt') return router.navigate('/');
   if (n.tableId) return router.push({ pathname: '/table/[id]', params: { id: n.tableId } });

@@ -28,7 +28,7 @@ export interface NotifyInput {
 }
 
 /** Alerts about your own account, where you are both the actor and the recipient. */
-const SYSTEM_TYPES = new Set<NotificationType>(['badge', 'plate_prompt', 'streak_nudge']);
+const SYSTEM_TYPES = new Set<NotificationType>(['badge', 'plate_prompt', 'streak_nudge', 'goal_reached']);
 
 /**
  * The one way to put something in someone's activity inbox. Run it inside the

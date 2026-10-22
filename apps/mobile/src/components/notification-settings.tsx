@@ -24,6 +24,7 @@ const labels: Record<NotificationType, string> = {
   table_invite: 'Added to a table',
   checkin: 'Close friends out now',
   streak_nudge: 'Streak reminders',
+  goal_reached: 'Goal reached',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

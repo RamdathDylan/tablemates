@@ -18,6 +18,7 @@ import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
 import { evaluateBadges } from '../lib/badges';
+import { checkGoalReached } from '../lib/goals';
 import { dishesFor, setDishes } from '../lib/dishes';
 import { photosFor, setReviewPhotos } from '../lib/photos';
 import { notify, notifySaversOfReview } from '../lib/notify';
@@ -262,6 +263,7 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
       return { visit: visit!, review };
     });
     await evaluateBadges(db, [req.userId]);
+    await checkGoalReached(db, req.userId, result.visit.visitedAt);
     reply.status(201);
     return {
       id: result.visit.id,
