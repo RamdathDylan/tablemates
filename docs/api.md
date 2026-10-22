@@ -21,7 +21,7 @@ Request bodies and query strings are validated with the Zod schemas in [`package
 | Format | JSON request and response bodies; `Content-Type: application/json` |
 | IDs | UUIDs |
 | Dates | Calendar dates as `YYYY-MM-DD`; timestamps as ISO 8601 in UTC |
-| Status codes | `200` OK, `201` created (body `{ "id": … }`), `204` no content |
+| Status codes | `200` OK, `201` created, `204` no content. A `201` body is usually `{ "id": … }`; the exceptions are listed under [Created responses](#created-responses). |
 | Hidden resources | `404`, never `403`, when revealing existence would leak information |
 | Visibility | Every response is already filtered for the caller (see the [privacy model](privacy.md)) |
 
@@ -66,7 +66,23 @@ Every error uses one shape:
 | `not_found` | 404 | Doesn't exist, or isn't visible to you |
 | `conflict` | 409 | Duplicate (for example, the username is taken) |
 | `rate_limited` | 429 | Too many requests |
+| `too_soon` | 429 | A new verification code was requested within a minute of the last one |
+| `too_many_attempts` | 429 | Five wrong verification codes. Request a new code. |
 | `places_unavailable` | 503 | No Google Places key is configured |
+| `places_error` | 502 | Google Places returned an error. Retry later. |
+
+## Created responses
+
+Most `201` responses return `{ "id": "<uuid>" }`. These return something else:
+
+| Endpoint | Body |
+|---|---|
+| `POST /auth/signup` | `{ user, accessToken }`, plus `refreshToken` for native clients |
+| `POST /uploads` | `{ photoId, uploadUrl, headers }`. PUT the bytes to `uploadUrl` with `headers`, then confirm. |
+| `POST /visits` | The created visit (`Visit`) |
+| `POST /visits/:id/review` | The created review (`Review`) |
+| `POST /plates` | `{ ok: true }` |
+| `POST /friends/requests` | `{ status, requestId }`. `status` is `outgoing`, or `friends` if the other person had already asked you. |
 
 ## Pagination
 
@@ -127,8 +143,8 @@ To get the next page, pass `nextCursor` back as `cursor`. A `null` cursor means 
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/visits` | Log a visit (`googlePlaceId`, `visitedAt`, `audience`, `companionIds`, optional `review` with rating, body, dishes and `photoIds`) |
-| PATCH / DELETE | `/visits/:id` | Edit or delete your visit |
+| POST | `/visits` | Log a visit (`googlePlaceId`, `visitedAt`, `audience`, `companionIds`, optional `review` with rating, body, dishes and `photoIds`). A `private` visit can't have companions. |
+| PATCH / DELETE | `/visits/:id` | Change the audience (`{ audience, removeCompanions }`) or delete your visit. Making a tagged visit `private` requires `removeCompanions: true`. |
 | POST | `/visits/:id/review` | Add a review to an existing visit |
 | DELETE | `/visits/:id/companions/me` | Remove yourself from a visit you were tagged on |
 | PATCH / DELETE | `/reviews/:id` | Edit or delete your review |

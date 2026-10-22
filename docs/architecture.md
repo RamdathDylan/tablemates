@@ -168,7 +168,9 @@ sequenceDiagram
 
 ## Background jobs
 
-[`jobs/runner.ts`](../apps/api/src/jobs/runner.ts) runs each job on its own interval, never runs two copies of the same job at once, and logs a failure without stopping the other jobs. Every job is written to be **idempotent**: it claims work with a conditional update before acting on it, so it's safe to run again or to run on several instances.
+[`jobs/runner.ts`](../apps/api/src/jobs/runner.ts) runs each job on its own interval, never runs two copies of the same job at once, and logs a failure without stopping the other jobs. Every job is **idempotent** and safe to run on several instances, because it claims its work atomically before acting:
+- **`push`, `plate-prompts`, `streak-nudges` and `challenges`** claim each item with a conditional `UPDATE ... RETURNING` (setting `pushed_at`, `notified_at`, `streak_nudged_week`, `completed_at` or `ended_at`). Only one instance's update succeeds.
+- **`story-expiry` and `photo-cleanup`** claim rows with `DELETE ... RETURNING storage_key`, then delete the storage objects. A crash between the two steps leaves at most an orphaned object, which a bucket lifecycle rule removes, and never a row pointing at a missing object.
 
 | Job | Interval | Purpose |
 |---|---|---|
@@ -228,4 +230,4 @@ Each device reports its IANA time zone, which is stored in `users.timezone`. Any
 | **Computed, not cached, aggregates** | Streaks, mayors and goals depend on who's asking. Computing them per viewer from visible visits is simpler than invalidating a cache, and can never leak. |
 | **Outbox for push** | Alerts are sent only for changes that committed, and survive restarts. |
 | **Interfaces around every vendor** | Tests run fully offline, and providers can be swapped: RustFS in development and R2 in production use the same storage code. |
-| **Server-side rate limiting on auth** | Sign-up, login and verification are limited per IP to slow down credential stuffing and guessing of email codes. |
+| **Server-side rate limiting on auth** | Sign-up, login and verification are limited per IP to slow down credential stuffing and guessing of email codes. With `REDIS_URL`, the counters are shared across instances. `TRUST_PROXY` makes sure the limit applies to the real client behind a load balancer. |
