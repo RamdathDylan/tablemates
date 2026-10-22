@@ -68,6 +68,12 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         body: `It's ${n.restaurantName ?? 'decided'}!`,
         data: { type: n.type, planId: n.planId ?? '' },
       };
+    case 'goal_reached':
+      return {
+        title: '🎯 Goal reached!',
+        body: n.count ? `You tried ${n.count} new places this year` : 'You hit your new-places goal',
+        data: { type: n.type, screen: 'passport' },
+      };
     case 'streak_nudge':
       return {
         title: n.count ? `🔥 Keep your ${n.count}-week streak` : '🔥 Keep your streak',

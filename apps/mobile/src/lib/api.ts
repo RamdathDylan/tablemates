@@ -42,6 +42,7 @@ import type {
   VisitAudience,
   Wrapped,
   CheckinsResponse,
+  Goal,
   Streak,
   TableDetail,
   TableSummary,
@@ -227,6 +228,8 @@ export const api = {
   createList: (input: { title: string; description?: string; audience: 'friends' | 'private'; tableId?: string }) =>
     request<{ id: string }>('POST', '/lists', input),
   streak: () => request<Streak>('GET', '/me/streak'),
+  setGoal: (year: number, target: number) => request<Goal>('PUT', `/me/goals/${year}`, { target }),
+  deleteGoal: (year: number) => request<void>('DELETE', `/me/goals/${year}`),
   checkins: () => request<CheckinsResponse>('GET', '/checkins'),
   checkIn: (input: { restaurantId: string; audience: 'friends' | 'close_friends'; hours: number; notifyCloseFriends: boolean }) =>
     request<{ id: string }>('POST', '/checkins', input),

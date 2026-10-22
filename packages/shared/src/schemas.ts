@@ -70,7 +70,10 @@ export const notificationTypes = [
   'table_invite',
   'checkin',
   'streak_nudge',
+  'goal_reached',
 ] as const;
+
+export const goalInput = z.object({ target: z.number().int().min(1, 'Aim for at least one new place').max(365) });
 
 export const tableInput = z.object({
   name: z.string().trim().min(1, 'Name your table').max(40),

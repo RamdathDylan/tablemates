@@ -109,6 +109,7 @@ export const notificationType = pgEnum('notification_type', [
   'table_invite',
   'checkin',
   'streak_nudge',
+  'goal_reached',
 ]);
 
 /**
@@ -276,6 +277,22 @@ export const visitCompanions = pgTable(
     linkedVisitId: uuid('linked_visit_id').references(() => visits.id, { onDelete: 'set null' }),
   },
   (t) => [primaryKey({ columns: [t.visitId, t.userId] }), index('visit_companions_user_idx').on(t.userId)],
+);
+
+/** A yearly target for new places, Goodreads-style. */
+export const goals = pgTable(
+  'goals',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    targetNewPlaces: integer('target_new_places').notNull(),
+    /** When the goal was first reached, so it's celebrated once. */
+    reachedAt: timestamptz('reached_at'),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.year] })],
 );
 
 export const tableRole = pgEnum('table_role', ['owner', 'member']);

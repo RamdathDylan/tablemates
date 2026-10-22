@@ -18,6 +18,7 @@ import { Fragment, useState } from 'react';
 import { View } from 'react-native';
 
 import { FavoritesRow } from '@/components/favorites';
+import { GoalCard } from '@/components/goal';
 import { MyListsSection } from '@/components/lists';
 import { NotificationSettings } from '@/components/notification-settings';
 import { Passport } from '@/components/passport';
@@ -56,6 +57,7 @@ export default function ProfileScreen() {
       )}
 
       {profile.data && <FavoritesRow favorites={profile.data.favorites ?? []} own username={me.username} />}
+      {profile.data && <GoalCard profile={profile.data} />}
 
       <Button
         title={`Your ${new Date().getFullYear()} in food`}

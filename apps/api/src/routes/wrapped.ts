@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { restaurants, reviews, users, visitCompanions, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { parse } from '../lib/errors';
+import { goalFor } from '../lib/goals';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
 
 const top = <T>(counts: Map<string, number>, n: number, make: (key: string, count: number) => T) =>
@@ -99,6 +100,7 @@ export function wrappedRoutes(app: FastifyInstance, { db }: Deps) {
       byWeekday,
       companions: top(companionCounts, 3, (id, visits) => ({ user: companionUsers.get(id)!, visits })),
       bestNewFind: best ? { restaurant: toRestaurant(best.restaurant), rating: best.rating! } : null,
+      goal: await goalFor(db, me, me, year),
     };
   });
 }

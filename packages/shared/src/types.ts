@@ -35,6 +35,15 @@ export interface Profile extends PublicUser {
   favorites?: Favorite[];
   /** Weekly streak, from the visits the viewer can see. Only for yourself and friends. */
   streak?: Streak;
+  /** This year's goal, if set. Only for yourself and friends. */
+  goal?: Goal | null;
+}
+
+/** A yearly target for new places. `done` counts places first visited that year. */
+export interface Goal {
+  year: number;
+  target: number;
+  done: number;
 }
 
 /** Consecutive weeks (Monday to Sunday, in the person's time zone) with at least one logged visit. */
@@ -115,7 +124,8 @@ export type NotificationType =
   | 'plate_prompt'
   | 'table_invite'
   | 'checkin'
-  | 'streak_nudge';
+  | 'streak_nudge'
+  | 'goal_reached';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -440,6 +450,8 @@ export interface Wrapped {
   companions: { user: PublicUser; visits: number }[];
   /** Your highest-rated place first visited this year. */
   bestNewFind: { restaurant: Restaurant; rating: number } | null;
+  /** The year's goal, if you set one. */
+  goal: Goal | null;
 }
 
 export interface Badge {

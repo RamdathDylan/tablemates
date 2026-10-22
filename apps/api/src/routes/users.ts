@@ -1,5 +1,6 @@
 import {
   favoritesInput,
+  goalInput,
   updateProfileInput,
   userSearchQuery,
   username as usernameSchema,
@@ -10,13 +11,14 @@ import {
 import { and, count, eq, ilike, ne, or } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { friendships, reviews, users, visits } from '../db/schema';
+import { friendships, goals, reviews, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
-import { forbidden, notFound, parse } from '../lib/errors';
+import { badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { toMe, toPublicUser } from '../lib/serialize';
 import { passport } from '../lib/badges';
 import { favoritesFor, setFavorites } from '../lib/favorites';
 import { ownReadyPhotos } from '../lib/photos';
+import { checkGoalReached, currentYearOf, goalFor } from '../lib/goals';
 import { streakFor } from '../lib/streaks';
 import { tasteWith } from '../lib/taste';
 import { relationshipsWith, relationshipWith, visitsOfFilter } from '../lib/visibility';
@@ -39,6 +41,27 @@ export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: 
   }
 
   app.get('/me/streak', async (req): Promise<Streak> => streakFor(db, req.userId, req.userId));
+
+  /** Sets (or changes) a year's goal. Only this year and next. */
+  app.put('/me/goals/:year', async (req) => {
+    const year = Number((req.params as { year: string }).year);
+    const current = await currentYearOf(db, req.userId);
+    if (year !== current && year !== current + 1) throw badRequest(`Set a goal for ${current} or ${current + 1}`);
+    const { target } = parse(goalInput, req.body);
+    await db
+      .insert(goals)
+      .values({ userId: req.userId, year, targetNewPlaces: target })
+      // Raising the target past what's done means it can be reached (and celebrated) again.
+      .onConflictDoUpdate({ target: [goals.userId, goals.year], set: { targetNewPlaces: target, reachedAt: null } });
+    await checkGoalReached(db, req.userId, `${year}-01-01`);
+    return goalFor(db, req.userId, req.userId, year);
+  });
+
+  app.delete('/me/goals/:year', async (req, reply) => {
+    const year = Number((req.params as { year: string }).year);
+    await db.delete(goals).where(and(eq(goals.userId, req.userId), eq(goals.year, year)));
+    return reply.status(204).send();
+  });
 
   app.get('/me', async (req) => {
     const [user] = await db.select().from(users).where(eq(users.id, req.userId));
@@ -124,6 +147,7 @@ export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: 
       if (rel.status === 'friends') profile.taste = await tasteWith(db, req.userId, user.id);
       profile.favorites = await favoritesFor(db, storage, user.id, req.userId);
       profile.streak = await streakFor(db, user.id, req.userId);
+      profile.goal = await goalFor(db, user.id, req.userId, await currentYearOf(db, user.id));
     }
     return profile;
   });
