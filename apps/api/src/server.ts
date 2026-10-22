@@ -1,3 +1,5 @@
+import { Redis } from 'ioredis';
+
 import { buildApp } from './app';
 import { createDb } from './db/client';
 import { env } from './env';
@@ -26,6 +28,9 @@ function createMailer() {
 
 const { db } = createDb(env.databaseUrl);
 const storage = new S3Storage(env.s3);
+// Short timeouts and a single retry, so a Redis outage fails fast instead of stalling requests.
+const rateLimitRedis = env.redisUrl ? new Redis(env.redisUrl, { connectTimeout: 500, maxRetriesPerRequest: 1 }) : undefined;
+
 const app = await buildApp({
   db,
   tokens: new TokenService(db, env.jwtSecret),
@@ -36,6 +41,8 @@ const app = await buildApp({
   cookieSecure: env.isProduction,
   corsOrigins: env.corsOrigins,
   logger: true,
+  trustProxy: env.trustProxy,
+  rateLimitRedis,
 });
 
 if (!env.googlePlacesApiKey) {
