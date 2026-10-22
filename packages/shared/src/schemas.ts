@@ -69,6 +69,30 @@ export const placesSearchQuery = z.object({
 
 export const userSearchQuery = z.object({ q: z.string().trim().min(1).max(50) });
 
+const queryBoolean = z.enum(['true', 'false']).transform((v) => v === 'true');
+
+export const mapScopes = ['everyone', 'me', 'friends', 'friend'] as const;
+export const mapSorts = ['recommended', 'rating', 'recent', 'distance'] as const;
+
+export const mapPlacesQuery = z
+  .object({
+    scope: z.enum(mapScopes).default('everyone'),
+    /** Required when scope is "friend". */
+    friendId: z.uuid().optional(),
+    recommended: queryBoolean.optional(),
+    minRating: z.coerce.number().int().min(1).max(5).optional(),
+    cuisine: z.string().trim().min(1).max(40).optional(),
+    sort: z.enum(mapSorts).default('recommended'),
+    lat: z.coerce.number().min(-90).max(90).optional(),
+    lng: z.coerce.number().min(-180).max(180).optional(),
+  })
+  .refine((q) => q.scope !== 'friend' || q.friendId, { message: 'Choose a friend', path: ['friendId'] })
+  .refine((q) => q.sort !== 'distance' || (q.lat !== undefined && q.lng !== undefined), {
+    message: 'Sorting by distance needs your location',
+    path: ['sort'],
+  });
+export type MapPlacesQuery = z.input<typeof mapPlacesQuery>;
+
 export const feedQuery = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),

@@ -21,7 +21,7 @@ export class FakePlaces implements PlacesProvider {
   getCalls = 0;
   places = new Map<string, PlaceResult>();
 
-  add(id: string, name: string) {
+  add(id: string, name: string, extra: Partial<PlaceResult> = {}) {
     this.places.set(id, {
       googlePlaceId: id,
       name,
@@ -30,6 +30,7 @@ export class FakePlaces implements PlacesProvider {
       lng: -74,
       priceLevel: 2,
       cuisine: ['Italian'],
+      ...extra,
     });
   }
 
@@ -163,12 +164,9 @@ export async function logVisit(
   user: TestUser,
   googlePlaceId: string,
   review?: { rating: number; recommends: boolean; body?: string },
+  visitedAt = '2026-10-01',
 ) {
-  const res = await as(app, user).post('/visits', {
-    googlePlaceId,
-    visitedAt: '2026-10-01',
-    review,
-  });
+  const res = await as(app, user).post('/visits', { googlePlaceId, visitedAt, review });
   if (res.statusCode !== 201) throw new Error(`log visit failed: ${res.body}`);
   return res.json();
 }

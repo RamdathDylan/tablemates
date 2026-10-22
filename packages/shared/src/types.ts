@@ -111,6 +111,35 @@ export interface RestaurantDetail {
   friendStats: { visits: number; recommends: number; averageRating: number | null };
 }
 
+export interface MapVisitor {
+  user: PublicUser;
+  rating: number | null;
+  recommends: boolean | null;
+  visitedAt: string;
+}
+
+/** One restaurant on the map, summarizing the visits visible to the viewer. */
+export interface MapPlace {
+  restaurant: Restaurant;
+  /** Totals across everyone included by the current scope. */
+  summary: { visits: number; recommends: number; averageRating: number | null; lastVisitedAt: string };
+  /** The viewer's own visits (null if they haven't been, or the scope excludes them). */
+  me: { visits: number; rating: number | null; recommends: boolean | null; lastVisitedAt: string } | null;
+  friends: {
+    /** Distinct friends who've been. */
+    count: number;
+    visits: number;
+    recommends: number;
+    averageRating: number | null;
+    /** Most recent visit per friend, newest first, up to 5. */
+    visitors: MapVisitor[];
+  };
+  /** Most recent written review in scope, for previews. */
+  latestReview: { author: PublicUser; rating: number; body: string; recommends: boolean; visitedAt: string } | null;
+  /** Present when the request included a location. */
+  distanceKm: number | null;
+}
+
 export interface ApiError {
   error: string;
   message: string;
