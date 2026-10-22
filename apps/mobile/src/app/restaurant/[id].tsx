@@ -6,6 +6,7 @@ import { View } from 'react-native';
 
 import { CommentsSheet } from '@/components/comments-sheet';
 import { EssentialActions, HoursList, OpenChip } from '@/components/essentials';
+import { AddToListSheet } from '@/components/lists';
 import { AddToPlanSheet, AvatarStack } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
@@ -21,6 +22,7 @@ export default function RestaurantScreen() {
   const react = useReaction();
   const [thread, setThread] = useState<{ reviewId: string; title: string } | null>(null);
   const [planning, setPlanning] = useState(false);
+  const [listing, setListing] = useState(false);
 
   if (detail.isPending) {
     return (
@@ -94,7 +96,9 @@ export default function RestaurantScreen() {
           onPress={() => save.mutate({ restaurantId: r.id, saved, name: r.name })}
         />
         <Button title="Add to a plan" icon="calendar-outline" variant="ghost" onPress={() => setPlanning(true)} />
+        <Button title="Add to list" icon="list" variant="ghost" onPress={() => setListing(true)} />
       </View>
+      {listing && <AddToListSheet restaurant={r} onClose={() => setListing(false)} />}
       {planning && <AddToPlanSheet restaurant={r} onClose={() => setPlanning(false)} />}
 
       {topDishes.length > 0 && (

@@ -1,5 +1,6 @@
 import { openStatus, type MapPlace, type MapPlacesQuery } from '@tablemates/shared';
 import {
+  Button,
   Card,
   Chip,
   EmptyState,
@@ -10,6 +11,7 @@ import {
   radius,
   Rating,
   RestaurantCard,
+  Sheet,
   space,
   Text,
   useBreakpoint,
@@ -43,6 +45,7 @@ interface Params {
   min?: string;
   saved?: string;
   open?: string;
+  list?: string;
   cuisine?: string;
   sort?: Sort;
   view?: 'map' | 'list';
@@ -64,6 +67,10 @@ export default function MapScreen() {
   const params = useLocalSearchParams<Params>();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  const [pickingList, setPickingList] = useState(false);
+  const lists = useQuery({ queryKey: qk.myLists, queryFn: api.myLists });
+  const allLists = [...(lists.data?.mine ?? []), ...(lists.data?.following ?? [])];
+  const listTitle = allLists.find((l) => l.id === params.list)?.title;
   const [centerKey, setCenterKey] = useState(0);
   const location = useLocation();
   const toast = useToast();
@@ -82,6 +89,7 @@ export default function MapScreen() {
     recommended: params.rec === '1' ? true : undefined,
     minRating: params.min ? Number(params.min) : undefined,
     saved: params.saved === '1' ? true : undefined,
+    listId: params.list,
     // "Nearest" only applies once we know where the user is.
     sort: params.sort === 'distance' && !location.coords ? 'recommended' : (params.sort ?? 'recommended'),
     lat: location.coords?.lat,
@@ -110,9 +118,19 @@ export default function MapScreen() {
       (params.open !== '1' || openStatus(p.restaurant.hours, p.restaurant.utcOffsetMinutes)?.open),
   );
   const selected = shown.find((p) => p.restaurant.id === selectedId) ?? null;
-  const filtered = scope !== 'everyone' || !!params.rec || !!params.min || !!params.saved || !!params.open || !!params.cuisine;
+  const filtered =
+    scope !== 'everyone' || !!params.rec || !!params.min || !!params.saved || !!params.open || !!params.list || !!params.cuisine;
   const clearFilters = () =>
-    set({ scope: undefined, friend: undefined, rec: undefined, min: undefined, saved: undefined, open: undefined, cuisine: undefined });
+    set({
+      scope: undefined,
+      friend: undefined,
+      rec: undefined,
+      min: undefined,
+      saved: undefined,
+      open: undefined,
+      list: undefined,
+      cuisine: undefined,
+    });
 
   const filterBar = (
     <View style={{ gap: space[2] }}>
@@ -133,6 +151,13 @@ export default function MapScreen() {
         <Chip label="4★ & up" icon="star" selected={params.min === '4'} onPress={() => set({ min: params.min === '4' ? undefined : '4' })} />
         <Chip label="Want to try" icon="bookmark" selected={params.saved === '1'} onPress={() => set({ saved: params.saved === '1' ? undefined : '1' })} />
         <Chip label="Open now" icon="time" selected={params.open === '1'} onPress={() => set({ open: params.open === '1' ? undefined : '1' })} />
+        <Chip
+          label={params.list && listTitle ? listTitle : 'On a list'}
+          icon="list"
+          selected={!!params.list}
+          accessibilityLabel={params.list && listTitle ? `Showing list ${listTitle}. Tap to clear` : 'Filter by a list'}
+          onPress={() => (params.list ? set({ list: undefined }) : setPickingList(true))}
+        />
         {cuisines.map((c) => (
           <Chip
             key={c}
@@ -256,6 +281,28 @@ export default function MapScreen() {
     </View>
   ) : null;
 
+  const listPicker = (
+    <Sheet visible={pickingList} onClose={() => setPickingList(false)} title="Show a list on the map">
+      {allLists.length ? (
+        allLists.map((l) => (
+          <Button
+            key={l.id}
+            title={l.isOwner ? l.title : `${l.title} · ${l.owner.displayName}`}
+            icon="list"
+            variant="secondary"
+            fullWidth
+            onPress={() => {
+              setPickingList(false);
+              set({ list: l.id });
+            }}
+          />
+        ))
+      ) : (
+        <Text tone="muted">Make a list from your profile, or follow a friend’s.</Text>
+      )}
+    </Sheet>
+  );
+
   const picker = (
     <FriendPicker
       visible={picking}
@@ -285,6 +332,8 @@ export default function MapScreen() {
         </ScrollView>
         {map}
         {picker}
+      {listPicker}
+        {listPicker}
       </View>
     );
   }
@@ -319,6 +368,7 @@ export default function MapScreen() {
         </ScrollView>
       )}
       {picker}
+      {listPicker}
     </View>
   );
 }

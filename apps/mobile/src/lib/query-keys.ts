@@ -18,4 +18,7 @@ export const qk = {
   asks: ['asks'] as const,
   plans: ['plans'] as const,
   plan: (id: string) => ['plan', id] as const,
+  myLists: ['lists', 'me'] as const,
+  userLists: (username: string) => ['lists', 'user', username] as const,
+  list: (id: string) => ['list', id] as const,
 };

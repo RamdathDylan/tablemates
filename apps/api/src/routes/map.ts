@@ -3,10 +3,11 @@ import { mapPlacesQuery, type MapPlace, type MapVisitor } from '@tablemates/shar
 import { desc, eq, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
+import { listItems, lists, restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
-import { forbidden, parse } from '../lib/errors';
+import { forbidden, notFound, parse } from '../lib/errors';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
+import { canSeeList } from './lists';
 import { canSeeActivityOf, friendVisitFilter, visibleVisitFilter, visitsOfFilter } from '../lib/visibility';
 
 /** Upper bound on visits read per request; plenty for a friend group, and keeps the query cheap. */
@@ -121,8 +122,8 @@ function distanceFrom(origin: { lat: number; lng: number } | undefined, r: { lat
     : null;
 }
 
-/** A saved restaurant nobody in scope has visited yet. */
-function savedOnly(r: typeof restaurants.$inferSelect, origin?: { lat: number; lng: number }): MapPlace {
+/** A restaurant on your list(s) that nobody in scope has visited yet. */
+function unvisited(r: typeof restaurants.$inferSelect, origin: { lat: number; lng: number } | undefined, saved: boolean): MapPlace {
   return {
     restaurant: toRestaurant(r),
     summary: { visits: 0, recommends: 0, averageRating: null, lastVisitedAt: '' },
@@ -130,7 +131,7 @@ function savedOnly(r: typeof restaurants.$inferSelect, origin?: { lat: number; l
     friends: { count: 0, visits: 0, recommends: 0, averageRating: null, visitors: [] },
     latestReview: null,
     distanceKm: distanceFrom(origin, r),
-    saved: true,
+    saved,
   };
 }
 
@@ -184,9 +185,26 @@ export function mapRoutes(app: FastifyInstance, { db }: Deps) {
     // Your list is yours: saved-but-unvisited places join the views that include you.
     if (q.scope === 'everyone' || q.scope === 'me' || q.saved) {
       const shown = new Set(places.map((p) => p.restaurant.id));
-      for (const s of saved) if (!shown.has(s.restaurant.id)) places.push(savedOnly(s.restaurant, origin));
+      for (const s of saved) if (!shown.has(s.restaurant.id)) places.push(unvisited(s.restaurant, origin, true));
     }
     if (q.saved) places = places.filter((p) => p.saved);
+
+    if (q.listId) {
+      const [list] = await db.select().from(lists).where(eq(lists.id, q.listId));
+      if (!list || !(await canSeeList(db, me, list))) throw notFound('List not found');
+      const items = await db
+        .select({ restaurant: restaurants })
+        .from(listItems)
+        .innerJoin(restaurants, eq(listItems.restaurantId, restaurants.id))
+        .where(eq(listItems.listId, list.id));
+      const onList = new Set(items.map((i) => i.restaurant.id));
+      places = places.filter((p) => onList.has(p.restaurant.id));
+      // List places nobody in scope has visited still belong on a list view.
+      const shown = new Set(places.map((p) => p.restaurant.id));
+      for (const i of items) {
+        if (!shown.has(i.restaurant.id)) places.push(unvisited(i.restaurant, origin, savedIds.has(i.restaurant.id)));
+      }
+    }
 
     if (q.recommended) places = places.filter((p) => p.summary.recommends > 0);
     if (q.minRating) places = places.filter((p) => (p.summary.averageRating ?? 0) >= q.minRating!);

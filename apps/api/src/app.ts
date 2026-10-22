@@ -11,6 +11,7 @@ import { authRoutes, verificationRoutes, type RateLimit } from './routes/auth';
 import { engagementRoutes } from './routes/engagement';
 import { feedRoutes } from './routes/feed';
 import { friendRoutes } from './routes/friends';
+import { listRoutes } from './routes/lists';
 import { mapRoutes } from './routes/map';
 import { notificationRoutes } from './routes/notifications';
 import { savedRoutes } from './routes/saved';
@@ -99,6 +100,7 @@ export async function buildApp({
     engagementRoutes(authed, deps);
     askRoutes(authed, deps);
     planRoutes(authed, deps);
+    listRoutes(authed, deps);
     mapRoutes(authed, deps);
     savedRoutes(authed, deps);
     pushRoutes(authed, deps);

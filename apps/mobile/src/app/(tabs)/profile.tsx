@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import { Fragment, useState } from 'react';
 import { View } from 'react-native';
 
+import { MyListsSection } from '@/components/lists';
 import { NotificationSettings } from '@/components/notification-settings';
 import { ProfileHeader } from '@/components/profile-header';
 import { ErrorState, LoadingCards } from '@/components/query-state';
@@ -72,6 +73,8 @@ export default function ProfileScreen() {
       </Section>
 
       <WantToTry />
+
+      <MyListsSection />
 
       <NotificationSettings />
 

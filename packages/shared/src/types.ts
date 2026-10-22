@@ -261,6 +261,31 @@ export interface Plan extends PlanSummary {
   isCreator: boolean;
 }
 
+export interface ListSummary {
+  id: string;
+  title: string;
+  description: string;
+  audience: 'friends' | 'private';
+  owner: PublicUser;
+  itemCount: number;
+  /** First few restaurant names, for previews. */
+  preview: string[];
+  isOwner: boolean;
+  following: boolean;
+}
+
+export interface ListItem {
+  restaurant: Restaurant;
+  note: string;
+  addedAt: string;
+  /** On the viewer's want-to-try list. */
+  saved: boolean;
+}
+
+export interface RestaurantList extends ListSummary {
+  items: ListItem[];
+}
+
 /** A visit a friend tagged you on that you haven't logged yourself yet. */
 export interface TaggedVisit {
   visitId: string;

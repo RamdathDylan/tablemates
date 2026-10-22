@@ -2,6 +2,7 @@ import { Button, EmptyState } from '@tablemates/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
+import { UserListsSection } from '@/components/lists';
 import { ProfileHeader } from '@/components/profile-header';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
@@ -56,6 +57,7 @@ export default function UserScreen() {
     <Screen header documentTitle={p.displayName}>
       <Stack.Screen options={{ title: `@${p.username}` }} />
       <ProfileHeader profile={p} actions={friendAction} />
+      {canSee && <UserListsSection username={p.username} />}
       {canSee ? (
         <Section title="Visits">
           {visits.isPending ? (
