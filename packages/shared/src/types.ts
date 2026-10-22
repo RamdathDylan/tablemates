@@ -115,7 +115,18 @@ export interface NotificationItem {
   planId: string | null;
 }
 
-export interface Restaurant {
+/** Practical details from Google Places, fetched for restaurant pages. Null until fetched. */
+export interface RestaurantEssentials {
+  hours: import('./hours').OpeningHours | null;
+  utcOffsetMinutes: number | null;
+  phone: string | null;
+  website: string | null;
+  /** Google Maps page for the place (directions, reservations). */
+  mapsUrl: string | null;
+  neighborhood: string | null;
+}
+
+export interface Restaurant extends RestaurantEssentials {
   id: string;
   googlePlaceId: string;
   name: string;
@@ -126,7 +137,7 @@ export interface Restaurant {
   cuisine: string[];
 }
 
-export interface PlaceResult {
+export interface PlaceResult extends Partial<RestaurantEssentials> {
   googlePlaceId: string;
   name: string;
   address: string;

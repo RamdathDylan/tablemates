@@ -1,3 +1,4 @@
+import type { OpeningHours } from '@tablemates/shared';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -6,6 +7,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -155,6 +157,14 @@ export const restaurants = pgTable('restaurants', {
   lng: doublePrecision('lng'),
   priceLevel: smallint('price_level'),
   cuisine: text('cuisine').array().notNull().default(sql`'{}'::text[]`),
+  // Essentials from Places details; null until the restaurant page first loads them.
+  openingHours: jsonb('opening_hours').$type<OpeningHours>(),
+  utcOffsetMinutes: integer('utc_offset_minutes'),
+  phone: text('phone'),
+  website: text('website'),
+  mapsUrl: text('maps_url'),
+  neighborhood: text('neighborhood'),
+  detailsFetchedAt: timestamptz('details_fetched_at'),
   cachedAt: timestamptz('cached_at').notNull().defaultNow(),
 });
 

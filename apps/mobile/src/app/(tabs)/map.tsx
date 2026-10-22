@@ -1,4 +1,4 @@
-import type { MapPlace, MapPlacesQuery } from '@tablemates/shared';
+import { openStatus, type MapPlace, type MapPlacesQuery } from '@tablemates/shared';
 import {
   Card,
   Chip,
@@ -42,6 +42,7 @@ interface Params {
   rec?: string;
   min?: string;
   saved?: string;
+  open?: string;
   cuisine?: string;
   sort?: Sort;
   view?: 'map' | 'list';
@@ -102,11 +103,16 @@ export default function MapScreen() {
   // Cuisine is filtered here so the chip list can come from the unfiltered results.
   const all = places.data ?? [];
   const cuisines = [...new Set(all.flatMap((p) => p.restaurant.cuisine))].sort().slice(0, 12);
-  const shown = params.cuisine ? all.filter((p) => p.restaurant.cuisine.includes(params.cuisine!)) : all;
+  // Cuisine and "open now" are filtered here (open-now depends on the current time).
+  const shown = all.filter(
+    (p) =>
+      (!params.cuisine || p.restaurant.cuisine.includes(params.cuisine)) &&
+      (params.open !== '1' || openStatus(p.restaurant.hours, p.restaurant.utcOffsetMinutes)?.open),
+  );
   const selected = shown.find((p) => p.restaurant.id === selectedId) ?? null;
-  const filtered = scope !== 'everyone' || !!params.rec || !!params.min || !!params.saved || !!params.cuisine;
+  const filtered = scope !== 'everyone' || !!params.rec || !!params.min || !!params.saved || !!params.open || !!params.cuisine;
   const clearFilters = () =>
-    set({ scope: undefined, friend: undefined, rec: undefined, min: undefined, saved: undefined, cuisine: undefined });
+    set({ scope: undefined, friend: undefined, rec: undefined, min: undefined, saved: undefined, open: undefined, cuisine: undefined });
 
   const filterBar = (
     <View style={{ gap: space[2] }}>
@@ -126,6 +132,7 @@ export default function MapScreen() {
         <Chip label="Recommended" icon="thumbs-up" selected={params.rec === '1'} onPress={() => set({ rec: params.rec === '1' ? undefined : '1' })} />
         <Chip label="4★ & up" icon="star" selected={params.min === '4'} onPress={() => set({ min: params.min === '4' ? undefined : '4' })} />
         <Chip label="Want to try" icon="bookmark" selected={params.saved === '1'} onPress={() => set({ saved: params.saved === '1' ? undefined : '1' })} />
+        <Chip label="Open now" icon="time" selected={params.open === '1'} onPress={() => set({ open: params.open === '1' ? undefined : '1' })} />
         {cuisines.map((c) => (
           <Chip
             key={c}

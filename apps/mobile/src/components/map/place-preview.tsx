@@ -14,7 +14,10 @@ import {
 } from '@tablemates/ui';
 import { router } from 'expo-router';
 
+import { openDirections } from '@/lib/maps-link';
 import { useSaveToggle } from '@/lib/use-save';
+
+import { OpenChip } from '../essentials';
 import { ScrollView, View } from 'react-native';
 
 /** Details for the selected pin: your stars, each friend's stars, and the latest review. */
@@ -39,6 +42,8 @@ export function PlacePreview({ place, onClose }: { place: MapPlace; onClose: () 
           </View>
           <IconButton icon="close" accessibilityLabel="Close details" size="sm" onPress={onClose} />
         </View>
+
+        <OpenChip restaurant={r} />
 
         {place.summary.averageRating !== null && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
@@ -95,6 +100,13 @@ export function PlacePreview({ place, onClose }: { place: MapPlace; onClose: () 
               onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: r.id } })}
             />
           </View>
+          <IconButton
+            icon="navigate"
+            variant="secondary"
+            size="lg"
+            accessibilityLabel={`Directions to ${r.name}`}
+            onPress={() => openDirections(r)}
+          />
           <IconButton
             icon={place.saved ? 'bookmark' : 'bookmark-outline'}
             variant="secondary"
