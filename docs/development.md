@@ -29,7 +29,8 @@ This guide covers setting up TableMates locally, configuring it, and the everyda
 
 ```sh
 pnpm install
-cp .env.example apps/api/.env
+cp apps/api/.env.example apps/api/.env
+cp apps/mobile/.env.example apps/mobile/.env
 ```
 
 Edit `apps/api/.env`:
@@ -75,13 +76,15 @@ Data persists in Docker volumes. To reset the database, run `docker compose down
 | `S3_ENDPOINT` | | `http://localhost:9000` | Storage endpoint (RustFS locally, R2 in production) |
 | `S3_PUBLIC_ENDPOINT` | | `S3_ENDPOINT` | Host used in signed URLs, when clients reach storage at a different address |
 | `S3_BUCKET` | | `tablemates-photos` | Bucket name |
-| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Yes, for photos | | Storage credentials (local defaults are in `.env.example`) |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Yes, for photos | | Storage credentials (local defaults are in `apps/api/.env.example`) |
 | `S3_REGION` | | `auto` | Region (R2 uses `auto`) |
 | `EXPO_ACCESS_TOKEN` | | | Needed only if "enhanced push security" is on for the Expo project |
 | `TRUST_PROXY` | | `false` | Proxies trusted to report the client address: `true`, a hop count, or addresses and CIDR ranges |
 | `REDIS_URL` | | | Shares rate-limit counters across instances. Unset in development. |
 
 ### App (`apps/mobile/.env`)
+
+Start from [`apps/mobile/.env.example`](../apps/mobile/.env.example).
 
 | Variable | Purpose |
 |---|---|
