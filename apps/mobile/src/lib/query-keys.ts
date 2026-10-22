@@ -25,4 +25,5 @@ export const qk = {
   forYou: (near: object | null) => ['forYou', near] as const,
   wrapped: (year: number) => ['wrapped', year] as const,
   badges: (username: string) => ['badges', username] as const,
+  stories: ['stories'] as const,
 };

@@ -19,6 +19,7 @@ type Row = {
   planId: string | null;
   planTitle: string | null;
   badgeKey: string | null;
+  emoji: string | null;
 };
 
 /** Notification copy. Kept short: lock screens truncate. */
@@ -66,6 +67,8 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
       };
     case 'badge':
       return { title: 'New badge!', body: `You earned ${badgeTitle(n.badgeKey ?? '')}`, data: { type: n.type, screen: 'passport' } };
+    case 'story_reaction':
+      return { title: 'Story reaction', body: `${n.actorName} reacted ${n.emoji ?? ''} to your story`, data: { type: n.type, screen: 'feed' } };
     case 'saved_place_reviewed':
       return {
         title: n.restaurantName ?? 'A place you saved',
@@ -100,6 +103,7 @@ export class PushWorker {
         planId: notifications.planId,
         planTitle: plans.title,
         badgeKey: notifications.badgeKey,
+        emoji: notifications.emoji,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))

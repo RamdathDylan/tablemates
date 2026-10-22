@@ -100,6 +100,7 @@ export const notificationType = pgEnum('notification_type', [
   'plan_invite',
   'plan_decided',
   'badge',
+  'story_reaction',
 ]);
 
 /**
@@ -127,6 +128,8 @@ export const notifications = pgTable(
     askId: uuid('ask_id').references(() => asks.id, { onDelete: 'cascade' }),
     planId: uuid('plan_id').references(() => plans.id, { onDelete: 'cascade' }),
     badgeKey: text('badge_key'),
+    /** Emoji for story reactions. */
+    emoji: text('emoji'),
     reaction: reactionKind('reaction'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),
@@ -458,6 +461,42 @@ export const reviewDishes = pgTable(
     index('review_dishes_review_idx').on(t.reviewId),
     check('review_dishes_rating_range', sql`${t.rating} is null or ${t.rating} between 1 and 5`),
   ],
+);
+
+export const storyAudience = pgEnum('story_audience', ['friends', 'close_friends']);
+
+/** 24-hour photo posts ("Tonight"), optionally tied to a restaurant. */
+export const stories = pgTable(
+  'stories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    photoId: uuid('photo_id')
+      .notNull()
+      .references(() => photos.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'set null' }),
+    caption: text('caption').notNull().default(''),
+    audience: storyAudience('audience').notNull().default('friends'),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    expiresAt: timestamptz('expires_at').notNull(),
+  },
+  (t) => [index('stories_active_idx').on(t.authorId, t.expiresAt)],
+);
+
+export const storyViews = pgTable(
+  'story_views',
+  {
+    storyId: uuid('story_id')
+      .notNull()
+      .references(() => stories.id, { onDelete: 'cascade' }),
+    viewerId: uuid('viewer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    viewedAt: timestamptz('viewed_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.storyId, t.viewerId] })],
 );
 
 /** Up to four pinned all-time favorites shown atop a profile (Letterboxd-style). */
