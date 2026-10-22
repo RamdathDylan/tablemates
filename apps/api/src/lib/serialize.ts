@@ -23,6 +23,7 @@ export const toMe = (u: UserRow): T.Me => ({
   homeCity: u.homeCity,
   emailVerified: u.emailVerifiedAt !== null,
   defaultAudience: u.defaultAudience,
+  timezone: u.timezone,
   createdAt: u.createdAt.toISOString(),
 });
 

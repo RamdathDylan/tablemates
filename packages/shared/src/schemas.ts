@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+/** A valid IANA time zone name ("America/New_York"). */
+const timezone = z.string().max(64).refine((tz) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}, 'Unknown time zone');
+
 export const username = z
   .string()
   .trim()
@@ -37,6 +47,7 @@ export const updateProfileInput = z
     /** An uploaded avatar photo; replaces avatarUrl. */
     avatarPhotoId: z.uuid().nullable(),
     homeCity: z.string().trim().max(80).nullable(),
+    timezone,
   })
   .partial();
 export type UpdateProfileInput = z.infer<typeof updateProfileInput>;
@@ -55,7 +66,14 @@ export const notificationTypes = [
   'plan_decided',
   'badge',
   'story_reaction',
+  'plate_prompt',
 ] as const;
+
+export const plateInput = z.object({
+  photoId: z.uuid(),
+  restaurantId: z.uuid().optional(),
+  googlePlaceId: z.string().min(1).max(300).optional(),
+});
 
 export const storyReactions = ['😋', '🔥', '😍', '👀', '🙌'] as const;
 

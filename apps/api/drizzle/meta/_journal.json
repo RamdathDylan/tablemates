@@ -127,6 +127,13 @@
       "when": 1792644622205,
       "tag": "0017_stories",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792644943232,
+      "tag": "0018_plate_check",
+      "breakpoints": true
     }
   ]
 }

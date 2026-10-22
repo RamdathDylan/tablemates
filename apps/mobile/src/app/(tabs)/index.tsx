@@ -8,6 +8,7 @@ import { ActivityBell } from '@/components/activity-bell';
 import { AsksSection } from '@/components/asks';
 import { CommentsSheet } from '@/components/comments-sheet';
 import { ForYouCarousel } from '@/components/for-you';
+import { PlateCheckCard } from '@/components/plate-check';
 import { StoriesRow } from '@/components/stories';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { useContentStyle } from '@/components/screen';
@@ -52,6 +53,7 @@ export default function FeedScreen() {
           {bp === 'phone' && <ActivityBell />}
         </View>
         <StoriesRow />
+        <PlateCheckCard />
         {/* The year-in-review lands on the Feed in December and January. */}
         {[11, 0].includes(new Date().getMonth()) && (
           <Button
