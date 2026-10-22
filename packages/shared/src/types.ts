@@ -310,6 +310,22 @@ export interface RestaurantList extends ListSummary {
   items: ListItem[];
 }
 
+/** "Your year in food": a recap of the viewer's own visits in one calendar year. */
+export interface Wrapped {
+  year: number;
+  totals: { visits: number; places: number; newPlaces: number; reviews: number; recommendations: number };
+  topCuisines: { name: string; visits: number }[];
+  topRestaurants: { restaurant: Restaurant; visits: number }[];
+  /** Visits per month, January first. */
+  byMonth: number[];
+  /** Visits per weekday, Sunday first. */
+  byWeekday: number[];
+  /** Friends you ate with most (tagged either way). */
+  companions: { user: PublicUser; visits: number }[];
+  /** Your highest-rated place first visited this year. */
+  bestNewFind: { restaurant: Restaurant; rating: number } | null;
+}
+
 /** A visit a friend tagged you on that you haven't logged yourself yet. */
 export interface TaggedVisit {
   visitId: string;

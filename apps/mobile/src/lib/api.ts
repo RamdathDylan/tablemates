@@ -35,6 +35,7 @@ import type {
   UserSearchResult,
   Visit,
   VisitAudience,
+  Wrapped,
 } from '@tablemates/shared';
 
 import { API_URL, isWeb } from './config';
@@ -227,6 +228,7 @@ export const api = {
   saveAllFromList: (id: string) => request<{ added: number }>('POST', `/lists/${id}/save-all`),
   forYou: (near?: { lat: number; lng: number } | null) =>
     request<ForYouItem[]>('GET', `/for-you${qs({ lat: near?.lat, lng: near?.lng })}`),
+  wrapped: (year: number) => request<Wrapped>('GET', `/me/wrapped${qs({ year })}`),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),
