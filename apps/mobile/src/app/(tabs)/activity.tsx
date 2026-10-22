@@ -35,6 +35,7 @@ const icons: Record<NotificationItem['type'], IconName> = {
   ask_reply: 'help-circle',
   plan_invite: 'calendar',
   plan_decided: 'checkmark-circle',
+  badge: 'ribbon',
 };
 
 function message(n: NotificationItem) {
@@ -56,6 +57,8 @@ function message(n: NotificationItem) {
       return `${who} invited you to “${n.excerpt ?? 'a dinner plan'}”`;
     case 'plan_decided':
       return `“${n.excerpt ?? 'Your plan'}” is happening at ${n.restaurant?.name ?? 'the winning spot'}`;
+    case 'badge':
+      return `You earned the ${n.badge?.title ?? 'new'} badge`;
     case 'ask_reply':
       return `${who} suggested ${n.restaurant?.name ?? 'a place'} for “${n.excerpt ?? 'your question'}”`;
     case 'tagged':
@@ -64,7 +67,7 @@ function message(n: NotificationItem) {
 }
 
 function open(n: NotificationItem) {
-  if (n.type === 'tagged') return router.navigate('/profile');
+  if (n.type === 'tagged' || n.type === 'badge') return router.navigate('/profile');
   if (n.type === 'ask_reply') return router.navigate('/');
   if (n.planId) return router.push({ pathname: '/plan/[id]', params: { id: n.planId } });
   if (n.type !== 'friend_request' && n.type !== 'friend_accepted' && n.restaurant) {

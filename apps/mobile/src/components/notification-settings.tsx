@@ -18,6 +18,7 @@ const labels: Record<NotificationType, string> = {
   ask_reply: 'Answers to your questions',
   plan_invite: 'Dinner plan invites',
   plan_decided: 'When a plan is decided',
+  badge: 'Badges you earn',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

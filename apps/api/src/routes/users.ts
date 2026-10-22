@@ -12,6 +12,7 @@ import { friendships, reviews, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { forbidden, notFound, parse } from '../lib/errors';
 import { toMe, toPublicUser } from '../lib/serialize';
+import { passport } from '../lib/badges';
 import { tasteWith } from '../lib/taste';
 import { relationshipsWith, relationshipWith, visitsOfFilter } from '../lib/visibility';
 import { listVisits } from './visits';
@@ -103,6 +104,14 @@ export function userRoutes(app: FastifyInstance, { db }: Deps) {
       if (rel.status === 'friends') profile.taste = await tasteWith(db, req.userId, user.id);
     }
     return profile;
+  });
+
+  /** Your passport (with progress), or a friend's earned badges. */
+  app.get('/users/:username/badges', async (req) => {
+    const user = await findByUsername((req.params as { username: string }).username);
+    const rel = await relationshipWith(db, req.userId, user.id);
+    if (rel.status !== 'self' && rel.status !== 'friends') throw forbidden('Add this person as a friend to see their badges');
+    return passport(db, user.id, rel.status === 'self');
   });
 
   app.get('/users/:username/visits', async (req) => {

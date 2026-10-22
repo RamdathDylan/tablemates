@@ -17,6 +17,7 @@ import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
+import { evaluateBadges } from '../lib/badges';
 import { dishesFor, setDishes } from '../lib/dishes';
 import { notify, notifySaversOfReview } from '../lib/notify';
 import { relationshipsWith, visitsOfFilter } from '../lib/visibility';
@@ -247,6 +248,7 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
       }
       return { visit: visit!, review };
     });
+    await evaluateBadges(db, [req.userId]);
     reply.status(201);
     return {
       id: result.visit.id,
@@ -298,6 +300,7 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
         await notifySaversOfReview(tx, visitId, created!.id);
         return created;
       });
+      await evaluateBadges(db, [req.userId]);
       reply.status(201);
       return toReview(review!, input.dishes);
     } catch (err) {

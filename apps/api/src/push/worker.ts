@@ -2,6 +2,7 @@ import { and, eq, gt, inArray, isNull } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
 import { notifications, plans, pushTokens, restaurants, users } from '../db/schema';
+import { badgeTitle } from '../lib/badges';
 import type { PushMessage, PushProvider } from './types';
 
 /** Alerts older than this when first seen are skipped rather than pushed late. */
@@ -17,6 +18,7 @@ type Row = {
   restaurantName: string | null;
   planId: string | null;
   planTitle: string | null;
+  badgeKey: string | null;
 };
 
 /** Notification copy. Kept short: lock screens truncate. */
@@ -62,6 +64,8 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         body: `It's ${n.restaurantName ?? 'decided'}!`,
         data: { type: n.type, planId: n.planId ?? '' },
       };
+    case 'badge':
+      return { title: 'New badge!', body: `You earned ${badgeTitle(n.badgeKey ?? '')}`, data: { type: n.type, screen: 'passport' } };
     case 'saved_place_reviewed':
       return {
         title: n.restaurantName ?? 'A place you saved',
@@ -105,6 +109,7 @@ export class PushWorker {
         restaurantName: restaurants.name,
         planId: notifications.planId,
         planTitle: plans.title,
+        badgeKey: notifications.badgeKey,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))

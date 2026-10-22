@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
 import { UserListsSection } from '@/components/lists';
+import { Passport } from '@/components/passport';
 import { ProfileHeader } from '@/components/profile-header';
 import { TasteCard } from '@/components/taste-card';
 import { ErrorState, LoadingCards } from '@/components/query-state';
@@ -60,6 +61,7 @@ export default function UserScreen() {
       <ProfileHeader profile={p} actions={friendAction} />
       {p.taste && <TasteCard taste={p.taste} name={p.displayName} />}
       {canSee && <UserListsSection username={p.username} />}
+      {canSee && <Passport username={p.username} own={p.friendship === 'self'} />}
       {canSee ? (
         <Section title="Visits">
           {visits.isPending ? (

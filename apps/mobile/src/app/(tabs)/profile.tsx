@@ -19,6 +19,7 @@ import { View } from 'react-native';
 
 import { MyListsSection } from '@/components/lists';
 import { NotificationSettings } from '@/components/notification-settings';
+import { Passport } from '@/components/passport';
 import { ProfileHeader } from '@/components/profile-header';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
@@ -83,6 +84,8 @@ export default function ProfileScreen() {
       <WantToTry />
 
       <MyListsSection />
+
+      <Passport username={me.username} own />
 
       <NotificationSettings />
 

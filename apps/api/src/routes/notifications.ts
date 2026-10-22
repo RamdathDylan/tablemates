@@ -11,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import { asks, comments, friendships, notifications, plans, restaurants, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
+import { badgeTitle } from '../lib/badges';
 import { parse } from '../lib/errors';
 import { toPublicUser } from '../lib/serialize';
 
@@ -102,6 +103,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         pendingRequestId: n.type === 'friend_request' && friendshipStatus === 'pending' ? n.friendshipId : null,
         reaction: n.reaction,
         planId: n.planId,
+        badge: n.badgeKey ? { key: n.badgeKey, title: badgeTitle(n.badgeKey) } : null,
         excerpt: excerpt ? (excerpt.length > 80 ? `${excerpt.slice(0, 79)}…` : excerpt) : null,
       })),
       nextCursor: rows.length > limit && last ? encodeCursor(last.n.createdAt, last.n.id) : null,

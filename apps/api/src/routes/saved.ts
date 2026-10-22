@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { restaurants, savedPlaces } from '../db/schema';
 import type { Deps } from '../deps';
+import { evaluateBadges, recommendersAmongFriends } from '../lib/badges';
 import { notFound } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toRestaurant } from '../lib/serialize';
@@ -25,7 +26,13 @@ export function savedRoutes(app: FastifyInstance, { db }: Deps) {
     const restaurantId = idParam(req.params);
     const [exists] = await db.select({ id: restaurants.id }).from(restaurants).where(eq(restaurants.id, restaurantId));
     if (!exists) throw notFound('Restaurant not found');
-    await db.insert(savedPlaces).values({ userId: req.userId, restaurantId }).onConflictDoNothing();
+    const [added] = await db
+      .insert(savedPlaces)
+      .values({ userId: req.userId, restaurantId })
+      .onConflictDoNothing()
+      .returning({ id: savedPlaces.restaurantId });
+    // A save can push a friend who recommended this place toward Tastemaker.
+    if (added) await evaluateBadges(db, await recommendersAmongFriends(db, req.userId, restaurantId));
     return reply.status(204).send();
   });
 

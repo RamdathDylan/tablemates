@@ -95,7 +95,8 @@ export type NotificationType =
   | 'tagged'
   | 'ask_reply'
   | 'plan_invite'
-  | 'plan_decided';
+  | 'plan_decided'
+  | 'badge';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -137,6 +138,8 @@ export interface NotificationItem {
   /** For comment notifications: the start of the comment. For ask replies: the question. For plans: the title. */
   excerpt: string | null;
   planId: string | null;
+  /** For badge notifications. */
+  badge: { key: string; title: string } | null;
 }
 
 /** Practical details from Google Places, fetched for restaurant pages. Null until fetched. */
@@ -324,6 +327,17 @@ export interface Wrapped {
   companions: { user: PublicUser; visits: number }[];
   /** Your highest-rated place first visited this year. */
   bestNewFind: { restaurant: Restaurant; rating: number } | null;
+}
+
+export interface Badge {
+  key: string;
+  title: string;
+  description: string;
+  /** An Ionicons name. */
+  icon: string;
+  earnedAt: string | null;
+  /** Progress toward earning it (only on your own passport). */
+  progress: { current: number; target: number } | null;
 }
 
 /** A visit a friend tagged you on that you haven't logged yourself yet. */
