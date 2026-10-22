@@ -5,8 +5,8 @@ import { elevation, fontFamily, palette, radius, space } from '../tokens';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
-/** Who has been: you, your friends, or both. */
-export type MapPinKind = 'mine' | 'friends' | 'both';
+/** Who has been: you, your friends, or both. `saved` = on your list, nobody's been yet. */
+export type MapPinKind = 'mine' | 'friends' | 'both' | 'saved';
 
 export interface MapPinProps {
   kind: MapPinKind;
@@ -14,6 +14,8 @@ export interface MapPinProps {
   rating: number | null;
   /** Shows a thumbs-up when anyone in scope recommends it. */
   recommended?: boolean;
+  /** On the viewer's want-to-try list. */
+  saved?: boolean;
   selected?: boolean;
 }
 
@@ -22,10 +24,10 @@ export interface MapPinProps {
  * Tomato = you've been, saffron = friends only, tomato with a saffron ring = both.
  * The map supplies the accessible label (the restaurant summary); the pin is visual.
  */
-export function MapPin({ kind, rating, recommended, selected }: MapPinProps) {
+export function MapPin({ kind, rating, recommended, saved, selected }: MapPinProps) {
   const { colors } = useTheme();
-  const fill = kind === 'friends' ? palette.saffron[400] : colors.primary;
-  const fg = kind === 'friends' ? palette.stone[900] : colors.onPrimary;
+  const fill = kind === 'friends' ? palette.saffron[400] : kind === 'saved' ? palette.stone[800] : colors.primary;
+  const fg = kind === 'friends' ? palette.stone[900] : kind === 'saved' ? palette.stone[0] : colors.onPrimary;
   const ring = kind === 'both' ? palette.saffron[400] : colors.surface;
 
   return (
@@ -53,9 +55,10 @@ export function MapPin({ kind, rating, recommended, selected }: MapPinProps) {
             </Text>
           </>
         ) : (
-          <Icon name="restaurant" size={13} color={fg} />
+          <Icon name={kind === 'saved' ? 'bookmark' : 'restaurant'} size={13} color={fg} />
         )}
         {recommended && <Icon name="thumbs-up" size={11} color={fg} />}
+        {saved && kind !== 'saved' && <Icon name="bookmark" size={11} color={fg} />}
       </View>
       {/* Pointer that marks the exact spot. */}
       <View

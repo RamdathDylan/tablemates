@@ -3,7 +3,7 @@ import { mapPlacesQuery, type MapPlace, type MapVisitor } from '@tablemates/shar
 import { desc, eq, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { restaurants, reviews, users, visits } from '../db/schema';
+import { restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { forbidden, parse } from '../lib/errors';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
@@ -109,12 +109,29 @@ function summarize(rows: Row[], viewerId: string, origin?: { lat: number; lng: n
             visitedAt: latest.visitedAt,
           }
         : null,
-      distanceKm:
-        origin && r.lat !== null && r.lng !== null
-          ? Math.round(haversineKm(origin.lat, origin.lng, r.lat, r.lng) * 10) / 10
-          : null,
+      distanceKm: distanceFrom(origin, r),
+      saved: false,
     };
   });
+}
+
+function distanceFrom(origin: { lat: number; lng: number } | undefined, r: { lat: number | null; lng: number | null }) {
+  return origin && r.lat !== null && r.lng !== null
+    ? Math.round(haversineKm(origin.lat, origin.lng, r.lat, r.lng) * 10) / 10
+    : null;
+}
+
+/** A saved restaurant nobody in scope has visited yet. */
+function savedOnly(r: typeof restaurants.$inferSelect, origin?: { lat: number; lng: number }): MapPlace {
+  return {
+    restaurant: toRestaurant(r),
+    summary: { visits: 0, recommends: 0, averageRating: null, lastVisitedAt: '' },
+    me: null,
+    friends: { count: 0, visits: 0, recommends: 0, averageRating: null, visitors: [] },
+    latestReview: null,
+    distanceKm: distanceFrom(origin, r),
+    saved: true,
+  };
 }
 
 const byDesc = (a: number | null, b: number | null) => (b ?? -1) - (a ?? -1);
@@ -153,7 +170,23 @@ export function mapRoutes(app: FastifyInstance, { db }: Deps) {
     }
 
     const origin = q.lat !== undefined && q.lng !== undefined ? { lat: q.lat, lng: q.lng } : undefined;
-    let places = summarize(await selectVisits(db, author), me, origin);
+    const [rows, saved] = await Promise.all([
+      selectVisits(db, author),
+      db
+        .select({ restaurant: restaurants })
+        .from(savedPlaces)
+        .innerJoin(restaurants, eq(savedPlaces.restaurantId, restaurants.id))
+        .where(eq(savedPlaces.userId, me)),
+    ]);
+    let places = summarize(rows, me, origin);
+    const savedIds = new Set(saved.map((s) => s.restaurant.id));
+    for (const p of places) p.saved = savedIds.has(p.restaurant.id);
+    // Your list is yours: saved-but-unvisited places join the views that include you.
+    if (q.scope === 'everyone' || q.scope === 'me' || q.saved) {
+      const shown = new Set(places.map((p) => p.restaurant.id));
+      for (const s of saved) if (!shown.has(s.restaurant.id)) places.push(savedOnly(s.restaurant, origin));
+    }
+    if (q.saved) places = places.filter((p) => p.saved);
 
     if (q.recommended) places = places.filter((p) => p.summary.recommends > 0);
     if (q.minRating) places = places.filter((p) => (p.summary.averageRating ?? 0) >= q.minRating!);

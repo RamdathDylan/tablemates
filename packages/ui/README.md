@@ -52,11 +52,11 @@ Every component reads its colors from the theme, works on web, and shows a visib
 
 | Component | Use for |
 |---|---|
-| `ReviewCard` | A friend's review in the feed or on a restaurant page. Omit `restaurantName` on the restaurant's own page. |
+| `ReviewCard` | A friend's review in the feed or on a restaurant page. Omit `restaurantName` on the restaurant's own page. Pass `saved` and `onToggleSave` to show a want-to-try bookmark. |
 | `RestaurantCard` | Search results, and restaurants with a friends summary (`friendStats`). Optional `you` (your rating) and `distanceKm`. |
-| `MapPin` | A marker on the friends map: a pill with the average stars. `kind` is `mine` (tomato), `friends` (saffron), or `both` (tomato with a saffron ring). Shows a thumbs-up when `recommended`, and enlarges when `selected`. The map supplies its accessible label. |
+| `MapPin` | A marker on the friends map: a pill with the average stars. `kind` is `mine` (tomato), `friends` (saffron), `both` (tomato with a saffron ring), or `saved` (dark, with a bookmark: on your list, not visited yet). `saved` on a visited place adds a bookmark icon. Shows a thumbs-up when `recommended`, and enlarges when `selected`. The map supplies its accessible label. |
 | `FriendRow` | A person, with the action that matches their `status`: `none` → Add, `incoming` → Accept/Decline, `outgoing` → Requested (tap to cancel), `friends` → badge. |
-| `VisitListItem` | A compact row in a profile's visit history. |
+| `VisitListItem` | A compact row in a profile's visit history. `subtitle` replaces the date line (e.g. "Saved Oct 21"). |
 
 ## Do and don't
 

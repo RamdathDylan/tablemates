@@ -8,11 +8,13 @@ import { useContentStyle } from '@/components/screen';
 import { api } from '@/lib/api';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { qk } from '@/lib/query-keys';
+import { useSaveToggle } from '@/lib/use-save';
 
 export default function FeedScreen() {
   const { colors } = useTheme();
   const content = useContentStyle();
   useDocumentTitle('Feed');
+  const save = useSaveToggle();
   const feed = useInfiniteQuery({
     queryKey: qk.feed,
     queryFn: ({ pageParam }) => api.feed(pageParam),
@@ -59,6 +61,8 @@ export default function FeedScreen() {
           visitedAt={item.visitedAt}
           onPressAuthor={() => router.push({ pathname: '/user/[username]', params: { username: item.author.username } })}
           onPressRestaurant={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant.id } })}
+          saved={item.saved}
+          onToggleSave={() => save.mutate({ restaurantId: item.restaurant.id, saved: item.saved, name: item.restaurant.name })}
         />
       )}
       onEndReached={() => feed.hasNextPage && !feed.isFetchingNextPage && feed.fetchNextPage()}

@@ -6,6 +6,7 @@ import { space } from '../tokens';
 import { Avatar } from './Avatar';
 import { Card } from './Card';
 import { Chip } from './Chip';
+import { IconButton } from './IconButton';
 import { focusRing, type PressState } from './internal';
 import { Rating } from './Rating';
 import { Text } from './Text';
@@ -21,6 +22,9 @@ export interface ReviewCardProps {
   visitedAt: string;
   onPressAuthor?: () => void;
   onPressRestaurant?: () => void;
+  /** Shows a bookmark button for the want-to-try list. */
+  saved?: boolean;
+  onToggleSave?: () => void;
 }
 
 export function ReviewCard({
@@ -33,6 +37,8 @@ export function ReviewCard({
   visitedAt,
   onPressAuthor,
   onPressRestaurant,
+  saved,
+  onToggleSave,
 }: ReviewCardProps) {
   const { colors } = useTheme();
 
@@ -67,6 +73,16 @@ export function ReviewCard({
             Visited {formatDate(visitedAt)}
           </Text>
         </View>
+        {onToggleSave && (
+          <IconButton
+            icon={saved ? 'bookmark' : 'bookmark-outline'}
+            accessibilityLabel={
+              saved ? `Remove ${restaurantName ?? 'this place'} from want to try` : `Save ${restaurantName ?? 'this place'} to want to try`
+            }
+            aria-pressed={!!saved}
+            onPress={onToggleSave}
+          />
+        )}
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], flexWrap: 'wrap' }}>

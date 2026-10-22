@@ -11,4 +11,5 @@ export const qk = {
   restaurant: (id: string) => ['restaurant', id] as const,
   notifications: ['notifications'] as const,
   map: (params: object) => ['map', params] as const,
+  saved: ['saved'] as const,
 };

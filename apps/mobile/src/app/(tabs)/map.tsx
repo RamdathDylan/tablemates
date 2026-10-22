@@ -41,6 +41,7 @@ interface Params {
   friend?: string;
   rec?: string;
   min?: string;
+  saved?: string;
   cuisine?: string;
   sort?: Sort;
   view?: 'map' | 'list';
@@ -79,6 +80,7 @@ export default function MapScreen() {
     friendId: scope === 'friend' ? params.friend : undefined,
     recommended: params.rec === '1' ? true : undefined,
     minRating: params.min ? Number(params.min) : undefined,
+    saved: params.saved === '1' ? true : undefined,
     // "Nearest" only applies once we know where the user is.
     sort: params.sort === 'distance' && !location.coords ? 'recommended' : (params.sort ?? 'recommended'),
     lat: location.coords?.lat,
@@ -102,9 +104,9 @@ export default function MapScreen() {
   const cuisines = [...new Set(all.flatMap((p) => p.restaurant.cuisine))].sort().slice(0, 12);
   const shown = params.cuisine ? all.filter((p) => p.restaurant.cuisine.includes(params.cuisine!)) : all;
   const selected = shown.find((p) => p.restaurant.id === selectedId) ?? null;
-  const filtered = scope !== 'everyone' || !!params.rec || !!params.min || !!params.cuisine;
+  const filtered = scope !== 'everyone' || !!params.rec || !!params.min || !!params.saved || !!params.cuisine;
   const clearFilters = () =>
-    set({ scope: undefined, friend: undefined, rec: undefined, min: undefined, cuisine: undefined });
+    set({ scope: undefined, friend: undefined, rec: undefined, min: undefined, saved: undefined, cuisine: undefined });
 
   const filterBar = (
     <View style={{ gap: space[2] }}>
@@ -123,6 +125,7 @@ export default function MapScreen() {
       <ChipRow>
         <Chip label="Recommended" icon="thumbs-up" selected={params.rec === '1'} onPress={() => set({ rec: params.rec === '1' ? undefined : '1' })} />
         <Chip label="4★ & up" icon="star" selected={params.min === '4'} onPress={() => set({ min: params.min === '4' ? undefined : '4' })} />
+        <Chip label="Want to try" icon="bookmark" selected={params.saved === '1'} onPress={() => set({ saved: params.saved === '1' ? undefined : '1' })} />
         {cuisines.map((c) => (
           <Chip
             key={c}

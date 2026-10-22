@@ -15,6 +15,7 @@ import type {
   Profile,
   PublicUser,
   RestaurantDetail,
+  SavedPlace,
   Review,
   ReviewInput,
   SignupInput,
@@ -167,6 +168,9 @@ export const api = {
   searchPlaces: (q: string, near?: { lat: number; lng: number } | null) =>
     request<PlaceResult[]>('GET', `/places/search${qs({ q, lat: near?.lat, lng: near?.lng })}`),
   restaurant: (id: string) => request<RestaurantDetail>('GET', `/restaurants/${id}`),
+  saved: () => request<SavedPlace[]>('GET', '/me/saved'),
+  savePlace: (restaurantId: string) => request<void>('PUT', `/restaurants/${restaurantId}/save`),
+  unsavePlace: (restaurantId: string) => request<void>('DELETE', `/restaurants/${restaurantId}/save`),
   mapPlaces: (query: MapPlacesQuery) => request<MapPlace[]>('GET', `/map/places${qs({ ...query })}`),
 
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),

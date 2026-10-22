@@ -8,6 +8,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -149,6 +150,21 @@ export const reviews = pgTable(
     index('reviews_created_idx').on(t.createdAt, t.id),
     check('reviews_rating_range', sql`${t.rating} between 1 and 5`),
   ],
+);
+
+/** A user's private "want to try" list. */
+export const savedPlaces = pgTable(
+  'saved_places',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id')
+      .notNull()
+      .references(() => restaurants.id, { onDelete: 'cascade' }),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.restaurantId] })],
 );
 
 export const refreshTokens = pgTable(

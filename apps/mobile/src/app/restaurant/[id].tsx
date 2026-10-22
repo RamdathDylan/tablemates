@@ -7,10 +7,12 @@ import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/query-keys';
+import { useSaveToggle } from '@/lib/use-save';
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const detail = useQuery({ queryKey: qk.restaurant(id), queryFn: () => api.restaurant(id) });
+  const save = useSaveToggle();
 
   if (detail.isPending) {
     return (
@@ -27,7 +29,7 @@ export default function RestaurantScreen() {
     );
   }
 
-  const { restaurant: r, reviews, friendStats } = detail.data;
+  const { restaurant: r, reviews, friendStats, saved } = detail.data;
   const price = priceLabel(r.priceLevel);
 
   return (
@@ -61,16 +63,27 @@ export default function RestaurantScreen() {
         </View>
       )}
 
-      <Button
-        title="Log a visit here"
-        icon="add-circle-outline"
-        onPress={() =>
-          router.navigate({
-            pathname: '/log',
-            params: { googlePlaceId: r.googlePlaceId, name: r.name, address: r.address },
-          })
-        }
-      />
+      <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap' }}>
+        <Button
+          title="Log a visit here"
+          icon="add-circle-outline"
+          onPress={() =>
+            router.navigate({
+              pathname: '/log',
+              params: { googlePlaceId: r.googlePlaceId, name: r.name, address: r.address },
+            })
+          }
+        />
+        <Button
+          title={saved ? 'On your list' : 'Want to try'}
+          icon={saved ? 'bookmark' : 'bookmark-outline'}
+          variant="secondary"
+          aria-pressed={saved}
+          accessibilityLabel={saved ? `Remove ${r.name} from want to try` : `Save ${r.name} to want to try`}
+          loading={save.isPending}
+          onPress={() => save.mutate({ restaurantId: r.id, saved, name: r.name })}
+        />
+      </View>
 
       <Section title="From your table">
         {reviews.length === 0 ? (

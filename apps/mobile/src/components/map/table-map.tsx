@@ -65,7 +65,7 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
             tracksViewChanges={false}
             accessibilityLabel={pinLabel(p)}
             zIndex={selected ? 2 : 1}>
-            <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} selected={selected} />
+            <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} selected={selected} />
           </Marker>
         );
       })}

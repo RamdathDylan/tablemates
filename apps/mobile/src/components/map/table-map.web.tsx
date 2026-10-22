@@ -51,7 +51,7 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
               title={pinLabel(p)}
               zIndex={selected ? 2 : 1}
               onClick={() => onSelect(p.restaurant.id)}>
-              <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} selected={selected} />
+              <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} selected={selected} />
             </AdvancedMarker>
           );
         })}

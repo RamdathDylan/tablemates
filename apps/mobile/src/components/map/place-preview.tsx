@@ -13,6 +13,8 @@ import {
   useTheme,
 } from '@tablemates/ui';
 import { router } from 'expo-router';
+
+import { useSaveToggle } from '@/lib/use-save';
 import { ScrollView, View } from 'react-native';
 
 /** Details for the selected pin: your stars, each friend's stars, and the latest review. */
@@ -21,6 +23,7 @@ export function PlacePreview({ place, onClose }: { place: MapPlace; onClose: () 
   const r = place.restaurant;
   const price = priceLabel(r.priceLevel);
   const others = place.friends.count - place.friends.visitors.length;
+  const save = useSaveToggle();
 
   return (
     <Card padding={0} style={{ boxShadow: elevation(3, colors.shadow), maxHeight: 440 }} role="region" aria-label={`${r.name} details`}>
@@ -78,12 +81,29 @@ export function PlacePreview({ place, onClose }: { place: MapPlace; onClose: () 
           </View>
         )}
 
-        <Button
-          title="Open restaurant"
-          icon="arrow-forward"
-          fullWidth
-          onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: r.id } })}
-        />
+        {place.summary.visits === 0 && (
+          <Text variant="caption" tone="muted">
+            On your want-to-try list. None of your friends have been yet.
+          </Text>
+        )}
+        <View style={{ flexDirection: 'row', gap: space[2] }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="Open restaurant"
+              icon="arrow-forward"
+              fullWidth
+              onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: r.id } })}
+            />
+          </View>
+          <IconButton
+            icon={place.saved ? 'bookmark' : 'bookmark-outline'}
+            variant="secondary"
+            size="lg"
+            aria-pressed={place.saved}
+            accessibilityLabel={place.saved ? `Remove ${r.name} from want to try` : `Save ${r.name} to want to try`}
+            onPress={() => save.mutate({ restaurantId: r.id, saved: place.saved, name: r.name })}
+          />
+        </View>
       </ScrollView>
     </Card>
   );

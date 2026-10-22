@@ -1,7 +1,19 @@
-import { Button, EmptyState, Input, Sheet, space, TextArea, useToast } from '@tablemates/ui';
+import {
+  Button,
+  Card,
+  Divider,
+  EmptyState,
+  formatDate,
+  Input,
+  Sheet,
+  space,
+  TextArea,
+  useToast,
+  VisitListItem,
+} from '@tablemates/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { View } from 'react-native';
 
 import { ProfileHeader } from '@/components/profile-header';
@@ -53,6 +65,8 @@ export default function ProfileScreen() {
           <VisitList visits={visits.data} />
         )}
       </Section>
+
+      <WantToTry />
 
       {__DEV__ && (
         <Button title="Open style guide" variant="ghost" icon="color-palette-outline" onPress={() => router.push('/styleguide')} style={{ alignSelf: 'center' }} />
@@ -110,5 +124,27 @@ function EditProfileSheet({ visible, onClose }: { visible: boolean; onClose: () 
         />
       </View>
     </Sheet>
+  );
+}
+
+function WantToTry() {
+  const saved = useQuery({ queryKey: qk.saved, queryFn: api.saved });
+  if (!saved.data?.length) return null;
+  return (
+    <Section title={`Want to try · ${saved.data.length}`}>
+      <Card padding={0} style={{ paddingVertical: 4 }}>
+        {saved.data.map((s, i) => (
+          <Fragment key={s.restaurant.id}>
+            {i > 0 && <Divider inset={3} />}
+            <VisitListItem
+              restaurantName={s.restaurant.name}
+              visitedAt={s.savedAt}
+              subtitle={`Saved ${formatDate(s.savedAt)}`}
+              onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: s.restaurant.id } })}
+            />
+          </Fragment>
+        ))}
+      </Card>
+    </Section>
   );
 }
