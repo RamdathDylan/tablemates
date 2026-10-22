@@ -11,6 +11,7 @@ import { ForYouCarousel } from '@/components/for-you';
 import { OutNowStrip } from '@/components/out-now';
 import { PlateCheckCard } from '@/components/plate-check';
 import { StoriesRow } from '@/components/stories';
+import { StreakChip, useStreak } from '@/components/streak';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { useContentStyle } from '@/components/screen';
 import { api } from '@/lib/api';
@@ -26,6 +27,7 @@ export default function FeedScreen() {
   const bp = useBreakpoint();
   const save = useSaveToggle();
   const react = useReaction();
+  const streak = useStreak();
   const [thread, setThread] = useState<{ reviewId: string; title: string } | null>(null);
   const [viewer, setViewer] = useState<{ photos: { url: string }[]; index: number } | null>(null);
   const feed = useInfiniteQuery({
@@ -48,7 +50,10 @@ export default function FeedScreen() {
         <View style={{ gap: space[4] }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space[3] }}>
           <View style={{ flex: 1, gap: space[1] }}>
-            <Text variant="title">From your friends</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
+              <Text variant="title">From your friends</Text>
+              <StreakChip streak={streak.data} own />
+            </View>
             <Text tone="muted">Only people you’ve added can recommend here.</Text>
           </View>
           {bp === 'phone' && <ActivityBell />}

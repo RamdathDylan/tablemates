@@ -7,6 +7,7 @@ import { MailpitMailer, ResendMailer } from './mail/providers';
 import { GooglePlacesProvider } from './places/google';
 import { JobRunner } from './jobs/runner';
 import { cleanUpPendingPhotos } from './lib/photos';
+import { runStreakNudges } from './lib/streaks';
 import { ExpoPushProvider } from './push/expo';
 import { PushWorker } from './push/worker';
 import { runPlatePrompts } from './routes/plates';
@@ -56,6 +57,7 @@ new JobRunner(
     { name: 'photo-cleanup', intervalMs: 60 * 60 * 1000, run: () => cleanUpPendingPhotos(db, storage) },
     { name: 'plate-prompts', intervalMs: 30 * 1000, run: () => runPlatePrompts(db) },
     { name: 'story-expiry', intervalMs: 5 * 60 * 1000, run: () => expireStories(db, storage) },
+    { name: 'streak-nudges', intervalMs: 10 * 60 * 1000, run: () => runStreakNudges(db) },
   ],
   app.log,
 ).start();

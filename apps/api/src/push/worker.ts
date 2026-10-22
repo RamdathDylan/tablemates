@@ -22,6 +22,7 @@ type Row = {
   tableName: string | null;
   badgeKey: string | null;
   emoji: string | null;
+  count: number | null;
 };
 
 /** Notification copy. Kept short: lock screens truncate. */
@@ -66,6 +67,12 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         title: n.planTitle ?? 'Dinner plans',
         body: `It's ${n.restaurantName ?? 'decided'}!`,
         data: { type: n.type, planId: n.planId ?? '' },
+      };
+    case 'streak_nudge':
+      return {
+        title: n.count ? `🔥 Keep your ${n.count}-week streak` : '🔥 Keep your streak',
+        body: 'Log a meal today to keep it going.',
+        data: { type: n.type, screen: 'log' },
       };
     case 'checkin':
       return {
@@ -122,6 +129,7 @@ export class PushWorker {
         tableName: tables.name,
         badgeKey: notifications.badgeKey,
         emoji: notifications.emoji,
+        count: notifications.count,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))

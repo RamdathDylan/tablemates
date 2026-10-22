@@ -4,6 +4,7 @@ import {
   userSearchQuery,
   username as usernameSchema,
   type Profile,
+  type Streak,
   type UserSearchResult,
 } from '@tablemates/shared';
 import { and, count, eq, ilike, ne, or } from 'drizzle-orm';
@@ -16,6 +17,7 @@ import { toMe, toPublicUser } from '../lib/serialize';
 import { passport } from '../lib/badges';
 import { favoritesFor, setFavorites } from '../lib/favorites';
 import { ownReadyPhotos } from '../lib/photos';
+import { streakFor } from '../lib/streaks';
 import { tasteWith } from '../lib/taste';
 import { relationshipsWith, relationshipWith, visitsOfFilter } from '../lib/visibility';
 import { listVisits } from './visits';
@@ -35,6 +37,8 @@ export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: 
     if (!user) throw notFound('User not found');
     return user;
   }
+
+  app.get('/me/streak', async (req): Promise<Streak> => streakFor(db, req.userId, req.userId));
 
   app.get('/me', async (req) => {
     const [user] = await db.select().from(users).where(eq(users.id, req.userId));
@@ -119,6 +123,7 @@ export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: 
       profile.stats = { visits: v!.n, reviews: r!.n, friends: f!.n };
       if (rel.status === 'friends') profile.taste = await tasteWith(db, req.userId, user.id);
       profile.favorites = await favoritesFor(db, storage, user.id, req.userId);
+      profile.streak = await streakFor(db, user.id, req.userId);
     }
     return profile;
   });

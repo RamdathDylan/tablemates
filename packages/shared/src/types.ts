@@ -33,6 +33,16 @@ export interface Profile extends PublicUser {
   taste?: TasteMatch;
   /** Pinned all-time favorites, in order. Only for yourself and friends. */
   favorites?: Favorite[];
+  /** Weekly streak, from the visits the viewer can see. Only for yourself and friends. */
+  streak?: Streak;
+}
+
+/** Consecutive weeks (Monday to Sunday, in the person's time zone) with at least one logged visit. */
+export interface Streak {
+  current: number;
+  best: number;
+  /** A visit is already logged this week, so the streak is safe until next Monday. */
+  thisWeekDone: boolean;
 }
 
 export interface Friend extends PublicUser {
@@ -104,7 +114,8 @@ export type NotificationType =
   | 'story_reaction'
   | 'plate_prompt'
   | 'table_invite'
-  | 'checkin';
+  | 'checkin'
+  | 'streak_nudge';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -151,6 +162,8 @@ export interface NotificationItem {
   badge: { key: string; title: string } | null;
   /** For story reactions. */
   emoji: string | null;
+  /** A number the message needs, e.g. the streak length for a nudge. */
+  count: number | null;
 }
 
 /** Practical details from Google Places, fetched for restaurant pages. Null until fetched. */

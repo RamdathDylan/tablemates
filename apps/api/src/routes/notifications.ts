@@ -107,6 +107,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         tableId: n.tableId,
         badge: n.badgeKey ? { key: n.badgeKey, title: badgeTitle(n.badgeKey) } : null,
         emoji: n.emoji,
+        count: n.count,
         excerpt: excerpt ? (excerpt.length > 80 ? `${excerpt.slice(0, 79)}…` : excerpt) : null,
       })),
       nextCursor: rows.length > limit && last ? encodeCursor(last.n.createdAt, last.n.id) : null,

@@ -69,6 +69,7 @@ export const notificationTypes = [
   'plate_prompt',
   'table_invite',
   'checkin',
+  'streak_nudge',
 ] as const;
 
 export const tableInput = z.object({

@@ -27,6 +27,7 @@ export const qk = {
   badges: (username: string) => ['badges', username] as const,
   stories: ['stories'] as const,
   plates: ['plates'] as const,
+  streak: ['streak'] as const,
   checkins: ['checkins'] as const,
   tables: ['tables'] as const,
   table: (id: string) => ['tables', id] as const,

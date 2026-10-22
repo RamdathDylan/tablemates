@@ -80,6 +80,8 @@ function openFromNotification(data: Record<string, unknown> | undefined) {
     router.push({ pathname: '/plan/[id]', params: { id: data.planId } });
   } else if (data?.screen === 'tagged' || data?.screen === 'passport') {
     router.navigate('/profile');
+  } else if (data?.screen === 'log') {
+    router.navigate('/log');
   } else if (data?.screen === 'feed') {
     router.navigate('/');
   } else if (typeof data?.restaurantId === 'string' && data.restaurantId) {
