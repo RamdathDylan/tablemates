@@ -230,6 +230,7 @@ export const api = {
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),
+  myVisitsAt: (restaurantId: string) => request<Visit[]>('GET', `/restaurants/${restaurantId}/my-visits`),
   untag: (visitId: string) => request<void>('DELETE', `/visits/${visitId}/companions/me`),
   createVisit: (input: CreateVisitInput) => request<Visit>('POST', '/visits', input),
   deleteVisit: (id: string) => request<void>('DELETE', `/visits/${id}`),

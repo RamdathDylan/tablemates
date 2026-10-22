@@ -164,6 +164,10 @@ function VisitForm({
   const [companions, setCompanions] = useState<Friend[]>([]);
   const [picking, setPicking] = useState(false);
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
+  // "You've been here 3 times. Last time you gave it 4★."
+  const mine = useQuery({ queryKey: qk.myVisits, queryFn: api.myVisits });
+  const previous = (mine.data ?? []).filter((v) => v.restaurant.googlePlaceId === place.googlePlaceId);
+  const lastRated = previous.find((v) => v.review);
   const [rating, setRating] = useState(0);
   const [recommends, setRecommends] = useState<boolean | null>(null);
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -185,6 +189,7 @@ function VisitForm({
       // The server remembers this choice for next time; mirror it locally.
       if (visit.audience !== me.defaultAudience) setUser({ ...me, defaultAudience: visit.audience });
       queryClient.invalidateQueries({ queryKey: qk.myVisits });
+      queryClient.invalidateQueries({ queryKey: qk.myVisitsAt(visit.restaurant.id) });
       queryClient.invalidateQueries({ queryKey: qk.tagged });
       queryClient.invalidateQueries({ queryKey: qk.profile(me.username) });
       queryClient.invalidateQueries({ queryKey: qk.restaurant(visit.restaurant.id) });
@@ -229,6 +234,13 @@ function VisitForm({
         </View>
         <Button title="Change" variant="ghost" size="sm" onPress={onChangePlace} />
       </Card>
+
+      {previous.length > 0 && (
+        <Text variant="caption" tone="muted">
+          You’ve been here {previous.length === 1 ? 'once' : `${previous.length} times`}.
+          {lastRated?.review ? ` Last time you gave it ${lastRated.review.rating}★.` : ''}
+        </Text>
+      )}
 
       {tag && (
         <Text variant="caption" tone="muted">

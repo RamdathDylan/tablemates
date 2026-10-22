@@ -9,6 +9,7 @@ import { EssentialActions, HoursList, OpenChip } from '@/components/essentials';
 import { AddToListSheet } from '@/components/lists';
 import { AddToPlanSheet, AvatarStack } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
+import { YourVisits } from '@/components/your-visits';
 import { Screen, Section } from '@/components/screen';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/query-keys';
@@ -100,6 +101,8 @@ export default function RestaurantScreen() {
       </View>
       {listing && <AddToListSheet restaurant={r} onClose={() => setListing(false)} />}
       {planning && <AddToPlanSheet restaurant={r} onClose={() => setPlanning(false)} />}
+
+      <YourVisits restaurantId={r.id} />
 
       {topDishes.length > 0 && (
         <Section title="What friends order">

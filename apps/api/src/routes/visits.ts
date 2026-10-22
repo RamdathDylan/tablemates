@@ -109,13 +109,13 @@ export async function companionsFor(db: Db, visitIds: string[]): Promise<Map<str
 }
 
 /** A user's visits as the viewer may see them. Callers must check friendship first. */
-export async function listVisits(db: Db, userId: string, viewerId: string): Promise<Visit[]> {
+export async function listVisits(db: Db, userId: string, viewerId: string, restaurantId?: string): Promise<Visit[]> {
   const rows = await db
     .select({ visit: visits, restaurant: restaurants, review: reviews })
     .from(visits)
     .innerJoin(restaurants, eq(visits.restaurantId, restaurants.id))
     .leftJoin(reviews, eq(reviews.visitId, visits.id))
-    .where(visitsOfFilter(userId, viewerId))
+    .where(and(visitsOfFilter(userId, viewerId), restaurantId ? eq(visits.restaurantId, restaurantId) : undefined))
     .orderBy(desc(visits.visitedAt), desc(visits.createdAt))
     .limit(200);
   const [companions, dishes] = await Promise.all([
@@ -145,6 +145,9 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
   }
 
   app.get('/me/visits', async (req) => listVisits(db, req.userId, req.userId));
+
+  /** Your visit history at one restaurant, newest first. */
+  app.get('/restaurants/:id/my-visits', async (req) => listVisits(db, req.userId, req.userId, idParam(req.params)));
 
   /** Visits friends tagged you on that you haven't logged yourself. */
   app.get('/me/tagged', async (req): Promise<TaggedVisit[]> => {

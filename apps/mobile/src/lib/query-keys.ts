@@ -2,6 +2,7 @@
 export const qk = {
   feed: ['feed'] as const,
   myVisits: ['visits', 'me'] as const,
+  myVisitsAt: (restaurantId: string) => ['visits', 'me', restaurantId] as const,
   userVisits: (username: string) => ['visits', username] as const,
   profile: (username: string) => ['profile', username] as const,
   friends: ['friends'] as const,
