@@ -18,7 +18,7 @@ function yearProgress(year: number, now = new Date()) {
 
 /** "on pace", "3 behind pace", or "Goal reached". */
 export function paceLabel(goal: Goal) {
-  if (goal.done >= goal.target) return 'Goal reached 🎉';
+  if (goal.done >= goal.target) return 'Goal reached';
   const behind = Math.ceil(goal.target * yearProgress(goal.year) - goal.done);
   return behind > 0 ? `${behind} behind pace` : 'on pace';
 }

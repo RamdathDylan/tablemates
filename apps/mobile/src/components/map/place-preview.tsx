@@ -5,6 +5,7 @@ import {
   Card,
   Chip,
   elevation,
+  Icon,
   IconButton,
   priceLabel,
   Rating,
@@ -45,9 +46,12 @@ export function PlacePreview({ place, onClose }: { place: MapPlace; onClose: () 
 
         <OpenChip restaurant={r} />
         {place.mayor && (
-          <Text variant="caption" tone="muted">
-            👑 {place.mayor.displayName} is the mayor here
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[1] }}>
+            <Icon name="ribbon" size={14} color="textMuted" />
+            <Text variant="caption" tone="muted">
+              {place.mayor.displayName} is the mayor here
+            </Text>
+          </View>
         )}
 
         {place.summary.averageRating !== null && (

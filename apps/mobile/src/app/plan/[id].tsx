@@ -121,11 +121,11 @@ export default function PlanScreen() {
                     variant="subheading"
                     role="link"
                     onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: o.restaurant.id } })}>
-                    {open && i === 0 && o.voters.length > 0 ? '🏆 ' : ''}
                     {o.restaurant.name}
                   </Text>
                   <Text variant="caption" tone="muted">
                     Suggested by {o.addedBy.displayName}
+                    {open && i === 0 && o.voters.length > 0 ? ' · Leading' : ''}
                   </Text>
                 </View>
                 {open && o.canRemove && (

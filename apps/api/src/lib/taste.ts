@@ -90,7 +90,7 @@ export async function tasteWith(db: Db, viewerId: string, friendId: string): Pro
 }
 
 /**
- * Places friends rated 4★+ that the viewer hasn't visited. Each friend's
+ * Places friends rated 4 stars or more that the viewer hasn't visited. Each friend's
  * stars count in proportion to how much your tastes match; recommendations
  * add a bonus, and nearby places get a boost when a location is given.
  */
@@ -108,7 +108,7 @@ export async function forYou(
   const savedIds = new Set(saved.map((s) => s.id));
   const matchOf = new Map([...friends.entries()].map(([id, r]) => [id, compare(mine, r).match]));
 
-  // Latest review per friend per restaurant, 4★ and up, at places you haven't been.
+  // Latest review per friend per restaurant, 4 stars and up, at places you haven't been.
   const seen = new Set<string>();
   const candidates = new Map<string, { score: number; recommends: number; reasons: { userId: string; rating: number; match: number | null }[] }>();
   for (const r of theirs) {
@@ -163,8 +163,8 @@ export async function forYou(
 
 /**
  * Blend: places the viewer and up to 5 friends should try together, from the
- * ratings the viewer can see. A place qualifies when someone loved it (4★+),
- * nobody disliked it (2★ or less), and not everyone has been. Each love is
+ * ratings the viewer can see. A place qualifies when someone loved it (4 stars
+ * or more), nobody disliked it (2 stars or less), and not everyone has been. Each love is
  * weighted by how well that person's taste matches the rest of the group.
  */
 export async function blend(db: Db, viewerId: string, friendIds: string[]): Promise<Blend> {

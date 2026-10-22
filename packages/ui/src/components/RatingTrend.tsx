@@ -16,7 +16,7 @@ const DOT = 10;
 
 /**
  * One person's ratings of one place over time: 2px line, 10px dots ringed in
- * the surface color, recessive 1★/5★ guides, and first/last dates only. A
+ * the surface color, recessive 1-star and 5-star guides, and first/last dates only. A
  * single series, so no legend; pair it with a list of the visits as the table view.
  */
 export function RatingTrend({ points, height = 72 }: RatingTrendProps) {
@@ -38,7 +38,7 @@ export function RatingTrend({ points, height = 72 }: RatingTrendProps) {
           <Text variant="caption" tone="subtle">1★</Text>
         </View>
         <View style={{ flex: 1, height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} aria-hidden>
-          {/* Recessive guides at 5★ and 1★. */}
+          {/* Recessive guides at 5 stars and 1 star. */}
           {[5, 1].map((r) => (
             <View key={r} style={{ position: 'absolute', left: 0, right: 0, top: y(r), height: 1, backgroundColor: colors.border }} />
           ))}

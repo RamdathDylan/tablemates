@@ -79,7 +79,7 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
       };
     case 'challenge_complete':
       return {
-        title: '🏁 Challenge complete!',
+        title: 'Challenge complete',
         body: `You hit the target in ${n.challengeTitle ?? 'your challenge'}`,
         data: { type: n.type, challengeId: n.challengeId ?? '' },
       };
@@ -91,19 +91,19 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
       };
     case 'mayor_lost':
       return {
-        title: '👑 You lost a crown',
+        title: 'You lost a mayorship',
         body: `${n.actorName} took ${n.restaurantName ?? 'a place'} from you`,
         data: { type: n.type, restaurantId: n.restaurantId ?? '' },
       };
     case 'goal_reached':
       return {
-        title: '🎯 Goal reached!',
+        title: 'Goal reached',
         body: n.count ? `You tried ${n.count} new places this year` : 'You hit your new-places goal',
         data: { type: n.type, screen: 'passport' },
       };
     case 'streak_nudge':
       return {
-        title: n.count ? `🔥 Keep your ${n.count}-week streak` : '🔥 Keep your streak',
+        title: n.count ? `Keep your ${n.count}-week streak` : 'Keep your streak',
         body: 'Log a meal today to keep it going.',
         data: { type: n.type, screen: 'log' },
       };
@@ -124,7 +124,7 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
     case 'story_reaction':
       return { title: 'Story reaction', body: `${n.actorName} reacted ${n.emoji ?? ''} to your story`, data: { type: n.type, screen: 'feed' } };
     case 'plate_prompt':
-      return { title: '📸 Plate check!', body: "Show friends what you're eating. 5 minutes to be on time.", data: { type: n.type, screen: 'feed' } };
+      return { title: 'Plate check', body: "Show friends what you're eating. 5 minutes to be on time.", data: { type: n.type, screen: 'feed' } };
     case 'saved_place_reviewed':
       return {
         title: n.restaurantName ?? 'A place you saved',

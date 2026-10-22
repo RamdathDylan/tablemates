@@ -103,7 +103,7 @@ export default function BlendScreen() {
               </Section>
             </>
           ) : (
-            <EmptyState icon="restaurant-outline" title="No picks yet" message="Once someone in the group rates a place 4★ or more, it shows up here." />
+            <EmptyState icon="restaurant-outline" title="No picks yet" message="Once someone in the group rates a place 4 stars or more, it shows up here." />
           )}
         </>
       )}
