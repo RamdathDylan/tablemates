@@ -9,7 +9,7 @@ import { useLocation } from '@/lib/location';
 import { qk } from '@/lib/query-keys';
 import { useSaveToggle } from '@/lib/use-save';
 
-/** "Bob (94% match) gave it 5★" */
+/** "Bob (94% match) gave it 5 stars", shown in compact form. */
 export function reasonText(item: ForYouItem) {
   const top = item.reasons[0];
   if (!top) return `${item.recommends} friend${item.recommends === 1 ? '' : 's'} recommend it`;

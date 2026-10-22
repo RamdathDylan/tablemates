@@ -171,13 +171,13 @@ function VisitForm({
     const before = queryClient.getQueryData<Streak>(qk.streak);
     const after = await queryClient.fetchQuery({ queryKey: qk.streak, queryFn: api.streak, staleTime: 0 });
     if (before && !before.thisWeekDone && after.thisWeekDone && STREAK_MILESTONES.includes(after.current)) {
-      toast(`🔥 ${after.current}-week streak! Keep it going`, 'success');
+      toast(`${after.current}-week streak. Keep it going.`, 'success');
     }
   }
   const [companions, setCompanions] = useState<Friend[]>([]);
   const [picking, setPicking] = useState(false);
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
-  // "You've been here 3 times. Last time you gave it 4★."
+  // "You've been here 3 times. Last time you gave it 4 stars."
   const mine = useQuery({ queryKey: qk.myVisits, queryFn: api.myVisits });
   const previous = (mine.data ?? []).filter((v) => v.restaurant.googlePlaceId === place.googlePlaceId);
   const lastRated = previous.find((v) => v.review);
@@ -258,7 +258,7 @@ function VisitForm({
       {previous.length > 0 && (
         <Text variant="caption" tone="muted">
           You’ve been here {previous.length === 1 ? 'once' : `${previous.length} times`}.
-          {lastRated?.review ? ` Last time you gave it ${lastRated.review.rating}★.` : ''}
+          {lastRated?.review ? ` Last time you gave it ${lastRated.review.rating} star${lastRated.review.rating === 1 ? '' : 's'}.` : ''}
         </Text>
       )}
 

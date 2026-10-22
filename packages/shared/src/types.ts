@@ -424,7 +424,7 @@ export interface Blend {
 
 export interface BlendPlace {
   restaurant: Restaurant;
-  /** Participants who rated it 4★ or more. */
+  /** Participants who rated it 4 stars or more. */
   lovedBy: { user: PublicUser; rating: number }[];
   /** Participants who haven't been. */
   newTo: PublicUser[];

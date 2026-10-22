@@ -36,7 +36,24 @@ export function MapPin({ kind, rating, recommended, saved, crowned, stop, select
 
   return (
     <View aria-hidden style={{ alignItems: 'center', transform: [{ scale: selected ? 1.15 : 1 }] }}>
-      {crowned && <Text style={{ fontSize: 14, lineHeight: 16, marginBottom: -4, zIndex: 1 }}>👑</Text>}
+      {crowned && (
+        // A small badge above the pill marks a place where the viewer is mayor.
+        <View
+          style={{
+            width: 18,
+            height: 18,
+            marginBottom: -5,
+            zIndex: 1,
+            borderRadius: radius.full,
+            backgroundColor: palette.saffron[400],
+            borderWidth: 2,
+            borderColor: colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Icon name="ribbon" size={10} color={palette.stone[900]} />
+        </View>
+      )}
       <View
         style={{
           flexDirection: 'row',

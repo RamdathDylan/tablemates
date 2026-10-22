@@ -47,7 +47,7 @@ This guide describes what TableMates does, grouped by what people use it for. Ea
 |---|---|
 | **Feed** | Your friends' reviews, newest first. You can react with **Yum** or **Going**, comment, and save the place. |
 | **Friends map** | Every place you and your friends have visited, shown as pins. You can filter by everyone, just you, friends, or one friend; by recommended places, a minimum rating, a cuisine, places that are open now, your want-to-try list or one list. You can sort by most recommended, highest rated, most recent or nearest. A list view works on every device. |
-| **For You** | Places friends rated 4★ or higher that you haven't tried. Each friend's rating counts in proportion to how well your tastes match, and nearby places get a boost. |
+| **For You** | Places friends rated 4 stars or higher that you haven't tried. Each friend's rating counts in proportion to how well your tastes match, and nearby places get a boost. |
 | **Want to try** | A private list of places to visit. If a friend reviews a place you've saved, you get an alert. |
 | **Mayors** | The person with the most visits to a place in the last 60 days, among you and your friends. It takes at least 2 visits. The mayor is shown on restaurant pages and the map, and places where you're mayor get a crown on your pin. |
 | **Blend** | Choose up to 5 friends to see places the group is likely to enjoy: someone loved it, nobody disliked it, and not everyone has been. **Make it a plan** turns the top picks into a dinner plan. |
@@ -81,7 +81,7 @@ This guide describes what TableMates does, grouped by what people use it for. Ea
 
 | Feature | Description |
 |---|---|
-| **Streaks** | Consecutive weeks with at least one logged visit, counted in your time zone. A 🔥 chip shows the streak, there's a celebration at 4, 10, 26 and 52 weeks, and a reminder arrives on Sunday evening if this week is still open. |
+| **Streaks** | Consecutive weeks with at least one logged visit, counted in your time zone. A flame chip shows the streak, there's a celebration at 4, 10, 26 and 52 weeks, and a reminder arrives on Sunday evening if this week is still open. |
 | **Yearly goal** | A target number of new places for the year, with a progress bar showing whether you're on pace, a "goal reached" alert, and a slide in your year in review. |
 | **Badges** | A passport of achievements, such as Explorer (10 places), World Kitchen (25 cuisines), Trailblazer (first of your friends to review a place) and Champion (winning a challenge), with progress toward each. |
 | **Challenges** | Race your friends to a target of new places, cuisines, visits or reviews within a set period. Templates such as "3 new cuisines this month" are provided. Each challenge has a leaderboard, alerts when someone hits the target, and a winner announced at the end. |

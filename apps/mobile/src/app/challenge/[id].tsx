@@ -1,4 +1,4 @@
-import { Button, Card, RankedBars, space, Text, useToast } from '@tablemates/ui';
+import { Button, Card, Icon, RankedBars, space, Text, useToast } from '@tablemates/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
@@ -76,7 +76,10 @@ export default function ChallengeScreen() {
 
       {c.ended && leader && leader.count > 0 && (
         <Card style={{ gap: space[1] }}>
-          <Text variant="heading">🏅 {leader.user.id === me.id ? 'You won!' : `${leader.user.displayName} won`}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+            <Icon name="medal" color="primary" />
+            <Text variant="heading">{leader.user.id === me.id ? 'You won' : `${leader.user.displayName} won`}</Text>
+          </View>
           <Text tone="muted">
             {leader.count} {unit(c.metric, leader.count)}
           </Text>
@@ -91,7 +94,8 @@ export default function ChallengeScreen() {
       ) : (
         mine && (
           <Text variant="subheading">
-            You: {mine.count} of {c.target} {mine.completed ? '· done 🏁' : ''}
+            You: {mine.count} of {c.target}
+            {mine.completed ? ' · target reached' : ''}
           </Text>
         )
       )}

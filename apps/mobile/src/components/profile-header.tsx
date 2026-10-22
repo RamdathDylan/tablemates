@@ -32,7 +32,8 @@ export function ProfileHeader({ profile, actions }: { profile: Profile; actions?
           <StreakChip streak={profile.streak} own={own} />
           {!!profile.mayorOf && (
             <Chip
-              label={`👑 Mayor of ${profile.mayorOf}`}
+              icon="ribbon"
+              label={`Mayor of ${profile.mayorOf}`}
               accessibilityLabel={`Mayor of ${profile.mayorOf} place${profile.mayorOf === 1 ? '' : 's'}`}
             />
           )}

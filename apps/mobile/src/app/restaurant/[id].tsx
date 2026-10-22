@@ -1,4 +1,4 @@
-import { Button, Card, Chip, EmptyState, PhotoViewer, Icon, priceLabel, Rating, ReviewCard, space, Text } from '@tablemates/ui';
+import { Button, Card, Chip, EmptyState, Icon, PhotoViewer, priceLabel, Rating, ReviewCard, space, Text } from '@tablemates/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -69,9 +69,12 @@ export default function RestaurantScreen() {
       </View>
 
       {mayor && (
-        <Text>
-          👑 {mayor.user.displayName} is the mayor · {mayor.visits} visits in the last 60 days
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+          <Icon name="ribbon" size={18} color="primary" />
+          <Text style={{ flex: 1 }}>
+            {mayor.user.displayName} is the mayor · {mayor.visits} visits in the last 60 days
+          </Text>
+        </View>
       )}
       {(friendStats.averageRating !== null || friendStats.recommends > 0) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], flexWrap: 'wrap' }}>

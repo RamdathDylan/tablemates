@@ -70,21 +70,21 @@ function message(n: NotificationItem) {
     case 'challenge_invite':
       return `${who} challenged you: “${n.excerpt ?? 'a challenge'}”`;
     case 'challenge_complete':
-      return `🏁 You hit the target in “${n.excerpt ?? 'your challenge'}”`;
+      return `You hit the target in “${n.excerpt ?? 'your challenge'}”`;
     case 'challenge_ended':
-      return n.count ? `🏅 “${n.excerpt ?? 'Your challenge'}” is over. ${who} won with ${n.count}` : `“${n.excerpt ?? 'Your challenge'}” is over`;
+      return n.count ? `“${n.excerpt ?? 'Your challenge'}” is over. ${who} won with ${n.count}` : `“${n.excerpt ?? 'Your challenge'}” is over`;
     case 'mayor_lost':
-      return `👑 ${who} took ${n.restaurant?.name ?? 'a place'} from you. You're no longer the mayor`;
+      return `${who} took ${n.restaurant?.name ?? 'a place'} from you. You're no longer the mayor`;
     case 'goal_reached':
-      return n.count ? `🎯 You reached your goal: ${n.count} new places this year` : '🎯 You reached your goal';
+      return n.count ? `You reached your goal: ${n.count} new places this year` : 'You reached your goal';
     case 'streak_nudge':
-      return n.count ? `🔥 Keep your ${n.count}-week streak: log a meal today` : '🔥 Log a meal today to keep your streak';
+      return n.count ? `Keep your ${n.count}-week streak: log a meal today` : 'Log a meal today to keep your streak';
     case 'checkin':
       return `${who} is out now at ${n.restaurant?.name ?? 'a restaurant'}`;
     case 'table_invite':
       return `${who} added you to their table ${n.excerpt ?? ''}`.trimEnd();
     case 'plate_prompt':
-      return '📸 Plate check! Show your friends what you’re eating';
+      return 'Plate check: show your friends what you’re eating';
     case 'story_reaction':
       return `${who} reacted ${n.emoji ?? ''} to your story`;
     case 'badge':
