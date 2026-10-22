@@ -289,8 +289,8 @@ export const api = {
   untag: (visitId: string) => request<void>('DELETE', `/visits/${visitId}/companions/me`),
   createVisit: (input: CreateVisitInput) => request<Visit>('POST', '/visits', input),
   deleteVisit: (id: string) => request<void>('DELETE', `/visits/${id}`),
-  setVisitAudience: (id: string, audience: VisitAudience) =>
-    request<{ id: string; audience: VisitAudience }>('PATCH', `/visits/${id}`, { audience }),
+  setVisitAudience: (id: string, audience: VisitAudience, removeCompanions = false) =>
+    request<{ id: string; audience: VisitAudience }>('PATCH', `/visits/${id}`, { audience, removeCompanions }),
   addReview: (visitId: string, input: ReviewInput) =>
     request<Review>('POST', `/visits/${visitId}/review`, input),
   updateReview: (id: string, input: UpdateReviewInput) => request<Review>('PATCH', `/reviews/${id}`, input),

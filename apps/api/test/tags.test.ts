@@ -1,5 +1,10 @@
-import type { FeedItem, NotificationItem, TaggedVisit, Visit } from '@tablemates/shared';
+import { readFileSync } from 'node:fs';
+
+import type { FeedItem, NotificationItem, RestaurantDetail, TaggedVisit, Visit } from '@tablemates/shared';
+import { eq, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+
+import { visitCompanions, visits } from '../src/db/schema';
 
 import { as, befriend, setupTestApp, signup, type TestUser } from './helpers';
 
@@ -38,11 +43,63 @@ describe('tagging who you ate with', () => {
     expect((await logWith(w.alice, [w.dave.id])).statusCode).toBe(400);
   });
 
-  it('lets tagged friends see the visit even when it is private', async () => {
+  it('refuses to tag anyone on an "Only me" visit, including by default', async () => {
     const w = await world();
-    await logWith(w.alice, [w.bob.id], { audience: 'private' });
-    expect(((await as(ctx.app, w.bob).get('/feed')).json().items as FeedItem[])).toHaveLength(1);
-    expect(((await as(ctx.app, w.carol).get('/feed')).json().items as FeedItem[])).toHaveLength(0);
+    expect((await logWith(w.alice, [w.bob.id], { audience: 'private' })).statusCode).toBe(400);
+    // The default audience follows the last visit, so a tag on a default-private visit is refused too.
+    await as(ctx.app, w.alice).post('/visits', { googlePlaceId: 'luigi', visitedAt: '2026-10-01', audience: 'private' });
+    expect((await logWith(w.alice, [w.bob.id])).statusCode).toBe(400);
+    expect((await as(ctx.app, w.bob).get('/notifications')).json().items.filter((n: NotificationItem) => n.type === 'tagged')).toEqual([]);
+  });
+
+  it('never shows a private visit to a friend tagged on it before the rule existed', async () => {
+    const w = await world();
+    const visit = (await logWith(w.alice, [w.bob.id])).json() as Visit;
+    // A legacy row: tagged, then made private directly in the database.
+    await ctx.db.update(visits).set({ audience: 'private' }).where(eq(visits.id, visit.id));
+    expect((await as(ctx.app, w.bob).get('/feed')).json().items).toEqual([]);
+    expect(((await as(ctx.app, w.bob).get(`/restaurants/${visit.restaurant.id}`)).json() as RestaurantDetail).reviews).toEqual([]);
+    expect((await as(ctx.app, w.bob).get('/users/alice/visits')).json()).toEqual([]);
+    expect((await as(ctx.app, w.bob).get('/map/places')).json()).toEqual([]);
+    expect((await as(ctx.app, w.bob).get('/me/tagged')).json()).toEqual([]);
+  });
+
+  it('the data migration removes tags and tag alerts from private visits', async () => {
+    const w = await world();
+    const visit = (await logWith(w.alice, [w.bob.id])).json() as Visit;
+    const kept = (await logWith(w.alice, [w.carol.id])).json() as Visit;
+    await ctx.db.update(visits).set({ audience: 'private' }).where(eq(visits.id, visit.id));
+    const file = readFileSync(new URL('../drizzle/0026_private_visit_companions.sql', import.meta.url), 'utf8');
+    // Running it twice proves it is safe to re-run.
+    for (let i = 0; i < 2; i++) {
+      for (const statement of file.split('--> statement-breakpoint')) await ctx.db.execute(sql.raw(statement));
+    }
+    const left = await ctx.db.select().from(visitCompanions);
+    expect(left.map((c) => c.visitId)).toEqual([kept.id]);
+    const bobAlerts = (await as(ctx.app, w.bob).get('/notifications')).json().items as NotificationItem[];
+    expect(bobAlerts.filter((n) => n.type === 'tagged')).toEqual([]);
+  });
+
+  it('making a tagged visit Only me requires confirming that the tags will be removed', async () => {
+    const w = await world();
+    const visit = (await logWith(w.alice, [w.bob.id])).json() as Visit;
+    expect((await as(ctx.app, w.alice).patch(`/visits/${visit.id}`, { audience: 'private' })).statusCode).toBe(400);
+    expect((await as(ctx.app, w.bob).get('/feed')).json().items).toHaveLength(1);
+
+    expect((await as(ctx.app, w.alice).patch(`/visits/${visit.id}`, { audience: 'private', removeCompanions: true })).statusCode).toBe(200);
+    expect((await as(ctx.app, w.bob).get('/feed')).json().items).toEqual([]);
+    expect((await as(ctx.app, w.bob).get('/me/tagged')).json()).toEqual([]);
+    const bobAlerts = (await as(ctx.app, w.bob).get('/notifications')).json().items as NotificationItem[];
+    expect(bobAlerts.filter((n) => n.type === 'tagged')).toEqual([]);
+  });
+
+  it('logging your side of a tagged visit privately links it without tagging anyone back', async () => {
+    const w = await world();
+    const original = (await logWith(w.alice, [w.bob.id])).json() as Visit;
+    const res = await as(ctx.app, w.bob).post('/visits', { googlePlaceId: 'luigi', visitedAt: '2026-10-03', fromVisitId: original.id, audience: 'private' });
+    expect(res.statusCode).toBe(201);
+    expect((res.json() as Visit).companions).toEqual([]);
+    expect((await as(ctx.app, w.bob).get('/me/tagged')).json()).toEqual([]);
   });
 
   it('lists pending tags, and logging your own visit from one links it back', async () => {
@@ -76,10 +133,11 @@ describe('tagging who you ate with', () => {
 
   it('lets you untag yourself', async () => {
     const w = await world();
-    const original = (await logWith(w.alice, [w.bob.id], { audience: 'private' })).json() as Visit;
+    // Bob isn't on alice's close friends list, so only the tag lets him see this visit.
+    const original = (await logWith(w.alice, [w.bob.id], { audience: 'close_friends' })).json() as Visit;
+    expect(((await as(ctx.app, w.bob).get('/feed')).json().items as FeedItem[])).toHaveLength(1);
     expect((await as(ctx.app, w.bob).delete(`/visits/${original.id}/companions/me`)).statusCode).toBe(204);
     expect((await as(ctx.app, w.bob).get('/me/tagged')).json()).toEqual([]);
-    // Untagged from a private visit, bob can no longer see it.
     expect(((await as(ctx.app, w.bob).get('/feed')).json().items as FeedItem[])).toHaveLength(0);
   });
 });

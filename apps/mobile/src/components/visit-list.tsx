@@ -1,5 +1,5 @@
 import type { Visit, VisitAudience } from '@tablemates/shared';
-import { Button, Card, Divider, formatDate, Sheet, useToast, VisitListItem } from '@tablemates/ui';
+import { Button, Card, Divider, formatDate, Sheet, Text, useToast, VisitListItem } from '@tablemates/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Fragment, useState } from 'react';
@@ -13,10 +13,12 @@ export function AudienceSheet({ visit, onClose }: { visit: Visit; onClose: () =>
   const [audience, setAudience] = useState<VisitAudience>(visit.audience);
   const queryClient = useQueryClient();
   const toast = useToast();
+  // Making a tagged visit private removes the tags; the sheet says so before saving.
+  const dropsTags = audience === 'private' && visit.companions.length > 0;
   const save = useMutation({
-    mutationFn: () => api.setVisitAudience(visit.id, audience),
+    mutationFn: () => api.setVisitAudience(visit.id, audience, dropsTags),
     onSuccess: () => {
-      for (const key of [qk.myVisits, qk.myVisitsAt(visit.restaurant.id), ['map'], qk.restaurant(visit.restaurant.id)]) {
+      for (const key of [qk.myVisits, qk.myVisitsAt(visit.restaurant.id), ['map'], qk.restaurant(visit.restaurant.id), qk.feed]) {
         queryClient.invalidateQueries({ queryKey: key });
       }
       toast(`Now visible to: ${audiences[audience].label}`, 'success');
@@ -32,6 +34,11 @@ export function AudienceSheet({ visit, onClose }: { visit: Visit; onClose: () =>
       title={`Who can see your ${visit.restaurant.name} visit?`}
       footer={<Button title="Save" fullWidth size="lg" loading={save.isPending} onPress={() => save.mutate()} />}>
       <AudiencePicker value={audience} onChange={setAudience} />
+      {dropsTags && (
+        <Text tone="danger" role="alert">
+          Saving removes {visit.companions.map((c) => c.displayName).join(', ')} from this visit. They will no longer see it.
+        </Text>
+      )}
     </Sheet>
   );
 }

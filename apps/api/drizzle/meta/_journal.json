@@ -183,6 +183,13 @@
       "when": 1792676403629,
       "tag": "0025_food_crawls",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792688967048,
+      "tag": "0026_private_visit_companions",
+      "breakpoints": true
     }
   ]
 }
