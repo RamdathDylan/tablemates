@@ -1,4 +1,4 @@
-import { Button, Chip, EmptyState, Icon, priceLabel, Rating, ReviewCard, space, Text } from '@tablemates/ui';
+import { Button, Card, Chip, EmptyState, Icon, priceLabel, Rating, ReviewCard, space, Text } from '@tablemates/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -6,7 +6,7 @@ import { View } from 'react-native';
 
 import { CommentsSheet } from '@/components/comments-sheet';
 import { EssentialActions, HoursList, OpenChip } from '@/components/essentials';
-import { AddToPlanSheet } from '@/components/plans';
+import { AddToPlanSheet, AvatarStack } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api } from '@/lib/api';
@@ -37,7 +37,7 @@ export default function RestaurantScreen() {
     );
   }
 
-  const { restaurant: r, reviews, friendStats, saved } = detail.data;
+  const { restaurant: r, reviews, friendStats, saved, topDishes } = detail.data;
   const price = priceLabel(r.priceLevel);
 
   return (
@@ -96,6 +96,25 @@ export default function RestaurantScreen() {
         <Button title="Add to a plan" icon="calendar-outline" variant="ghost" onPress={() => setPlanning(true)} />
       </View>
       {planning && <AddToPlanSheet restaurant={r} onClose={() => setPlanning(false)} />}
+
+      {topDishes.length > 0 && (
+        <Section title="What friends order">
+          <Card style={{ gap: space[3] }}>
+            {topDishes.map((d) => (
+              <View key={d.name} style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text variant="bodyStrong">{d.name}</Text>
+                  <Text variant="caption" tone="muted">
+                    {d.orders} order{d.orders === 1 ? '' : 's'}
+                  </Text>
+                </View>
+                {d.averageRating !== null && <Rating value={d.averageRating} size="sm" />}
+                <AvatarStack people={d.people} max={3} />
+              </View>
+            ))}
+          </Card>
+        </Section>
+      )}
 
       <Section title="From your table">
         {reviews.length === 0 ? (

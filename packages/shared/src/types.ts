@@ -153,9 +153,24 @@ export interface Review {
   rating: number;
   body: string;
   recommends: boolean;
-  dishes: string[];
+  dishes: Dish[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Dish {
+  name: string;
+  rating: number | null;
+}
+
+/** A dish friends ordered at a restaurant, ranked on its page. */
+export interface TopDish {
+  name: string;
+  /** Reviews that mention it. */
+  orders: number;
+  averageRating: number | null;
+  /** Up to three people who ordered it. */
+  people: PublicUser[];
 }
 
 export interface Visit {
@@ -190,6 +205,8 @@ export interface RestaurantDetail {
   reviews: FeedItem[];
   friendStats: { visits: number; recommends: number; averageRating: number | null };
   saved: boolean;
+  /** What the viewer and their friends order here, most-ordered first. */
+  topDishes: TopDish[];
 }
 
 export interface AskReply {

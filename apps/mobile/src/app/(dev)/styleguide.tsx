@@ -195,7 +195,10 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
           rating={5}
           recommends
           body="Best cacio e pepe in the city. Sit at the bar and ask for the off-menu negroni."
-          dishes={['Cacio e pepe', 'Tiramisu']}
+          dishes={[
+            { name: 'Cacio e pepe', rating: 5 },
+            { name: 'Tiramisu', rating: null },
+          ]}
           visitedAt="2026-10-12"
           onPressAuthor={() => {}}
           onPressRestaurant={() => {}}

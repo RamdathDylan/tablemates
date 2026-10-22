@@ -1,10 +1,11 @@
-import type { Friend, PlaceResult } from '@tablemates/shared';
+import type { Dish, Friend, PlaceResult } from '@tablemates/shared';
 import {
   Button,
   Card,
   Chip,
   EmptyState,
   Icon,
+  IconButton,
   Input,
   Rating,
   RestaurantCard,
@@ -165,7 +166,7 @@ function VisitForm({
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
   const [rating, setRating] = useState(0);
   const [recommends, setRecommends] = useState<boolean | null>(null);
-  const [dishes, setDishes] = useState<string[]>([]);
+  const [dishes, setDishes] = useState<Dish[]>([]);
   const [dishDraft, setDishDraft] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState<string>();
@@ -199,7 +200,9 @@ function VisitForm({
 
   function addDish() {
     const dish = dishDraft.trim();
-    if (dish && !dishes.includes(dish) && dishes.length < 10) setDishes([...dishes, dish]);
+    if (dish && !dishes.some((d) => d.name.toLowerCase() === dish.toLowerCase()) && dishes.length < 10) {
+      setDishes([...dishes, { name: dish, rating: null }]);
+    }
     setDishDraft('');
   }
 
@@ -270,17 +273,28 @@ function VisitForm({
               <Button title="Add" variant="secondary" onPress={addDish} disabled={!dishDraft.trim()} />
             </View>
             {dishes.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+              <View style={{ gap: space[2] }}>
                 {dishes.map((d) => (
-                  <Chip
-                    key={d}
-                    label={d}
-                    icon="close"
-                    tone="accent"
-                    accessibilityLabel={`Remove ${d}`}
-                    onPress={() => setDishes(dishes.filter((x) => x !== d))}
-                  />
+                  <View key={d.name} style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
+                    <Text variant="bodyStrong" style={{ minWidth: 96 }}>
+                      {d.name}
+                    </Text>
+                    <Rating
+                      value={d.rating ?? 0}
+                      size="md"
+                      onChange={(rating) => setDishes(dishes.map((x) => (x.name === d.name ? { ...x, rating } : x)))}
+                    />
+                    <IconButton
+                      icon="close"
+                      size="sm"
+                      accessibilityLabel={`Remove ${d.name}`}
+                      onPress={() => setDishes(dishes.filter((x) => x.name !== d.name))}
+                    />
+                  </View>
                 ))}
+                <Text variant="caption" tone="muted">
+                  Stars are optional. They help friends pick the best dish.
+                </Text>
               </View>
             )}
           </Section>

@@ -199,7 +199,6 @@ export const reviews = pgTable(
     rating: integer('rating').notNull(),
     body: text('body').notNull().default(''),
     recommends: boolean('recommends').notNull(),
-    dishes: text('dishes').array().notNull().default(sql`'{}'::text[]`),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
@@ -385,6 +384,26 @@ export const savedPlaces = pgTable(
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.restaurantId] })],
+);
+
+/** Dishes named in a review, optionally rated, so friends' favorites can be ranked per restaurant. */
+export const reviewDishes = pgTable(
+  'review_dishes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reviewId: uuid('review_id')
+      .notNull()
+      .references(() => reviews.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** Normalized name ("Cacio e Pepe!" and "cacio e pepe" match). */
+    nameKey: text('name_key').notNull(),
+    rating: integer('rating'),
+    position: integer('position').notNull().default(0),
+  },
+  (t) => [
+    index('review_dishes_review_idx').on(t.reviewId),
+    check('review_dishes_rating_range', sql`${t.rating} is null or ${t.rating} between 1 and 5`),
+  ],
 );
 
 export const refreshTokens = pgTable(

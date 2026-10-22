@@ -18,7 +18,8 @@ export interface ReviewCardProps {
   rating: number;
   body?: string;
   recommends: boolean;
-  dishes?: string[];
+  /** Dishes worth ordering, with optional stars. */
+  dishes?: { name: string; rating: number | null }[];
   visitedAt: string;
   onPressAuthor?: () => void;
   onPressRestaurant?: () => void;
@@ -109,7 +110,12 @@ export function ReviewCard({
             Order
           </Text>
           {dishes.map((d) => (
-            <Chip key={d} label={d} tone="accent" />
+            <Chip
+              key={d.name}
+              label={d.rating ? `${d.name} · ${d.rating}★` : d.name}
+              accessibilityLabel={d.rating ? `${d.name}, ${d.rating} stars` : d.name}
+              tone="accent"
+            />
           ))}
         </View>
       )}
