@@ -45,6 +45,13 @@ export interface FriendRequest {
   createdAt: string;
 }
 
+export interface NotificationSummary {
+  /** Incoming friend requests awaiting a response (drives the Friends badge). */
+  pendingFriendRequests: number;
+  /** People who accepted the viewer's friend requests since the alerts were last read. */
+  unreadAccepted: { id: string; user: PublicUser; createdAt: string }[];
+}
+
 export interface Restaurant {
   id: string;
   googlePlaceId: string;

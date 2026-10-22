@@ -69,7 +69,7 @@ export function setupTestApp() {
 
   beforeEach(async () => {
     await ctx.db.execute(
-      sql`truncate users, friendships, restaurants, visits, reviews, refresh_tokens cascade`,
+      sql`truncate users, friendships, notifications, restaurants, visits, reviews, refresh_tokens cascade`,
     );
     ctx.places.places.clear();
     ctx.places.getCalls = 0;

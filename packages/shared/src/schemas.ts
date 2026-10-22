@@ -37,6 +37,8 @@ export type UpdateProfileInput = z.infer<typeof updateProfileInput>;
 
 export const friendRequestInput = z.object({ username });
 
+export const markNotificationsReadInput = z.object({ ids: z.array(z.uuid()).min(1).max(50) });
+
 export const reviewInput = z.object({
   rating: z.number().int().min(1).max(5),
   body: z.string().trim().max(2000).default(''),

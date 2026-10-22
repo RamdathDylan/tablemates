@@ -173,7 +173,7 @@ function TabItem({ bp, label, accessibilityLabel, focused, badge, onPress, icon 
         }>
         {icon(focused ? colors.primary : colors.textMuted)}
         {!desktop && badge > 0 && (
-          <View style={{ position: 'absolute', top: -6, right: 4 }}>
+          <View style={{ position: 'absolute', top: -4, left: 32 }}>
             <Badge count={badge} />
           </View>
         )}

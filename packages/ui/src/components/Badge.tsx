@@ -21,9 +21,10 @@ export function Badge({ count, max = 9 }: BadgeProps) {
     <View
       aria-hidden
       style={{
+        // Border is included in the size, so a single digit is a 20px circle.
         minWidth: 20,
         height: 20,
-        paddingHorizontal: space[1] + 2,
+        paddingHorizontal: space[1],
         borderRadius: radius.full,
         backgroundColor: colors.primary,
         alignItems: 'center',
@@ -31,9 +32,8 @@ export function Badge({ count, max = 9 }: BadgeProps) {
         // Separates the bubble from whatever icon it overlaps.
         borderWidth: 2,
         borderColor: colors.surface,
-        boxSizing: 'content-box',
       }}>
-      <Text variant="overline" style={{ color: colors.onPrimary, letterSpacing: 0, lineHeight: 14 }}>
+      <Text variant="overline" style={{ color: colors.onPrimary, letterSpacing: 0, fontSize: 11, lineHeight: 14 }}>
         {count > max ? `${max}+` : count}
       </Text>
     </View>

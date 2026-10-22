@@ -2,7 +2,8 @@ import { friendRequestInput, type FriendRequest, type PublicUser } from '@tablem
 import { and, desc, eq, or } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { friendships, users } from '../db/schema';
+import type { Db } from '../db/client';
+import { friendships, notifications, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
@@ -14,6 +15,28 @@ const publicColumns = {
   displayName: users.displayName,
   avatarUrl: users.avatarUrl,
 };
+
+/**
+ * Accepts a pending request and tells the person who sent it. Returns false if
+ * the request was no longer pending (e.g. a concurrent accept got there first).
+ */
+async function acceptRequest(db: Db, request: { id: string; requesterId: string }, accepterId: string) {
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(friendships)
+      .set({ status: 'accepted', acceptedAt: new Date() })
+      .where(and(eq(friendships.id, request.id), eq(friendships.status, 'pending')))
+      .returning({ id: friendships.id });
+    if (!updated) return false;
+    await tx.insert(notifications).values({
+      userId: request.requesterId,
+      type: 'friend_accepted',
+      actorId: accepterId,
+      friendshipId: request.id,
+    });
+    return true;
+  });
+}
 
 export function friendRoutes(app: FastifyInstance, { db }: Deps) {
   /** The friendship row between two users, whichever of them sent the request. */
@@ -83,10 +106,7 @@ export function friendRoutes(app: FastifyInstance, { db }: Deps) {
     if (existing?.status === 'accepted') throw conflict('You are already friends');
     if (existing?.requesterId === req.userId) throw conflict('Friend request already sent');
     if (existing) {
-      await db
-        .update(friendships)
-        .set({ status: 'accepted', acceptedAt: new Date() })
-        .where(eq(friendships.id, existing.id));
+      if (!(await acceptRequest(db, existing, req.userId))) throw conflict('You are already friends');
       return { status: 'friends' as const, requestId: existing.id };
     }
 
@@ -106,17 +126,16 @@ export function friendRoutes(app: FastifyInstance, { db }: Deps) {
   app.post('/friends/requests/:id/accept', async (req) => {
     const id = idParam(req.params);
     const [row] = await db
-      .update(friendships)
-      .set({ status: 'accepted', acceptedAt: new Date() })
+      .select()
+      .from(friendships)
       .where(
         and(
           eq(friendships.id, id),
           eq(friendships.addresseeId, req.userId),
           eq(friendships.status, 'pending'),
         ),
-      )
-      .returning();
-    if (!row) throw notFound('Friend request not found');
+      );
+    if (!row || !(await acceptRequest(db, row, req.userId))) throw notFound('Friend request not found');
     return { status: 'friends' as const };
   });
 

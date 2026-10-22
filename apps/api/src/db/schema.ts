@@ -61,6 +61,31 @@ export const friendships = pgTable(
   ],
 );
 
+export const notificationType = pgEnum('notification_type', ['friend_accepted']);
+
+/**
+ * In-app alerts. Pending friend requests aren't stored here: the badge counts
+ * pending friendships directly, so it can never drift out of sync.
+ */
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: notificationType('type').notNull(),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // Unfriending deletes the friendship, which clears its alerts too.
+    friendshipId: uuid('friendship_id').references(() => friendships.id, { onDelete: 'cascade' }),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    readAt: timestamptz('read_at'),
+  },
+  (t) => [index('notifications_user_unread_idx').on(t.userId, t.readAt)],
+);
+
 export const restaurants = pgTable('restaurants', {
   id: uuid('id').primaryKey().defaultRandom(),
   googlePlaceId: text('google_place_id').notNull().unique(),
