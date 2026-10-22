@@ -162,6 +162,13 @@
       "when": 1792647506722,
       "tag": "0022_goals",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792648765943,
+      "tag": "0023_mayors",
+      "breakpoints": true
     }
   ]
 }

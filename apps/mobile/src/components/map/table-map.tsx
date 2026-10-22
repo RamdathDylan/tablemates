@@ -6,7 +6,7 @@ import { CheckinMarker, checkinLabel } from '../out-now';
 import { framePoints, mappable, mappableCheckins, pinKind, pinLabel, type TableMapProps } from './shared';
 
 /** Native map: Apple Maps on iOS, Google Maps on Android. */
-export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin }: TableMapProps) {
+export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin, viewerId }: TableMapProps) {
   const ref = useRef<MapView>(null);
   const pins = mappable(places);
   const frame = framePoints(places, checkins);
@@ -67,7 +67,7 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
             tracksViewChanges={false}
             accessibilityLabel={pinLabel(p)}
             zIndex={selected ? 2 : 1}>
-            <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} selected={selected} />
+            <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} crowned={!!viewerId && p.mayor?.id === viewerId} selected={selected} />
           </Marker>
         );
       })}

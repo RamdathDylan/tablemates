@@ -19,6 +19,7 @@ import { passport } from '../lib/badges';
 import { favoritesFor, setFavorites } from '../lib/favorites';
 import { ownReadyPhotos } from '../lib/photos';
 import { checkGoalReached, currentYearOf, goalFor } from '../lib/goals';
+import { mayorships } from '../lib/mayors';
 import { streakFor } from '../lib/streaks';
 import { tasteWith } from '../lib/taste';
 import { relationshipsWith, relationshipWith, visitsOfFilter } from '../lib/visibility';
@@ -148,6 +149,7 @@ export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: 
       profile.favorites = await favoritesFor(db, storage, user.id, req.userId);
       profile.streak = await streakFor(db, user.id, req.userId);
       profile.goal = await goalFor(db, user.id, req.userId, await currentYearOf(db, user.id));
+      profile.mayorOf = [...(await mayorships(db, req.userId)).values()].filter((m) => m.user.id === user.id).length;
     }
     return profile;
   });

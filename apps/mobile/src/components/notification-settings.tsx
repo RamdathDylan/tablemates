@@ -25,6 +25,7 @@ const labels: Record<NotificationType, string> = {
   checkin: 'Close friends out now',
   streak_nudge: 'Streak reminders',
   goal_reached: 'Goal reached',
+  mayor_lost: 'Lost a mayorship',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

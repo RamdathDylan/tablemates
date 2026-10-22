@@ -16,6 +16,7 @@ import { engagementFor } from './engagement';
 import { companionsFor, withEssentials } from './visits';
 import { dishesFor } from '../lib/dishes';
 import { photosFor } from '../lib/photos';
+import { mayorAt } from '../lib/mayors';
 import { forYou } from '../lib/taste';
 
 export async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
@@ -166,6 +167,7 @@ export function feedRoutes(app: FastifyInstance, { db, places, storage }: Deps) 
       },
       saved: !!saved,
       topDishes: dishes,
+      mayor: await mayorAt(db, id, req.userId),
     };
   });
 }

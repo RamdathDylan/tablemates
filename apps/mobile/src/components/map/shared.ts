@@ -11,6 +11,8 @@ export interface TableMapProps {
   centerOnUser?: number;
   /** Friends out right now, drawn as avatars at their restaurants. */
   checkins?: Checkin[];
+  /** The signed-in user, to crown the places where they're mayor. */
+  viewerId?: string;
   onOpenCheckin?: (checkin: Checkin) => void;
 }
 
@@ -47,5 +49,6 @@ export function pinLabel(place: MapPlace) {
   if (place.me) parts.push("you've been");
   if (place.friends.count) parts.push(`${place.friends.count} friend${place.friends.count === 1 ? '' : 's'} visited`);
   if (place.saved) parts.push('on your want-to-try list');
+  if (place.mayor) parts.push(`${place.mayor.displayName} is mayor`);
   return parts.join(', ');
 }

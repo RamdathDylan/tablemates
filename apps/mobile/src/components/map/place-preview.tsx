@@ -44,6 +44,11 @@ export function PlacePreview({ place, onClose }: { place: MapPlace; onClose: () 
         </View>
 
         <OpenChip restaurant={r} />
+        {place.mayor && (
+          <Text variant="caption" tone="muted">
+            👑 {place.mayor.displayName} is the mayor here
+          </Text>
+        )}
 
         {place.summary.averageRating !== null && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>

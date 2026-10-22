@@ -42,6 +42,7 @@ const icons: Record<NotificationItem['type'], IconName> = {
   checkin: 'location',
   streak_nudge: 'flame',
   goal_reached: 'trophy',
+  mayor_lost: 'trophy-outline',
 };
 
 function message(n: NotificationItem) {
@@ -63,6 +64,8 @@ function message(n: NotificationItem) {
       return `${who} invited you to “${n.excerpt ?? 'a dinner plan'}”`;
     case 'plan_decided':
       return `“${n.excerpt ?? 'Your plan'}” is happening at ${n.restaurant?.name ?? 'the winning spot'}`;
+    case 'mayor_lost':
+      return `👑 ${who} took ${n.restaurant?.name ?? 'a place'} from you. You're no longer the mayor`;
     case 'goal_reached':
       return n.count ? `🎯 You reached your goal: ${n.count} new places this year` : '🎯 You reached your goal';
     case 'streak_nudge':

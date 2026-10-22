@@ -71,6 +71,7 @@ export const notificationTypes = [
   'checkin',
   'streak_nudge',
   'goal_reached',
+  'mayor_lost',
 ] as const;
 
 export const goalInput = z.object({ target: z.number().int().min(1, 'Aim for at least one new place').max(365) });

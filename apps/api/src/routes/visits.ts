@@ -19,6 +19,7 @@ import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
 import { evaluateBadges } from '../lib/badges';
 import { checkGoalReached } from '../lib/goals';
+import { watchMayorship } from '../lib/mayors';
 import { dishesFor, setDishes } from '../lib/dishes';
 import { photosFor, setReviewPhotos } from '../lib/photos';
 import { notify, notifySaversOfReview } from '../lib/notify';
@@ -213,6 +214,7 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
     }
 
     const restaurant = await ensureRestaurant(db, places, input.googlePlaceId);
+    const afterMayorship = await watchMayorship(db, req.userId, restaurant.id);
     const result = await db.transaction(async (tx) => {
       const [me] = await tx
         .select({ defaultAudience: users.defaultAudience })
@@ -264,6 +266,7 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
     });
     await evaluateBadges(db, [req.userId]);
     await checkGoalReached(db, req.userId, result.visit.visitedAt);
+    await afterMayorship();
     reply.status(201);
     return {
       id: result.visit.id,
