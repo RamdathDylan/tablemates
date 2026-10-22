@@ -13,6 +13,7 @@ export { Divider } from './components/Divider';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export { Icon, type IconName, type IconProps } from './components/Icon';
 export { IconButton, type IconButtonProps } from './components/IconButton';
+export { MapPin, type MapPinKind, type MapPinProps } from './components/MapPin';
 export { Input, TextArea, type InputProps } from './components/Input';
 export { Rating, type RatingProps } from './components/Rating';
 export { Sheet, type SheetProps } from './components/Sheet';

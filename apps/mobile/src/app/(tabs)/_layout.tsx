@@ -25,6 +25,7 @@ export default function TabLayout() {
       tabBar={(props) => <AppTabBar {...props} />}
       screenOptions={{ headerShown: false, tabBarPosition: bp === 'phone' ? 'bottom' : 'left' }}>
       <Tabs.Screen name="index" options={tab('Feed', 'Feed', 'restaurant-outline', 'restaurant')} />
+      <Tabs.Screen name="map" options={tab('Map', 'Map', 'map-outline', 'map')} />
       <Tabs.Screen name="log" options={tab('Log a visit', 'Log', 'add-circle-outline', 'add-circle')} />
       <Tabs.Screen
         name="friends"

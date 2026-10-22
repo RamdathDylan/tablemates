@@ -91,7 +91,17 @@ export const mapPlacesQuery = z
     message: 'Sorting by distance needs your location',
     path: ['sort'],
   });
-export type MapPlacesQuery = z.input<typeof mapPlacesQuery>;
+/** Client-side shape of the query (values are serialized into the URL). */
+export interface MapPlacesQuery {
+  scope?: (typeof mapScopes)[number];
+  friendId?: string;
+  recommended?: boolean;
+  minRating?: number;
+  cuisine?: string;
+  sort?: (typeof mapSorts)[number];
+  lat?: number;
+  lng?: number;
+}
 
 export const feedQuery = z.object({
   cursor: z.string().optional(),

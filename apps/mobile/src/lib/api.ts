@@ -6,6 +6,8 @@ import type {
   FriendRequest,
   FriendshipStatus,
   LoginInput,
+  MapPlace,
+  MapPlacesQuery,
   Me,
   NotificationSummary,
   Page,
@@ -115,8 +117,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return parse<T>(res);
 }
 
-const qs = (params: Record<string, string | number | undefined>) => {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined) as [string, string][];
+const qs = (params: Record<string, string | number | boolean | undefined>) => {
+  const entries = Object.entries(params)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => [k, String(v)]);
   return entries.length ? `?${new URLSearchParams(entries)}` : '';
 };
 
@@ -162,6 +166,7 @@ export const api = {
 
   searchPlaces: (q: string) => request<PlaceResult[]>('GET', `/places/search${qs({ q })}`),
   restaurant: (id: string) => request<RestaurantDetail>('GET', `/restaurants/${id}`),
+  mapPlaces: (query: MapPlacesQuery) => request<MapPlace[]>('GET', `/map/places${qs({ ...query })}`),
 
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),

@@ -14,6 +14,7 @@ import {
   FriendRow,
   IconButton,
   Input,
+  MapPin,
   palette,
   radius,
   Rating,
@@ -208,6 +209,13 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
           <Divider inset={12} />
           <FriendRow user={{ displayName: 'Alex Kim', username: 'alex' }} status="friends" />
         </Card>
+        <View style={{ flexDirection: 'row', gap: space[4], alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <MapPin kind="mine" rating={4} recommended />
+          <MapPin kind="friends" rating={4.5} />
+          <MapPin kind="both" rating={5} recommended />
+          <MapPin kind="friends" rating={null} />
+          <MapPin kind="both" rating={3.5} selected />
+        </View>
         <Card padding={0} style={{ paddingVertical: 4 }}>
           <VisitListItem restaurantName="Luigi's Trattoria" visitedAt="2026-10-12" rating={5} recommends onPress={() => {}} />
           <Divider inset={3} />
