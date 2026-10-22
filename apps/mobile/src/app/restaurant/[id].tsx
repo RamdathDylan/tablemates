@@ -73,14 +73,17 @@ export default function RestaurantScreen() {
           👑 {mayor.user.displayName} is the mayor · {mayor.visits} visits in the last 60 days
         </Text>
       )}
-      {friendStats.visits > 0 && (
+      {(friendStats.averageRating !== null || friendStats.recommends > 0) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], flexWrap: 'wrap' }}>
           {friendStats.averageRating !== null && <Rating value={friendStats.averageRating} />}
-          <Chip
-            tone="primary"
-            icon="thumbs-up"
-            label={`Recommended in ${friendStats.recommends} of ${friendStats.visits} visit${friendStats.visits === 1 ? '' : 's'}`}
-          />
+          {/* "Recommended in 0 of 5" reads as a warning; with no recommendations, say nothing. */}
+          {friendStats.recommends > 0 && (
+            <Chip
+              tone="primary"
+              icon="thumbs-up"
+              label={`Recommended in ${friendStats.recommends} of ${friendStats.visits} visit${friendStats.visits === 1 ? '' : 's'}`}
+            />
+          )}
         </View>
       )}
 
