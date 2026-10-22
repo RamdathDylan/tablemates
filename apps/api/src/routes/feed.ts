@@ -12,6 +12,7 @@ import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
 import { friendVisitFilter, visibleVisitFilter } from '../lib/visibility';
 import { engagementFor } from './engagement';
+import { companionsFor } from './visits';
 
 async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
   const rows = await db
@@ -42,11 +43,18 @@ type FeedRow = Awaited<ReturnType<typeof selectFeedItems>>[number];
 
 /** Serializes rows and attaches reaction/comment counts. */
 async function toFeedItems(db: Db, viewerId: string, rows: FeedRow[]): Promise<FeedItem[]> {
-  const engagement = await engagementFor(db, viewerId, rows.map((r) => r.review.id));
-  return rows.map((row) => ({ ...toFeedItem(row), engagement: engagement.get(row.review.id)! }));
+  const [engagement, companions] = await Promise.all([
+    engagementFor(db, viewerId, rows.map((r) => r.review.id)),
+    companionsFor(db, rows.map((r) => r.review.visitId)),
+  ]);
+  return rows.map((row) => ({
+    ...toFeedItem(row),
+    engagement: engagement.get(row.review.id)!,
+    companions: companions.get(row.review.visitId)!,
+  }));
 }
 
-const toFeedItem = (row: FeedRow): Omit<FeedItem, 'engagement'> => ({
+const toFeedItem = (row: FeedRow): Omit<FeedItem, 'engagement' | 'companions'> => ({
   review: toReview(row.review),
   visitedAt: row.visitedAt,
   author: toPublicUser(row.author),

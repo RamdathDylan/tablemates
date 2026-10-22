@@ -57,6 +57,13 @@
       "when": 1792638479279,
       "tag": "0007_reactions_comments",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792638716492,
+      "tag": "0008_visit_companions",
+      "breakpoints": true
     }
   ]
 }

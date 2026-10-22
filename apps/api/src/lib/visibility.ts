@@ -9,7 +9,7 @@ import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 
 import type { Db } from '../db/client';
-import { closeFriends, friendships, visits } from '../db/schema';
+import { closeFriends, friendships, visitCompanions, visits } from '../db/schema';
 
 /** Subquery yielding the ids of the viewer's accepted friends. */
 export function friendIdsOf(viewerId: string): SQL {
@@ -27,13 +27,18 @@ export function friendAuthorFilter(authorColumn: PgColumn, viewerId: string): SQ
 
 /**
  * Visits whose audience admits the viewer, assuming the viewer is the author's
- * friend: "friends" visits, plus "close_friends" visits when the author listed them.
+ * friend: "friends" visits, "close_friends" visits when the author listed them,
+ * and any visit the viewer was tagged on (they were there).
  * Never used alone; combine with a friendship check.
  */
 export function audienceAdmits(viewerId: string): SQL {
-  return sql`(${visits.audience} = 'friends' or (${visits.audience} = 'close_friends' and exists (
-    select 1 from ${closeFriends}
-    where ${closeFriends.ownerId} = ${visits.userId} and ${closeFriends.friendId} = ${viewerId})))`;
+  return sql`(${visits.audience} = 'friends'
+    or (${visits.audience} = 'close_friends' and exists (
+      select 1 from ${closeFriends}
+      where ${closeFriends.ownerId} = ${visits.userId} and ${closeFriends.friendId} = ${viewerId}))
+    or exists (
+      select 1 from ${visitCompanions}
+      where ${visitCompanions.visitId} = ${visits.id} and ${visitCompanions.userId} = ${viewerId}))`;
 }
 
 /** Friends' visits the viewer may see. Used for the feed and friends-only views. */

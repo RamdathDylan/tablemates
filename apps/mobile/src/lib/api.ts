@@ -20,6 +20,7 @@ import type {
   Profile,
   RestaurantDetail,
   SavedPlace,
+  TaggedVisit,
   Review,
   ReviewInput,
   SignupInput,
@@ -190,6 +191,8 @@ export const api = {
 
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
+  tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),
+  untag: (visitId: string) => request<void>('DELETE', `/visits/${visitId}/companions/me`),
   createVisit: (input: CreateVisitInput) => request<Visit>('POST', '/visits', input),
   deleteVisit: (id: string) => request<void>('DELETE', `/visits/${id}`),
   setVisitAudience: (id: string, audience: VisitAudience) =>

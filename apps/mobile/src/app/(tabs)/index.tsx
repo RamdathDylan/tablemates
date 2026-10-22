@@ -74,6 +74,7 @@ export default function FeedScreen() {
           onPressRestaurant={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant.id } })}
           saved={item.saved}
           onToggleSave={() => save.mutate({ restaurantId: item.restaurant.id, saved: item.saved, name: item.restaurant.name })}
+          companions={item.companions.map((c) => c.displayName)}
           engagement={item.engagement}
           onReact={(kind) => react.mutate({ reviewId: item.review.id, kind, on: item.engagement.mine.includes(kind) })}
           onOpenComments={() => setThread({ reviewId: item.review.id, title: `${item.author.displayName} at ${item.restaurant.name}` })}

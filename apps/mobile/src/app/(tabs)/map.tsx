@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FriendPicker } from '@/components/map/friend-picker';
+import { FriendPicker } from '@/components/friend-picker';
 import { PlacePreview } from '@/components/map/place-preview';
 import { mapsAvailable, TableMap } from '@/components/map/table-map';
 import { ErrorState, LoadingCards } from '@/components/query-state';

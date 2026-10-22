@@ -36,6 +36,12 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         body: `${n.actorName} commented on a review`,
         data: { type: n.type, restaurantId: n.restaurantId ?? '' },
       };
+    case 'tagged':
+      return {
+        title: n.restaurantName ?? 'You were tagged',
+        body: `${n.actorName} tagged you. Add your rating?`,
+        data: { type: n.type, screen: 'tagged' },
+      };
     case 'saved_place_reviewed':
       return {
         title: n.restaurantName ?? 'A place you saved',

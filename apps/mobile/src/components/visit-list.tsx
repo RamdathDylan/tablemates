@@ -1,5 +1,5 @@
 import type { Visit, VisitAudience } from '@tablemates/shared';
-import { Button, Card, Divider, IconButton, Sheet, useToast, VisitListItem } from '@tablemates/ui';
+import { Button, Card, Divider, formatDate, IconButton, joinNames, Sheet, useToast, VisitListItem } from '@tablemates/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Fragment, useState } from 'react';
@@ -27,6 +27,11 @@ export function VisitList({ visits, editable }: { visits: Visit[]; editable?: bo
                   visitedAt={v.visitedAt}
                   rating={v.review?.rating}
                   recommends={v.review?.recommends}
+                  subtitle={
+                    v.companions.length
+                      ? `${formatDate(v.visitedAt)} · with ${joinNames(v.companions.map((c) => c.displayName))}`
+                      : undefined
+                  }
                   onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: v.restaurant.id } })}
                 />
               </View>
