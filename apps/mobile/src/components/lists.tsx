@@ -56,7 +56,7 @@ export function ListRow({ list }: { list: ListSummary }) {
       ]}>
       <View
         style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={list.table ? 'people' : list.audience === 'private' ? 'lock-closed' : 'list'} color="onAccentSoft" />
+        <Icon name={list.kind === 'crawl' ? 'walk' : list.table ? 'people' : list.audience === 'private' ? 'lock-closed' : 'list'} color="onAccentSoft" />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text variant="bodyStrong" numberOfLines={1}>
@@ -131,10 +131,11 @@ export function ListSheet({
   const [title, setTitle] = useState(list?.title ?? '');
   const [description, setDescription] = useState(list?.description ?? '');
   const [audience, setAudience] = useState<'friends' | 'private'>(list?.audience ?? 'friends');
+  const [kind, setKind] = useState<'list' | 'crawl'>(list?.kind ?? 'list');
   const save = useMutation({
     mutationFn: async () => {
       if (list) return api.updateList(list.id, forTable ? { title, description } : { title, description, audience });
-      const created = await api.createList({ title, description, audience, tableId: table?.id });
+      const created = await api.createList({ title, description, audience, tableId: table?.id, kind });
       if (addRestaurantId) await api.addToList(created.id, addRestaurantId);
       return created;
     },
@@ -154,6 +155,20 @@ export function ListSheet({
       title={list ? 'Edit list' : forTable ? `New list for ${forTable.name}` : 'New list'}
       footer={<Button title={list ? 'Save' : 'Create list'} fullWidth size="lg" disabled={!title.trim()} loading={save.isPending} onPress={() => save.mutate()} />}>
       <Input label="Name" placeholder="Best tacos" value={title} onChangeText={setTitle} maxLength={60} />
+      {!list && (
+        <View style={{ gap: space[2] }}>
+          <Text variant="label">Type</Text>
+          <View style={{ flexDirection: 'row', gap: space[2] }}>
+            <Chip label="List" icon="list" selected={kind === 'list'} onPress={() => setKind('list')} />
+            <Chip label="Food crawl" icon="walk" selected={kind === 'crawl'} onPress={() => setKind('crawl')} />
+          </View>
+          {kind === 'crawl' && (
+            <Text variant="caption" tone="muted">
+              A crawl is a route: stops stay in order and you can walk it with Google Maps.
+            </Text>
+          )}
+        </View>
+      )}
       <TextArea label="Description (optional)" value={description} onChangeText={setDescription} maxLength={280} placeholder="What ties these places together?" />
       {forTable ? (
         <Text variant="caption" tone="muted">

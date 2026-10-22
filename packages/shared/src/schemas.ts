@@ -312,7 +312,11 @@ export const listInput = z.object({
   audience: z.enum(['friends', 'private']).default('friends'),
   /** Makes it a Table's shared list. */
   tableId: z.uuid().optional(),
+  /** A crawl keeps its stops in order. */
+  kind: z.enum(['list', 'crawl']).default('list'),
 });
+
+export const listOrderInput = z.object({ restaurantIds: z.array(z.uuid()).min(1).max(100) });
 
 export const updateListInput = z.object({
   title: z.string().trim().min(1).max(60).optional(),

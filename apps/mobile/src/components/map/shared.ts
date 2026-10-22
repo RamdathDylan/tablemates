@@ -13,6 +13,8 @@ export interface TableMapProps {
   checkins?: Checkin[];
   /** The signed-in user, to crown the places where they're mayor. */
   viewerId?: string;
+  /** A crawl's stops in order: pins get numbers and a dashed line joins them. */
+  route?: { id: string; lat: number; lng: number }[];
   onOpenCheckin?: (checkin: Checkin) => void;
 }
 

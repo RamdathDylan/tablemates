@@ -484,6 +484,8 @@ export const closeFriends = pgTable(
 export const listAudience = pgEnum('list_audience', ['friends', 'private']);
 
 /** A curated, shareable list of restaurants ("Date night", "Best tacos"). */
+export const listKind = pgEnum('list_kind', ['list', 'crawl']);
+
 export const lists = pgTable(
   'lists',
   {
@@ -496,6 +498,8 @@ export const lists = pgTable(
     audience: listAudience('audience').notNull().default('friends'),
     /** A Table's shared list: visible to and editable by its members. */
     tableId: uuid('table_id').references(() => tables.id, { onDelete: 'cascade' }),
+    /** A crawl is an ordered list of stops. */
+    kind: listKind('kind').notNull().default('list'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
@@ -512,6 +516,8 @@ export const listItems = pgTable(
       .notNull()
       .references(() => restaurants.id, { onDelete: 'cascade' }),
     note: text('note').notNull().default(''),
+    /** Order of stops on a crawl (lists sort by when items were added). */
+    position: integer('position').notNull().default(0),
     addedAt: timestamptz('added_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.listId, t.restaurantId] })],

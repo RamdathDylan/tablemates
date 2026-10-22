@@ -18,6 +18,8 @@ export interface MapPinProps {
   saved?: boolean;
   /** The viewer is mayor here: a crown sits on the pin. */
   crowned?: boolean;
+  /** A crawl stop number, shown in place of the rating. */
+  stop?: number;
   selected?: boolean;
 }
 
@@ -26,7 +28,7 @@ export interface MapPinProps {
  * Tomato = you've been, saffron = friends only, tomato with a saffron ring = both.
  * The map supplies the accessible label (the restaurant summary); the pin is visual.
  */
-export function MapPin({ kind, rating, recommended, saved, crowned, selected }: MapPinProps) {
+export function MapPin({ kind, rating, recommended, saved, crowned, stop, selected }: MapPinProps) {
   const { colors } = useTheme();
   const fill = kind === 'friends' ? palette.saffron[400] : kind === 'saved' ? palette.stone[800] : colors.primary;
   const fg = kind === 'friends' ? palette.stone[900] : kind === 'saved' ? palette.stone[0] : colors.onPrimary;
@@ -50,7 +52,9 @@ export function MapPin({ kind, rating, recommended, saved, crowned, selected }: 
           justifyContent: 'center',
           boxShadow: elevation(selected ? 3 : 2, colors.shadow),
         }}>
-        {rating !== null ? (
+        {stop !== undefined ? (
+          <Text style={{ color: fg, fontFamily: fontFamily.bodyBold, fontSize: 13, lineHeight: 16 }}>{stop}</Text>
+        ) : rating !== null ? (
           <>
             <Icon name="star" size={11} color={fg} />
             <Text style={{ color: fg, fontFamily: fontFamily.bodyBold, fontSize: 12, lineHeight: 16 }}>

@@ -120,18 +120,25 @@ export function PlanRow({ plan }: { plan: PlanSummary }) {
   );
 }
 
-/** With `table`, every member is invited; extra friends are optional. */
+/**
+ * With `table`, every member is invited; extra friends are optional.
+ * `restaurantIds` become the plan's first options (e.g. a crawl's stops).
+ */
 export function NewPlanSheet({
   table,
+  restaurantIds = [],
+  defaultTitle = '',
   onClose,
 }: {
   table?: { id: string; name: string; members: { id: string; displayName: string; avatarUrl: string | null }[] };
+  restaurantIds?: string[];
+  defaultTitle?: string;
   onClose: () => void;
 }) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(defaultTitle);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('19:00');
   const [invited, setInvited] = useState<Friend[]>([]);
@@ -139,14 +146,16 @@ export function NewPlanSheet({
   const [error, setError] = useState<string>();
 
   const create = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       let startsAt: string | undefined;
       if (date) {
         const local = new Date(`${date}T${time || '19:00'}`);
         if (Number.isNaN(local.getTime())) throw new Error('Use YYYY-MM-DD and HH:MM for the date and time.');
         startsAt = local.toISOString();
       }
-      return api.createPlan({ title, startsAt, memberIds: invited.map((f) => f.id), tableId: table?.id });
+      const created = await api.createPlan({ title, startsAt, memberIds: invited.map((f) => f.id), tableId: table?.id });
+      for (const restaurantId of restaurantIds) await api.addPlanOption(created.id, { restaurantId });
+      return created;
     },
     onSuccess: ({ id }) => {
       queryClient.invalidateQueries({ queryKey: qk.plans });

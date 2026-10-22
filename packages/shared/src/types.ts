@@ -490,6 +490,7 @@ export interface ListSummary {
   table: { id: string; name: string; emoji: string } | null;
   /** The viewer may add and remove places (owner, or any member of the list's table). */
   canEdit: boolean;
+  kind: 'list' | 'crawl';
 }
 
 export interface ListItem {
@@ -501,7 +502,10 @@ export interface ListItem {
 }
 
 export interface RestaurantList extends ListSummary {
+  /** In crawl order for crawls; oldest first otherwise. */
   items: ListItem[];
+  /** Crawls only: straight-line distance from each stop to the next, and in total. */
+  route: { legsKm: number[]; totalKm: number } | null;
 }
 
 /** "Your year in food": a recap of the viewer's own visits in one calendar year. */

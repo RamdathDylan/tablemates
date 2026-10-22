@@ -2,12 +2,14 @@ import { Button, Chip, EmptyState, IconButton, RestaurantCard, space, Text, useT
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 
 import { ListSheet } from '@/components/lists';
+import { NewPlanSheet } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen } from '@/components/screen';
 import { api, ApiError } from '@/lib/api';
+import { walkingRouteUrl } from '@/lib/maps-link';
 import { qk } from '@/lib/query-keys';
 
 export default function ListScreen() {
@@ -36,6 +38,8 @@ export default function ListScreen() {
     },
     onError,
   });
+  const reorder = useMutation({ mutationFn: (ids: string[]) => api.reorderList(id, ids), onSuccess: refresh, onError });
+  const [planning, setPlanning] = useState(false);
   const remove = useMutation({ mutationFn: (restaurantId: string) => api.removeFromList(id, restaurantId), onSuccess: refresh, onError });
   const del = useMutation({
     mutationFn: () => api.deleteList(id),
@@ -61,6 +65,13 @@ export default function ListScreen() {
     );
   }
   const l = list.data;
+  const crawl = l.kind === 'crawl';
+  const route = crawl ? walkingRouteUrl(l.items.map((i) => i.restaurant)) : null;
+  function move(index: number, by: -1 | 1) {
+    const ids = l.items.map((i) => i.restaurant.id);
+    [ids[index], ids[index + by]] = [ids[index + by]!, ids[index]!];
+    reorder.mutate(ids);
+  }
 
   return (
     <Screen header documentTitle={l.title}>
@@ -130,6 +141,18 @@ export default function ListScreen() {
         )}
       </View>
 
+      {crawl && l.items.length > 1 && (
+        <View style={{ gap: space[2] }}>
+          <Text tone="muted">
+            {l.items.length} stops · {l.route?.totalKm ?? 0} km as the crow flies
+          </Text>
+          <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap' }}>
+            {route && <Button title="Open walking route" icon="walk" onPress={() => Linking.openURL(route)} />}
+            <Button title="Plan this crawl" icon="calendar-outline" variant="secondary" onPress={() => setPlanning(true)} />
+          </View>
+        </View>
+      )}
+
       {l.items.length === 0 ? (
         <EmptyState
           icon="list"
@@ -137,8 +160,32 @@ export default function ListScreen() {
           message={l.canEdit ? 'Add places from any restaurant page.' : `${l.owner.displayName} hasn't added anything yet.`}
         />
       ) : (
-        l.items.map((item) => (
+        l.items.map((item, i) => (
           <View key={item.restaurant.id} style={{ gap: space[1] }}>
+            {crawl && i > 0 && !!l.route?.legsKm[i - 1] && (
+              <Text variant="caption" tone="muted" style={{ paddingLeft: space[2] }}>
+                ↓ {l.route.legsKm[i - 1]} km
+              </Text>
+            )}
+            {crawl && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+                <Text variant="overline" tone="primary" style={{ flex: 1 }}>
+                  Stop {i + 1}
+                </Text>
+                {l.canEdit && (
+                  <>
+                    <IconButton icon="arrow-up" size="sm" accessibilityLabel={`Move ${item.restaurant.name} earlier`} disabled={i === 0 || reorder.isPending} onPress={() => move(i, -1)} />
+                    <IconButton
+                      icon="arrow-down"
+                      size="sm"
+                      accessibilityLabel={`Move ${item.restaurant.name} later`}
+                      disabled={i === l.items.length - 1 || reorder.isPending}
+                      onPress={() => move(i, 1)}
+                    />
+                  </>
+                )}
+              </View>
+            )}
             <RestaurantCard
               name={item.restaurant.name}
               address={item.restaurant.address}
@@ -165,6 +212,7 @@ export default function ListScreen() {
         ))
       )}
       {editing && <ListSheet list={l} onClose={() => setEditing(false)} />}
+      {planning && <NewPlanSheet defaultTitle={l.title} restaurantIds={l.items.map((i) => i.restaurant.id)} onClose={() => setPlanning(false)} />}
     </Screen>
   );
 }

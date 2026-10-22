@@ -219,6 +219,7 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
           <MapPin kind="friends" rating={null} />
           <MapPin kind="both" rating={3.5} selected />
           <MapPin kind="mine" rating={4.5} crowned />
+          <MapPin kind="friends" rating={4} stop={2} />
         </View>
         <Card padding={0} style={{ paddingVertical: 4 }}>
           <VisitListItem restaurantName="Luigi's Trattoria" visitedAt="2026-10-12" rating={5} recommends onPress={() => {}} />
