@@ -4,6 +4,26 @@ import { fileURLToPath } from 'node:url';
 const envFile = fileURLToPath(new URL('../.env', import.meta.url));
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 
+/**
+ * Which proxies to trust for the client address (X-Forwarded-For): "false"
+ * (default, trust none), "true" (trust all), a hop count, or comma-separated
+ * addresses and CIDR ranges. Trust only the proxies you run, or clients could
+ * spoof their address and dodge rate limits.
+ */
+export type TrustProxy = boolean | string[] | ((address: string, hop: number) => boolean);
+
+export function parseTrustProxy(value: string | undefined): TrustProxy {
+  const v = (value ?? '').trim();
+  if (!v || v === 'false') return false;
+  if (v === 'true') return true;
+  // A hop count: trust that many proxies in front of the API.
+  if (/^\d+$/.test(v)) {
+    const hops = Number(v);
+    return (_address, hop) => hop < hops;
+  }
+  return v.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required env var ${name} (see .env.example)`);
@@ -24,6 +44,9 @@ export const env = {
     .map((o) => o.trim())
     .filter(Boolean),
   isProduction: process.env.NODE_ENV === 'production',
+  trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
+  /** Optional. When set, rate limits are shared across API instances through Redis. */
+  redisUrl: process.env.REDIS_URL || undefined,
   /** How clients reach this API; used for public links such as avatar images. */
   publicApiUrl: process.env.PUBLIC_API_URL ?? `http://localhost:${process.env.PORT ?? 4000}`,
   s3: {

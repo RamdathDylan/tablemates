@@ -94,7 +94,7 @@ export interface TestUser {
 /** Builds an app against the test database and wipes data before each test. */
 const mailers = new WeakMap<FastifyInstance, FakeMailer>();
 
-export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
+export function setupTestApp(options: Pick<AppOptions, 'authRateLimit' | 'trustProxy'> = {}) {
   const ctx = {} as { app: FastifyInstance; db: Db; places: FakePlaces; mailer: FakeMailer; storage: FakeStorage };
   let close: () => Promise<void>;
 

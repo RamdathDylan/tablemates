@@ -2,9 +2,11 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import Fastify from 'fastify';
+import type { Redis } from 'ioredis';
 import { ZodError } from 'zod';
 
 import type { Deps } from './deps';
+import type { TrustProxy } from './env';
 import { AppError, isUniqueViolation, unauthorized } from './lib/errors';
 import { askRoutes } from './routes/asks';
 import { challengeRoutes } from './routes/challenges';
@@ -34,6 +36,10 @@ export interface AppOptions extends Deps {
   logger?: boolean;
   /** Per-IP limit on sign-up, login, and verification attempts. */
   authRateLimit?: RateLimit;
+  /** Proxies trusted to report the client address; see parseTrustProxy in env.ts. */
+  trustProxy?: TrustProxy;
+  /** A Redis client to share rate-limit counters across instances; in-memory when omitted. */
+  rateLimitRedis?: Redis;
 }
 
 /** Routes an unverified account may use, so it can finish verifying. */
@@ -43,9 +49,11 @@ export async function buildApp({
   corsOrigins,
   logger = false,
   authRateLimit = { max: 10, timeWindow: '1 minute' },
+  trustProxy = false,
+  rateLimitRedis,
   ...deps
 }: AppOptions) {
-  const app = Fastify({ logger });
+  const app = Fastify({ logger, trustProxy });
 
   await app.register(cors, {
     origin: corsOrigins,
@@ -55,7 +63,13 @@ export async function buildApp({
   });
   await app.register(cookie);
   // Opt-in per route (see routes/auth.ts) rather than limiting every request.
-  await app.register(rateLimit, { global: false });
+  // With Redis, counters are shared by every instance. If Redis is unreachable,
+  // requests are allowed and the error is logged, so an outage doesn't lock
+  // everyone out of signing in.
+  await app.register(rateLimit, {
+    global: false,
+    ...(rateLimitRedis && { redis: rateLimitRedis, nameSpace: 'tablemates:ratelimit:', skipOnError: true }),
+  });
 
   app.setErrorHandler((err: unknown, req, reply) => {
     if (err instanceof ZodError) {
