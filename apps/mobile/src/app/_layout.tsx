@@ -1,13 +1,15 @@
 import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { fontFamily, ThemeProvider, ToastProvider, useTheme } from '@tablemates/ui';
+import { fontFamily, ThemeProvider, ToastProvider, useBreakpoint, useTheme } from '@tablemates/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { phoneTabBarHeight } from '@/components/app-tab-bar';
 import { ApiError } from '@/lib/api';
 import { AuthProvider, useAuth } from '@/lib/auth';
 
@@ -38,13 +40,20 @@ export default function RootLayout() {
       {/* TableMates ships in light mode. Dark tokens stay in @tablemates/ui for a future opt-in setting. */}
       <ThemeProvider scheme="light">
         <AuthProvider>
-          <ToastProvider>
+          <Toasts>
             <RootNavigator fontsLoaded={fontsLoaded} />
-          </ToastProvider>
+          </Toasts>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+/** Keeps toasts above the phone tab bar instead of underneath it. */
+function Toasts({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  const phone = useBreakpoint() === 'phone';
+  return <ToastProvider bottomInset={phone ? phoneTabBarHeight(insets.bottom) : insets.bottom}>{children}</ToastProvider>;
 }
 
 function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
