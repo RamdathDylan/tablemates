@@ -62,7 +62,7 @@ export default function ProfileScreen() {
             action={{ label: 'Log a visit', onPress: () => router.navigate('/log') }}
           />
         ) : (
-          <VisitList visits={visits.data} />
+          <VisitList visits={visits.data} editable />
         )}
       </Section>
 

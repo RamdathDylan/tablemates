@@ -18,11 +18,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { AudiencePicker } from '@/components/audience-picker';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api, ApiError } from '@/lib/api';
 import { useLocation } from '@/lib/location';
-import { useMe } from '@/lib/auth';
+import { useAuth, useMe } from '@/lib/auth';
 import { qk } from '@/lib/query-keys';
 import { useDebounced } from '@/lib/use-debounced';
 
@@ -128,7 +129,9 @@ function PlaceSearch({ onPick }: { onPick: (place: PlaceResult) => void }) {
 
 function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () => void }) {
   const me = useMe();
+  const { setUser } = useAuth();
   const toast = useToast();
+  const [audience, setAudience] = useState(me.defaultAudience);
   const queryClient = useQueryClient();
   const [visitedAt, setVisitedAt] = useState(localDate());
   const [rating, setRating] = useState(0);
@@ -143,13 +146,19 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
       api.createVisit({
         googlePlaceId: place.googlePlaceId,
         visitedAt,
+        audience,
         review: rating ? { rating, recommends: !!recommends, dishes, body } : undefined,
       }),
     onSuccess: (visit) => {
+      // The server remembers this choice for next time; mirror it locally.
+      if (visit.audience !== me.defaultAudience) setUser({ ...me, defaultAudience: visit.audience });
       queryClient.invalidateQueries({ queryKey: qk.myVisits });
       queryClient.invalidateQueries({ queryKey: qk.profile(me.username) });
       queryClient.invalidateQueries({ queryKey: qk.restaurant(visit.restaurant.id) });
-      toast(visit.review ? 'Review shared with your friends' : 'Visit logged', 'success');
+      toast(
+        visit.audience === 'private' ? 'Saved privately' : visit.review ? 'Review shared with your friends' : 'Visit logged',
+        'success',
+      );
       onChangePlace();
       router.push({ pathname: '/restaurant/[id]', params: { id: visit.restaurant.id } });
     },
@@ -242,13 +251,17 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
         </>
       )}
 
+      <Section title="Who can see this">
+        <AudiencePicker value={audience} onChange={setAudience} />
+      </Section>
+
       {error && (
         <Text tone="danger" role="alert">
           {error}
         </Text>
       )}
       <Button
-        title={rating ? 'Share with friends' : 'Save visit without a review'}
+        title={audience === 'private' ? 'Save privately' : rating ? 'Share with friends' : 'Save visit without a review'}
         onPress={submit}
         loading={save.isPending}
         fullWidth

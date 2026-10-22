@@ -44,7 +44,9 @@ All reads of visits and reviews filter authors through `apps/api/src/lib/visibil
 - **Restaurant page:** your reviews and your friends' reviews.
 - **Profile visits:** you or your friends only.
 
-A pending request grants nothing, and unfriending hides reviews again right away. `apps/api/test/visibility.test.ts` covers these cases.
+Each visit also has an audience: **Friends** (the default), **Close friends** (only people you've starred), or **Only me**. The shared filters `friendVisitFilter`, `visibleVisitFilter`, and `visitsOfFilter` apply both rules, and `apps/api/test/privacy.test.ts` checks each audience everywhere a review can appear.
+
+A pending request grants nothing, and unfriending hides reviews again right away (and clears close-friend status). `apps/api/test/visibility.test.ts` covers these cases.
 
 ## Auth
 - New accounts must enter the emailed code before using the app. Until then the API returns 403 `email_unverified` for everything except `/me` and the verify and resend endpoints.

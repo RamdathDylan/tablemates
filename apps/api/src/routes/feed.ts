@@ -10,7 +10,7 @@ import { decodeCursor, encodeCursor } from '../lib/cursor';
 import { notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
-import { friendAuthorFilter, visibleAuthorFilter } from '../lib/visibility';
+import { friendVisitFilter, visibleVisitFilter } from '../lib/visibility';
 
 async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
   const rows = await db
@@ -49,7 +49,7 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
   /** Friends' reviews, newest first. Your own reviews live on your profile. */
   app.get('/feed', async (req): Promise<Page<FeedItem>> => {
     const { cursor, limit } = parse(feedQuery, req.query);
-    const conditions = [friendAuthorFilter(visits.userId, req.userId)];
+    const conditions = [friendVisitFilter(req.userId)];
     if (cursor) {
       const c = decodeCursor(cursor);
       conditions.push(
@@ -71,10 +71,7 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
     const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, id));
     if (!restaurant) throw notFound('Restaurant not found');
 
-    const visible = and(
-      eq(visits.restaurantId, id),
-      visibleAuthorFilter(visits.userId, req.userId),
-    );
+    const visible = and(eq(visits.restaurantId, id), visibleVisitFilter(req.userId));
     const [rows, [stats], [saved]] = await Promise.all([
       selectFeedItems(db, req.userId, visible, 50),
       db

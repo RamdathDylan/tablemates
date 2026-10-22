@@ -35,6 +35,13 @@ export function useFriendActions() {
       onError,
       onSettled,
     }),
+    toggleClose: useMutation({
+      mutationFn: ({ userId, close }: { userId: string; close: boolean; name: string }) =>
+        close ? api.removeCloseFriend(userId) : api.addCloseFriend(userId),
+      onSuccess: (_, { close, name }) => toast(close ? `${name} removed from close friends` : `${name} added to close friends`),
+      onError,
+      onSettled,
+    }),
     remove: useMutation({
       mutationFn: (userId: string) => api.removeFriend(userId),
       onSuccess: () => toast('Removed from friends'),

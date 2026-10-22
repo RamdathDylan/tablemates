@@ -2,17 +2,19 @@ import {
   createVisitInput,
   reviewInput,
   updateReviewInput,
+  updateVisitInput,
   type Visit,
 } from '@tablemates/shared';
 import { and, desc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
-import { restaurants, reviews, visits } from '../db/schema';
+import { restaurants, reviews, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toRestaurant, toReview } from '../lib/serialize';
+import { visitsOfFilter } from '../lib/visibility';
 import type { PlacesProvider } from '../places/types';
 
 /** Google's terms allow caching place details for up to 30 days. */
@@ -56,19 +58,20 @@ export async function ensureRestaurant(db: Db, places: PlacesProvider, googlePla
   return row!;
 }
 
-/** All of a user's visits. Callers must check visibility first. */
-export async function listVisits(db: Db, userId: string): Promise<Visit[]> {
+/** A user's visits as the viewer may see them. Callers must check friendship first. */
+export async function listVisits(db: Db, userId: string, viewerId: string): Promise<Visit[]> {
   const rows = await db
     .select({ visit: visits, restaurant: restaurants, review: reviews })
     .from(visits)
     .innerJoin(restaurants, eq(visits.restaurantId, restaurants.id))
     .leftJoin(reviews, eq(reviews.visitId, visits.id))
-    .where(eq(visits.userId, userId))
+    .where(visitsOfFilter(userId, viewerId))
     .orderBy(desc(visits.visitedAt), desc(visits.createdAt))
     .limit(200);
   return rows.map(({ visit, restaurant, review }) => ({
     id: visit.id,
     visitedAt: visit.visitedAt,
+    audience: visit.audience,
     restaurant: toRestaurant(restaurant),
     review: review ? toReview(review) : null,
   }));
@@ -86,16 +89,25 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
     return row.review;
   }
 
-  app.get('/me/visits', async (req) => listVisits(db, req.userId));
+  app.get('/me/visits', async (req) => listVisits(db, req.userId, req.userId));
 
   app.post('/visits', async (req, reply): Promise<Visit> => {
     const input = parse(createVisitInput, req.body);
     const restaurant = await ensureRestaurant(db, places, input.googlePlaceId);
     const result = await db.transaction(async (tx) => {
+      const [me] = await tx
+        .select({ defaultAudience: users.defaultAudience })
+        .from(users)
+        .where(eq(users.id, req.userId));
+      const audience = input.audience ?? me!.defaultAudience;
       const [visit] = await tx
         .insert(visits)
-        .values({ userId: req.userId, restaurantId: restaurant.id, visitedAt: input.visitedAt })
+        .values({ userId: req.userId, restaurantId: restaurant.id, visitedAt: input.visitedAt, audience })
         .returning();
+      // Remember the choice so the next visit starts with it.
+      if (audience !== me!.defaultAudience) {
+        await tx.update(users).set({ defaultAudience: audience }).where(eq(users.id, req.userId));
+      }
       const [review] = input.review
         ? await tx
             .insert(reviews)
@@ -108,9 +120,22 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
     return {
       id: result.visit.id,
       visitedAt: result.visit.visitedAt,
+      audience: result.visit.audience,
       restaurant: toRestaurant(restaurant),
       review: result.review ? toReview(result.review) : null,
     };
+  });
+
+  /** Changes who can see a visit you logged. */
+  app.patch('/visits/:id', async (req) => {
+    const { audience } = parse(updateVisitInput, req.body);
+    const [row] = await db
+      .update(visits)
+      .set({ audience })
+      .where(and(eq(visits.id, idParam(req.params)), eq(visits.userId, req.userId)))
+      .returning({ id: visits.id, audience: visits.audience });
+    if (!row) throw notFound('Visit not found');
+    return row;
   });
 
   app.delete('/visits/:id', async (req, reply) => {

@@ -19,6 +19,9 @@ import {
 // Millisecond precision so timestamps round-trip through JS Dates exactly (keyset cursors rely on it).
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true, precision: 3 });
 
+/** Who can see a visit (and its review) besides its author. */
+export const visitAudience = pgEnum('visit_audience', ['friends', 'close_friends', 'private']);
+
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
@@ -30,6 +33,8 @@ export const users = pgTable('users', {
   homeCity: text('home_city'),
   /** Null until the user enters the code emailed at sign-up. */
   emailVerifiedAt: timestamptz('email_verified_at'),
+  /** The audience picked on the user's last logged visit, preselected next time. */
+  defaultAudience: visitAudience('default_audience').notNull().default('friends'),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
 });
 
@@ -123,6 +128,7 @@ export const visits = pgTable(
       .notNull()
       .references(() => restaurants.id, { onDelete: 'cascade' }),
     visitedAt: date('visited_at', { mode: 'string' }).notNull(),
+    audience: visitAudience('audience').notNull().default('friends'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },
   (t) => [
@@ -150,6 +156,21 @@ export const reviews = pgTable(
     index('reviews_created_idx').on(t.createdAt, t.id),
     check('reviews_rating_range', sql`${t.rating} between 1 and 5`),
   ],
+);
+
+/** People a user shares close-friends-only visits with. Always a subset of their friends. */
+export const closeFriends = pgTable(
+  'close_friends',
+  {
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    friendId: uuid('friend_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.ownerId, t.friendId] })],
 );
 
 /** A user's private "want to try" list. */

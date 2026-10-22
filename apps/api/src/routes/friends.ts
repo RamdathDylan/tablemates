@@ -1,11 +1,12 @@
-import { friendRequestInput, type FriendRequest, type PublicUser } from '@tablemates/shared';
+import { friendRequestInput, type Friend, type FriendRequest } from '@tablemates/shared';
 import { and, desc, eq, or } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
-import { friendships, notifications, users } from '../db/schema';
+import { closeFriends, friendships, notifications, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
+import { canSeeActivityOf } from '../lib/visibility';
 import { idParam } from '../lib/params';
 import { toPublicUser } from '../lib/serialize';
 
@@ -53,10 +54,10 @@ export function friendRoutes(app: FastifyInstance, { db }: Deps) {
     return row;
   }
 
-  app.get('/friends', async (req): Promise<PublicUser[]> => {
+  app.get('/friends', async (req): Promise<Friend[]> => {
     const me = req.userId;
     const rows = await db
-      .select(publicColumns)
+      .select({ ...publicColumns, closeFriendSince: closeFriends.createdAt })
       .from(friendships)
       .innerJoin(
         users,
@@ -65,9 +66,27 @@ export function friendRoutes(app: FastifyInstance, { db }: Deps) {
           and(eq(friendships.addresseeId, me), eq(users.id, friendships.requesterId)),
         ),
       )
+      .leftJoin(closeFriends, and(eq(closeFriends.ownerId, me), eq(closeFriends.friendId, users.id)))
       .where(eq(friendships.status, 'accepted'))
       .orderBy(users.displayName);
-    return rows.map(toPublicUser);
+    return rows.map((r) => ({ ...toPublicUser(r), closeFriend: r.closeFriendSince !== null }));
+  });
+
+  /** Close friends see visits marked "Close friends". Only accepted friends qualify. */
+  app.put('/me/close-friends/:userId', async (req, reply) => {
+    const friendId = idParam(req.params, 'userId');
+    if (friendId === req.userId || !(await canSeeActivityOf(db, req.userId, friendId))) {
+      throw badRequest('Only friends can be close friends');
+    }
+    await db.insert(closeFriends).values({ ownerId: req.userId, friendId }).onConflictDoNothing();
+    return reply.status(204).send();
+  });
+
+  app.delete('/me/close-friends/:userId', async (req, reply) => {
+    await db
+      .delete(closeFriends)
+      .where(and(eq(closeFriends.ownerId, req.userId), eq(closeFriends.friendId, idParam(req.params, 'userId'))));
+    return reply.status(204).send();
   });
 
   app.get('/friends/requests', async (req): Promise<FriendRequest[]> => {
@@ -160,7 +179,18 @@ export function friendRoutes(app: FastifyInstance, { db }: Deps) {
     const otherId = idParam(req.params, 'userId');
     const existing = await pairRow(req.userId, otherId);
     if (existing?.status !== 'accepted') throw notFound('You are not friends with this user');
-    await db.delete(friendships).where(eq(friendships.id, existing.id));
+    await db.transaction(async (tx) => {
+      await tx.delete(friendships).where(eq(friendships.id, existing.id));
+      // Re-friending later starts fresh rather than restoring close-friend access.
+      await tx
+        .delete(closeFriends)
+        .where(
+          or(
+            and(eq(closeFriends.ownerId, req.userId), eq(closeFriends.friendId, otherId)),
+            and(eq(closeFriends.ownerId, otherId), eq(closeFriends.friendId, req.userId)),
+          ),
+        );
+    });
     return reply.status(204).send();
   });
 }
