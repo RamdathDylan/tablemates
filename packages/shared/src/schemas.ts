@@ -77,6 +77,14 @@ export const notificationTypes = [
   'challenge_ended',
 ] as const;
 
+export const blendQuery = z.object({
+  /** Comma-separated friend ids, 1 to 5. */
+  with: z
+    .string()
+    .transform((s) => [...new Set(s.split(',').filter(Boolean))])
+    .pipe(z.array(z.uuid()).min(1, 'Pick at least one friend').max(5, 'Blend with up to 5 friends')),
+});
+
 export const challengeMetrics = ['new_places', 'cuisines', 'visits', 'reviews'] as const;
 
 export const challengeInput = z

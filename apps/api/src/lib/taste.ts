@@ -2,13 +2,13 @@
  * Taste match and For You. Everything here reads reviews through the same
  * visibility rules as the feed, so a private review never shapes a score.
  */
-import type { ForYouItem, PublicUser, TasteMatch } from '@tablemates/shared';
+import type { Blend, ForYouItem, PublicUser, TasteMatch } from '@tablemates/shared';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
 import { restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
 import { toPublicUser, toRestaurant } from './serialize';
-import { friendIdsOf, friendVisitFilter } from './visibility';
+import { friendIdsOf, friendVisitFilter, visibleVisitFilter } from './visibility';
 
 /** Shared ratings needed before a match percentage means anything. */
 export const MIN_OVERLAP = 3;
@@ -164,4 +164,64 @@ export async function forYou(
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
+}
+
+/**
+ * Blend: places the viewer and up to 5 friends should try together, from the
+ * ratings the viewer can see. A place qualifies when someone loved it (4★+),
+ * nobody disliked it (2★ or less), and not everyone has been. Each love is
+ * weighted by how well that person's taste matches the rest of the group.
+ */
+export async function blend(db: Db, viewerId: string, friendIds: string[]): Promise<Blend> {
+  const ids = [viewerId, ...friendIds];
+  const [{ mine, friends }, visitedRows, people] = await Promise.all([
+    ratings(db, viewerId),
+    db
+      .selectDistinct({ userId: visits.userId, restaurantId: visits.restaurantId })
+      .from(visits)
+      .where(and(visibleVisitFilter(viewerId), inArray(visits.userId, ids))),
+    db.select({ id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl }).from(users).where(inArray(users.id, ids)),
+  ]);
+  const rated = new Map(ids.map((id) => [id, id === viewerId ? mine : (friends.get(id) ?? new Map<string, number>())]));
+  const person = new Map(people.map((p) => [p.id, toPublicUser(p)]));
+
+  // Pairwise matches, from what the viewer can see.
+  const pairMatch = new Map<string, number | null>();
+  const known: number[] = [];
+  for (const [i, a] of ids.entries()) {
+    for (const b of ids.slice(i + 1)) {
+      const m = compare(rated.get(a)!, rated.get(b)).match;
+      pairMatch.set(`${a}:${b}`, m).set(`${b}:${a}`, m);
+      if (m !== null) known.push(m);
+    }
+  }
+  const weight = (id: string) => {
+    const ms = ids.filter((o) => o !== id).map((o) => pairMatch.get(`${id}:${o}`)).filter((m): m is number => m != null);
+    return (ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : DEFAULT_MATCH) / 100;
+  };
+
+  const visited = new Map<string, Set<string>>();
+  for (const v of visitedRows) (visited.get(v.restaurantId) ?? visited.set(v.restaurantId, new Set()).get(v.restaurantId)!).add(v.userId);
+
+  const scored: { restaurantId: string; score: number; lovedBy: { id: string; rating: number }[] }[] = [];
+  const candidates = new Set(ids.flatMap((id) => [...rated.get(id)!.keys()]));
+  for (const rid of candidates) {
+    const marks = ids.flatMap((id) => (rated.get(id)!.has(rid) ? [{ id, rating: rated.get(id)!.get(rid)! }] : []));
+    if (marks.some((m) => m.rating <= 2)) continue;
+    const lovedBy = marks.filter((m) => m.rating >= 4);
+    if (!lovedBy.length || (visited.get(rid)?.size ?? 0) >= ids.length) continue;
+    scored.push({ restaurantId: rid, lovedBy, score: lovedBy.reduce((s, m) => s + m.rating * weight(m.id), 0) });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, 20);
+  const rows = top.length ? await db.select().from(restaurants).where(inArray(restaurants.id, top.map((t) => t.restaurantId))) : [];
+  return {
+    participants: ids.map((id) => person.get(id)!).filter(Boolean),
+    match: known.length ? Math.round(known.reduce((a, b) => a + b, 0) / known.length) : null,
+    places: top.map((t) => ({
+      restaurant: toRestaurant(rows.find((r) => r.id === t.restaurantId)!),
+      lovedBy: t.lovedBy.sort((a, b) => b.rating - a.rating).map((m) => ({ user: person.get(m.id)!, rating: m.rating })),
+      newTo: ids.filter((id) => !visited.get(t.restaurantId)?.has(id)).map((id) => person.get(id)!),
+    })),
+  };
 }

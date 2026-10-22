@@ -1,6 +1,6 @@
 import { Button, EmptyState } from '@tablemates/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 
 import { FavoritesRow } from '@/components/favorites';
 import { GoalCard } from '@/components/goal';
@@ -54,7 +54,10 @@ export default function UserScreen() {
     ) : p.friendship === 'outgoing' ? (
       <Button title="Cancel request" variant="secondary" onPress={() => p.requestId && actions.decline.mutate(p.requestId)} loading={busy} />
     ) : p.friendship === 'friends' ? (
-      <Button title="Remove friend" variant="ghost" size="sm" onPress={() => actions.remove.mutate(p.id)} loading={busy} />
+      <>
+        <Button title="Blend" icon="git-merge-outline" variant="secondary" size="sm" onPress={() => router.push({ pathname: '/blend', params: { with: p.id } })} />
+        <Button title="Remove friend" variant="ghost" size="sm" onPress={() => actions.remove.mutate(p.id)} loading={busy} />
+      </>
     ) : null;
 
   return (
