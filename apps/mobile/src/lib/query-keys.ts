@@ -30,6 +30,7 @@ export const qk = {
   streak: ['streak'] as const,
   checkins: ['checkins'] as const,
   challenges: ['challenges'] as const,
+  memories: (date: string) => ['memories', date] as const,
   blend: (ids: string[]) => ['blend', ...ids] as const,
   challenge: (id: string) => ['challenge', id] as const,
   tables: ['tables'] as const,
