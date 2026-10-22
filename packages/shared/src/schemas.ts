@@ -54,7 +54,20 @@ export const notificationTypes = [
   'plan_invite',
   'plan_decided',
   'badge',
+  'story_reaction',
 ] as const;
+
+export const storyReactions = ['😋', '🔥', '😍', '👀', '🙌'] as const;
+
+export const storyInput = z.object({
+  photoId: z.uuid(),
+  restaurantId: z.uuid().optional(),
+  googlePlaceId: z.string().min(1).max(300).optional(),
+  caption: z.string().trim().max(140).default(''),
+  audience: z.enum(['friends', 'close_friends']).default('friends'),
+});
+
+export const storyReactionInput = z.object({ emoji: z.enum(storyReactions) });
 
 export const createPlanInput = z.object({
   title: z.string().trim().min(1, 'Name the plan').max(80),

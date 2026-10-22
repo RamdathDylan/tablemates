@@ -21,6 +21,7 @@ export interface NotifyInput {
   askId?: string;
   planId?: string;
   badgeKey?: string;
+  emoji?: string;
   reaction?: 'yum' | 'going';
 }
 

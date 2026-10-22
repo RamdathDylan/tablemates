@@ -19,6 +19,7 @@ const labels: Record<NotificationType, string> = {
   plan_invite: 'Dinner plan invites',
   plan_decided: 'When a plan is decided',
   badge: 'Badges you earn',
+  story_reaction: 'Reactions to your stories',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

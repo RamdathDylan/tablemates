@@ -98,7 +98,8 @@ export type NotificationType =
   | 'ask_reply'
   | 'plan_invite'
   | 'plan_decided'
-  | 'badge';
+  | 'badge'
+  | 'story_reaction';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -142,6 +143,8 @@ export interface NotificationItem {
   planId: string | null;
   /** For badge notifications. */
   badge: { key: string; title: string } | null;
+  /** For story reactions. */
+  emoji: string | null;
 }
 
 /** Practical details from Google Places, fetched for restaurant pages. Null until fetched. */
@@ -194,6 +197,26 @@ export interface Photo {
   url: string;
   width: number | null;
   height: number | null;
+}
+
+export interface Story {
+  id: string;
+  photo: Photo;
+  restaurant: { id: string; name: string } | null;
+  caption: string;
+  audience: 'friends' | 'close_friends';
+  createdAt: string;
+  expiresAt: string;
+  /** The viewer has seen it. */
+  seen: boolean;
+}
+
+/** One person's active stories, oldest first (the order they play in). */
+export interface StoryGroup {
+  author: PublicUser;
+  stories: Story[];
+  allSeen: boolean;
+  isMine: boolean;
 }
 
 export interface Favorite {

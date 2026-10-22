@@ -2,7 +2,7 @@ export * from './tokens';
 export { ThemeProvider, useTheme, type ColorScheme, type Theme } from './theme';
 export { formatDate, joinNames, priceLabel, timeAgo } from './format';
 export { useBreakpoint, type Breakpoint } from './responsive';
-export { focusRing, type PressState } from './components/internal';
+export { focusRing, useReducedMotion, type PressState } from './components/internal';
 
 export { Avatar, type AvatarProps, type AvatarSize } from './components/Avatar';
 export { Badge, type BadgeProps } from './components/Badge';
