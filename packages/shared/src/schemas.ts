@@ -41,6 +41,18 @@ export type UpdateProfileInput = z.infer<typeof updateProfileInput>;
 
 export const friendRequestInput = z.object({ username });
 
+export const notificationTypes = ['friend_request', 'friend_accepted', 'saved_place_reviewed'] as const;
+
+export const registerPushTokenInput = z.object({
+  token: z.string().regex(/^Expo(nent)?PushToken\[.+\]$/, 'Not an Expo push token').max(300),
+  platform: z.enum(['ios', 'android']),
+});
+
+export const notificationSettingsInput = z.object({
+  /** Types that should not send a push (they still appear in Activity). */
+  mutedPush: z.array(z.enum(notificationTypes)).max(notificationTypes.length),
+});
+
 export const markNotificationsReadInput = z.object({ ids: z.array(z.uuid()).min(1).max(50) });
 
 export const reviewInput = z.object({

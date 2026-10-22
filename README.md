@@ -28,6 +28,8 @@ pnpm dev:mobile                      # press w for web, i for the iOS simulator
 
 **Email:** sign-up sends a 6-digit verification code. In development it goes to Mailpit, a local inbox at http://localhost:8025, so no real mail is sent. For real delivery, set `MAIL_PROVIDER=resend`, `RESEND_API_KEY`, and `MAIL_FROM`. Until you verify a domain in Resend, it only delivers to your own address.
 
+**Push notifications:** run `npx eas-cli@latest init` in `apps/mobile` to create an EAS project, which adds `extra.eas.projectId` to the app config. Then make a development build (`npx expo run:ios` or `eas build --profile development`). Expo Go on Android can't receive push. The API's worker sends through Expo's push service, and the inbox works without any of this.
+
 **Phones:** on a real device the app talks to the API at your machine's LAN address (taken from the Expo dev server). To point it somewhere else, set `EXPO_PUBLIC_API_URL`.
 
 ## Checks

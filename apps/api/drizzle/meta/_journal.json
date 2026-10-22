@@ -43,6 +43,13 @@
       "when": 1792637839367,
       "tag": "0005_activity_inbox",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792638221158,
+      "tag": "0006_push",
+      "breakpoints": true
     }
   ]
 }

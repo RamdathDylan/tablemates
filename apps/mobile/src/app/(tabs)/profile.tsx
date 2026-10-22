@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { Fragment, useState } from 'react';
 import { View } from 'react-native';
 
+import { NotificationSettings } from '@/components/notification-settings';
 import { ProfileHeader } from '@/components/profile-header';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
@@ -67,6 +68,8 @@ export default function ProfileScreen() {
       </Section>
 
       <WantToTry />
+
+      <NotificationSettings />
 
       {__DEV__ && (
         <Button title="Open style guide" variant="ghost" icon="color-palette-outline" onPress={() => router.push('/styleguide')} style={{ alignSelf: 'center' }} />

@@ -64,6 +64,10 @@ export interface NotificationSummary {
 
 export type NotificationType = 'friend_request' | 'friend_accepted' | 'saved_place_reviewed';
 
+export interface NotificationSettings {
+  mutedPush: NotificationType[];
+}
+
 /** One row in the activity inbox. */
 export interface NotificationItem {
   id: string;

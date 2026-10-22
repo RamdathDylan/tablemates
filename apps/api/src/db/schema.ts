@@ -33,6 +33,8 @@ export const users = pgTable('users', {
   homeCity: text('home_city'),
   /** Null until the user enters the code emailed at sign-up. */
   emailVerifiedAt: timestamptz('email_verified_at'),
+  /** Notification types the user turned off for push (they still appear in the inbox). */
+  mutedPushTypes: text('muted_push_types').array().notNull().default(sql`'{}'::text[]`),
   /** The audience picked on the user's last logged visit, preselected next time. */
   defaultAudience: visitAudience('default_audience').notNull().default('friends'),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
@@ -108,8 +110,27 @@ export const notifications = pgTable(
     restaurantId: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'cascade' }),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),
+    /** Set by the push worker once delivery was attempted (outbox pattern). */
+    pushedAt: timestamptz('pushed_at'),
   },
-  (t) => [index('notifications_user_unread_idx').on(t.userId, t.readAt)],
+  (t) => [
+    index('notifications_user_unread_idx').on(t.userId, t.readAt),
+    index('notifications_unpushed_idx').on(t.createdAt).where(sql`${t.pushedAt} is null`),
+  ],
+);
+
+/** Expo push tokens, one row per device. A token moves to whoever signed in last. */
+export const pushTokens = pgTable(
+  'push_tokens',
+  {
+    token: text('token').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    platform: text('platform').notNull(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('push_tokens_user_idx').on(t.userId)],
 );
 
 export const restaurants = pgTable('restaurants', {
