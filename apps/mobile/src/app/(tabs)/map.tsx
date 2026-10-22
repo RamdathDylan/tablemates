@@ -5,6 +5,7 @@ import {
   EmptyState,
   focusRing,
   Icon,
+  IconButton,
   maxContentWidth,
   radius,
   Rating,
@@ -13,6 +14,7 @@ import {
   Text,
   useBreakpoint,
   useTheme,
+  useToast,
   type PressState,
 } from '@tablemates/ui';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -26,6 +28,7 @@ import { PlacePreview } from '@/components/map/place-preview';
 import { mapsAvailable, TableMap } from '@/components/map/table-map';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { api } from '@/lib/api';
+import { useLocation } from '@/lib/location';
 import { qk } from '@/lib/query-keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
 
@@ -44,10 +47,11 @@ interface Params {
   [key: string]: string | undefined;
 }
 
-const sortLabels: Record<Exclude<Sort, 'distance'>, string> = {
+const sortLabels: Record<Sort, string> = {
   recommended: 'Most recommended',
   rating: 'Highest rated',
   recent: 'Recent',
+  distance: 'Nearest',
 };
 
 export default function MapScreen() {
@@ -58,6 +62,16 @@ export default function MapScreen() {
   const params = useLocalSearchParams<Params>();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  const [centerKey, setCenterKey] = useState(0);
+  const location = useLocation();
+  const toast = useToast();
+
+  /** The location, prompting if needed; explains itself if the user says no. */
+  async function needLocation(reason: string) {
+    const coords = location.coords ?? (await location.request());
+    if (!coords) toast(`Allow location access to ${reason}.`);
+    return coords;
+  }
 
   const scope: Scope = params.scope === 'friend' && !params.friend ? 'everyone' : (params.scope ?? 'everyone');
   const query: MapPlacesQuery = {
@@ -65,7 +79,10 @@ export default function MapScreen() {
     friendId: scope === 'friend' ? params.friend : undefined,
     recommended: params.rec === '1' ? true : undefined,
     minRating: params.min ? Number(params.min) : undefined,
-    sort: params.sort ?? 'recommended',
+    // "Nearest" only applies once we know where the user is.
+    sort: params.sort === 'distance' && !location.coords ? 'recommended' : (params.sort ?? 'recommended'),
+    lat: location.coords?.lat,
+    lng: location.coords?.lng,
   };
   const set = (next: Partial<Params>) => {
     setSelectedId(null);
@@ -144,8 +161,17 @@ export default function MapScreen() {
         </Text>
       </View>
       <ChipRow>
-        {(Object.keys(sortLabels) as (keyof typeof sortLabels)[]).map((s) => (
-          <Chip key={s} label={sortLabels[s]} selected={query.sort === s} onPress={() => set({ sort: s === 'recommended' ? undefined : s })} />
+        {(Object.keys(sortLabels) as Sort[]).map((s) => (
+          <Chip
+            key={s}
+            label={sortLabels[s]}
+            icon={s === 'distance' ? 'navigate' : undefined}
+            selected={query.sort === s}
+            onPress={async () => {
+              if (s === 'distance' && !(await needLocation('sort by distance'))) return;
+              set({ sort: s === 'recommended' ? undefined : s });
+            }}
+          />
         ))}
       </ChipRow>
       {shown.map((p) => (
@@ -187,7 +213,24 @@ export default function MapScreen() {
 
   const map = mapsAvailable ? (
     <View style={{ flex: 1 }}>
-      <TableMap places={shown} selectedId={selectedId} onSelect={setSelectedId} />
+      <TableMap
+        places={shown}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        userLocation={location.coords}
+        centerOnUser={centerKey}
+      />
+      <View style={{ position: 'absolute', top: space[3], right: space[3] }}>
+        <IconButton
+          icon="navigate"
+          variant="secondary"
+          size="lg"
+          accessibilityLabel="Center on my location"
+          onPress={async () => {
+            if (await needLocation('center the map on you')) setCenterKey((k) => k + 1);
+          }}
+        />
+      </View>
       {selected && (
         <View
           style={{
