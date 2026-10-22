@@ -56,8 +56,25 @@ export interface FriendRequest {
 export interface NotificationSummary {
   /** Incoming friend requests awaiting a response (drives the Friends badge). */
   pendingFriendRequests: number;
+  /** Unread items in the activity inbox (drives the bell). */
+  unread: number;
   /** People who accepted the viewer's friend requests since the alerts were last read. */
   unreadAccepted: { id: string; user: PublicUser; createdAt: string }[];
+}
+
+export type NotificationType = 'friend_request' | 'friend_accepted' | 'saved_place_reviewed';
+
+/** One row in the activity inbox. */
+export interface NotificationItem {
+  id: string;
+  type: NotificationType;
+  actor: PublicUser;
+  createdAt: string;
+  read: boolean;
+  restaurant: { id: string; name: string } | null;
+  reviewId: string | null;
+  /** For friend_request: the request id while it's still pending (null once resolved). */
+  pendingRequestId: string | null;
 }
 
 export interface Restaurant {

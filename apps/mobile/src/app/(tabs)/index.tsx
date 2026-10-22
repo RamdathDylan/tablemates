@@ -1,8 +1,9 @@
-import { Button, EmptyState, ReviewCard, space, Text, useTheme } from '@tablemates/ui';
+import { Button, EmptyState, ReviewCard, space, Text, useBreakpoint, useTheme } from '@tablemates/ui';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { FlatList, RefreshControl, View } from 'react-native';
 
+import { ActivityBell } from '@/components/activity-bell';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { useContentStyle } from '@/components/screen';
 import { api } from '@/lib/api';
@@ -14,6 +15,7 @@ export default function FeedScreen() {
   const { colors } = useTheme();
   const content = useContentStyle();
   useDocumentTitle('Feed');
+  const bp = useBreakpoint();
   const save = useSaveToggle();
   const feed = useInfiniteQuery({
     queryKey: qk.feed,
@@ -31,9 +33,12 @@ export default function FeedScreen() {
       keyExtractor={(item) => item.review.id}
       refreshControl={<RefreshControl refreshing={feed.isRefetching} onRefresh={() => void feed.refetch()} />}
       ListHeaderComponent={
-        <View style={{ gap: space[1] }}>
-          <Text variant="title">From your friends</Text>
-          <Text tone="muted">Only people you’ve added can recommend here.</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space[3] }}>
+          <View style={{ flex: 1, gap: space[1] }}>
+            <Text variant="title">From your friends</Text>
+            <Text tone="muted">Only people you’ve added can recommend here.</Text>
+          </View>
+          {bp === 'phone' && <ActivityBell />}
         </View>
       }
       ListEmptyComponent={

@@ -10,6 +10,7 @@ import type {
   MapPlace,
   MapPlacesQuery,
   Me,
+  NotificationItem,
   NotificationSummary,
   Page,
   PlaceResult,
@@ -167,6 +168,8 @@ export const api = {
 
   notificationSummary: () => request<NotificationSummary>('GET', '/notifications/summary'),
   markNotificationsRead: (ids: string[]) => request<void>('POST', '/notifications/read', { ids }),
+  notifications: (cursor?: string) => request<Page<NotificationItem>>('GET', `/notifications${qs({ cursor })}`),
+  readAllNotifications: () => request<void>('POST', '/notifications/read-all'),
 
   searchPlaces: (q: string, near?: { lat: number; lng: number } | null) =>
     request<PlaceResult[]>('GET', `/places/search${qs({ q, lat: near?.lat, lng: near?.lng })}`),

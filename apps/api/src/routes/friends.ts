@@ -6,6 +6,7 @@ import type { Db } from '../db/client';
 import { closeFriends, friendships, notifications, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
+import { notify } from '../lib/notify';
 import { canSeeActivityOf } from '../lib/visibility';
 import { idParam } from '../lib/params';
 import { toPublicUser } from '../lib/serialize';
@@ -29,12 +30,11 @@ async function acceptRequest(db: Db, request: { id: string; requesterId: string 
       .where(and(eq(friendships.id, request.id), eq(friendships.status, 'pending')))
       .returning({ id: friendships.id });
     if (!updated) return false;
-    await tx.insert(notifications).values({
-      userId: request.requesterId,
-      type: 'friend_accepted',
-      actorId: accepterId,
-      friendshipId: request.id,
-    });
+    // The request is resolved; replace it in the inbox with the acceptance.
+    await tx
+      .delete(notifications)
+      .where(and(eq(notifications.friendshipId, request.id), eq(notifications.type, 'friend_request')));
+    await notify(tx, { userId: request.requesterId, type: 'friend_accepted', actorId: accepterId, friendshipId: request.id });
     return true;
   });
 }
@@ -130,10 +130,14 @@ export function friendRoutes(app: FastifyInstance, { db }: Deps) {
     }
 
     try {
-      const [row] = await db
-        .insert(friendships)
-        .values({ requesterId: req.userId, addresseeId: target.id })
-        .returning();
+      const row = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(friendships)
+          .values({ requesterId: req.userId, addresseeId: target.id })
+          .returning();
+        await notify(tx, { userId: target.id, type: 'friend_request', actorId: req.userId, friendshipId: created!.id });
+        return created;
+      });
       reply.status(201);
       return { status: 'outgoing' as const, requestId: row!.id };
     } catch (err) {

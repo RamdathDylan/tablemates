@@ -10,6 +10,7 @@ export const qk = {
   places: (q: string) => ['places', q] as const,
   restaurant: (id: string) => ['restaurant', id] as const,
   notifications: ['notifications'] as const,
+  inbox: ['inbox'] as const,
   map: (params: object) => ['map', params] as const,
   saved: ['saved'] as const,
 };
