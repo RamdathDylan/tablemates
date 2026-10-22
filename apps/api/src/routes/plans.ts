@@ -10,6 +10,7 @@ import { badRequest, conflict, forbidden, isUniqueViolation, notFound, parse } f
 import { notify } from '../lib/notify';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
+import { memberTable, tableMemberIds } from '../lib/tables';
 import { relationshipsWith } from '../lib/visibility';
 import { ensureRestaurant } from './visits';
 
@@ -30,7 +31,7 @@ function requireOpen(plan: typeof plans.$inferSelect) {
   if (plan.status !== 'open') throw badRequest('This plan is already decided');
 }
 
-async function summaries(db: Db, planRows: (typeof plans.$inferSelect)[]): Promise<PlanSummary[]> {
+export async function planSummaries(db: Db, planRows: (typeof plans.$inferSelect)[]): Promise<PlanSummary[]> {
   if (!planRows.length) return [];
   const ids = planRows.map((p) => p.id);
   const decidedIds = planRows.flatMap((p) => (p.decidedOptionId ? [p.decidedOptionId] : []));
@@ -80,20 +81,31 @@ export function planRoutes(app: FastifyInstance, { db, places }: Deps) {
       .where(or(eq(plans.status, 'open'), gt(plans.createdAt, new Date(Date.now() - 30 * 86_400_000))))
       .orderBy(desc(plans.createdAt))
       .limit(30);
-    return summaries(db, rows.map((r) => r.plan));
+    return planSummaries(db, rows.map((r) => r.plan));
   });
 
   app.post('/plans', async (req, reply) => {
     const input = parse(createPlanInput, req.body);
-    const memberIds = [...new Set(input.memberIds)].filter((id) => id !== req.userId);
-    const rels = await relationshipsWith(db, req.userId, memberIds);
-    if (!memberIds.length || memberIds.some((id) => rels.get(id)?.status !== 'friends')) {
-      throw badRequest('You can only invite friends');
+    // A Table plan seats every member; anyone extra must still be a friend.
+    let seated: string[] = [];
+    if (input.tableId) {
+      await memberTable(db, req.userId, input.tableId);
+      seated = await tableMemberIds(db, input.tableId);
     }
+    const extras = [...new Set(input.memberIds)].filter((id) => id !== req.userId && !seated.includes(id));
+    const rels = await relationshipsWith(db, req.userId, extras);
+    if (extras.some((id) => rels.get(id)?.status !== 'friends')) throw badRequest('You can only invite friends');
+    const memberIds = [...new Set([...seated, ...extras])].filter((id) => id !== req.userId);
+    if (!memberIds.length) throw badRequest('Invite at least one friend');
     const plan = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(plans)
-        .values({ creatorId: req.userId, title: input.title, startsAt: input.startsAt ? new Date(input.startsAt) : null })
+        .values({
+          creatorId: req.userId,
+          title: input.title,
+          startsAt: input.startsAt ? new Date(input.startsAt) : null,
+          tableId: input.tableId ?? null,
+        })
         .returning();
       await tx.insert(planMembers).values([req.userId, ...memberIds].map((userId) => ({ planId: created!.id, userId })));
       await notify(tx, memberIds.map((userId) => ({ userId, type: 'plan_invite' as const, actorId: req.userId, planId: created!.id })));
@@ -106,7 +118,7 @@ export function planRoutes(app: FastifyInstance, { db, places }: Deps) {
   app.get('/plans/:id', async (req): Promise<Plan> => {
     const plan = await memberPlan(db, req.userId, idParam(req.params));
     const [[summary], options] = await Promise.all([
-      summaries(db, [plan]),
+      planSummaries(db, [plan]),
       db
         .select({ option: planOptions, restaurant: restaurants, addedBy: userColumns })
         .from(planOptions)

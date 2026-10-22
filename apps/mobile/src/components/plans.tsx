@@ -75,7 +75,7 @@ export function PlansSection() {
   );
 }
 
-function PlanRow({ plan }: { plan: PlanSummary }) {
+export function PlanRow({ plan }: { plan: PlanSummary }) {
   const { colors } = useTheme();
   const decided = plan.status === 'decided';
   return (
@@ -120,7 +120,14 @@ function PlanRow({ plan }: { plan: PlanSummary }) {
   );
 }
 
-function NewPlanSheet({ onClose }: { onClose: () => void }) {
+/** With `table`, every member is invited; extra friends are optional. */
+export function NewPlanSheet({
+  table,
+  onClose,
+}: {
+  table?: { id: string; name: string; members: { id: string; displayName: string; avatarUrl: string | null }[] };
+  onClose: () => void;
+}) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
@@ -139,11 +146,12 @@ function NewPlanSheet({ onClose }: { onClose: () => void }) {
         if (Number.isNaN(local.getTime())) throw new Error('Use YYYY-MM-DD and HH:MM for the date and time.');
         startsAt = local.toISOString();
       }
-      return api.createPlan({ title, startsAt, memberIds: invited.map((f) => f.id) });
+      return api.createPlan({ title, startsAt, memberIds: invited.map((f) => f.id), tableId: table?.id });
     },
     onSuccess: ({ id }) => {
       queryClient.invalidateQueries({ queryKey: qk.plans });
-      toast(`Invited ${invited.length} friend${invited.length === 1 ? '' : 's'}`, 'success');
+      if (table) queryClient.invalidateQueries({ queryKey: qk.table(table.id) });
+      toast(table ? `Invited everyone at ${table.name}` : `Invited ${invited.length} friend${invited.length === 1 ? '' : 's'}`, 'success');
       onClose();
       router.push({ pathname: '/plan/[id]', params: { id } });
     },
@@ -154,9 +162,16 @@ function NewPlanSheet({ onClose }: { onClose: () => void }) {
     <Sheet
       visible
       onClose={onClose}
-      title="New dinner plan"
+      title={table ? `New plan for ${table.name}` : 'New dinner plan'}
       footer={
-        <Button title="Create and invite" fullWidth size="lg" loading={create.isPending} disabled={!title.trim() || !invited.length} onPress={() => create.mutate()} />
+        <Button
+          title="Create and invite"
+          fullWidth
+          size="lg"
+          loading={create.isPending}
+          disabled={!title.trim() || (!table && !invited.length)}
+          onPress={() => create.mutate()}
+        />
       }>
       <Input label="What's the occasion?" placeholder="Friday dinner" value={title} onChangeText={setTitle} maxLength={80} />
       <View style={{ flexDirection: 'row', gap: space[3] }}>
@@ -167,8 +182,16 @@ function NewPlanSheet({ onClose }: { onClose: () => void }) {
           <Input label="Time" placeholder="19:00" value={time} onChangeText={setTime} />
         </View>
       </View>
+      {table && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+          <AvatarStack people={table.members} max={5} />
+          <Text variant="caption" tone="muted" style={{ flex: 1 }}>
+            Everyone at {table.name} is invited.
+          </Text>
+        </View>
+      )}
       <View style={{ gap: space[2] }}>
-        <Text variant="label">Invite friends</Text>
+        <Text variant="label">{table ? 'Invite more friends (optional)' : 'Invite friends'}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
           {invited.map((f) => (
             <Chip key={f.id} label={f.displayName} icon="close" tone="accent" accessibilityLabel={`Remove ${f.displayName}`} onPress={() => setInvited(invited.filter((x) => x.id !== f.id))} />
@@ -185,7 +208,7 @@ function NewPlanSheet({ onClose }: { onClose: () => void }) {
         visible={picking}
         title="Invite to this plan"
         actionLabel={(f) => `Invite ${f.displayName}`}
-        friends={(friends.data ?? []).filter((f) => !invited.some((i) => i.id === f.id))}
+        friends={(friends.data ?? []).filter((f) => !invited.some((i) => i.id === f.id) && !table?.members.some((m) => m.id === f.id))}
         onClose={() => setPicking(false)}
         onPick={(f) => {
           setInvited([...invited, f as Friend]);

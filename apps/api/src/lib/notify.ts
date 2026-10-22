@@ -20,6 +20,7 @@ export interface NotifyInput {
   visitId?: string;
   askId?: string;
   planId?: string;
+  tableId?: string;
   badgeKey?: string;
   emoji?: string;
   reaction?: 'yum' | 'going';

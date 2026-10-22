@@ -5,6 +5,7 @@ import { Fragment, useState, type ReactNode } from 'react';
 
 import { PlansSection } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
+import { TablesSection } from '@/components/tables';
 import { Screen, Section } from '@/components/screen';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/query-keys';
@@ -78,6 +79,7 @@ function FriendsAndRequests() {
 
   return (
     <>
+      <TablesSection />
       <PlansSection />
 
       {incoming.length > 0 && (

@@ -18,7 +18,7 @@ import { dishesFor } from '../lib/dishes';
 import { photosFor } from '../lib/photos';
 import { forYou } from '../lib/taste';
 
-async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
+export async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
   const rows = await db
     .select({
       saved: sql<boolean>`${savedPlaces.userId} is not null`,
@@ -46,7 +46,7 @@ async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined,
 type FeedRow = Awaited<ReturnType<typeof selectFeedItems>>[number];
 
 /** Serializes rows and attaches reaction/comment counts. */
-async function toFeedItems(db: Db, storage: Storage, viewerId: string, rows: FeedRow[]): Promise<FeedItem[]> {
+export async function toFeedItems(db: Db, storage: Storage, viewerId: string, rows: FeedRow[]): Promise<FeedItem[]> {
   const reviewIds = rows.map((r) => r.review.id);
   const [engagement, companions, dishes, photos] = await Promise.all([
     engagementFor(db, viewerId, reviewIds),

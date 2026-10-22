@@ -41,6 +41,8 @@ import type {
   Visit,
   VisitAudience,
   Wrapped,
+  TableDetail,
+  TableSummary,
 } from '@tablemates/shared';
 
 import { API_URL, isWeb } from './config';
@@ -209,7 +211,7 @@ export const api = {
   deleteAskReply: (askId: string, id: string) => request<void>('DELETE', `/asks/${askId}/replies/${id}`),
   plans: () => request<PlanSummary[]>('GET', '/plans'),
   plan: (id: string) => request<Plan>('GET', `/plans/${id}`),
-  createPlan: (input: { title: string; startsAt?: string; memberIds: string[] }) =>
+  createPlan: (input: { title: string; startsAt?: string; memberIds: string[]; tableId?: string }) =>
     request<{ id: string }>('POST', '/plans', input),
   addPlanOption: (planId: string, place: { restaurantId?: string; googlePlaceId?: string }) =>
     request<{ id: string }>('POST', `/plans/${planId}/options`, place),
@@ -218,10 +220,18 @@ export const api = {
   unvote: (planId: string, optionId: string) => request<void>('DELETE', `/plans/${planId}/options/${optionId}/vote`),
   decidePlan: (planId: string, optionId: string) => request<void>('POST', `/plans/${planId}/decide`, { optionId }),
   leavePlan: (planId: string) => request<void>('POST', `/plans/${planId}/leave`),
-  myLists: () => request<{ mine: ListSummary[]; following: ListSummary[] }>('GET', '/me/lists'),
+  myLists: () => request<{ mine: ListSummary[]; following: ListSummary[]; tables: ListSummary[] }>('GET', '/me/lists'),
   userLists: (username: string) => request<ListSummary[]>('GET', `/users/${encodeURIComponent(username)}/lists`),
-  createList: (input: { title: string; description?: string; audience: 'friends' | 'private' }) =>
+  createList: (input: { title: string; description?: string; audience: 'friends' | 'private'; tableId?: string }) =>
     request<{ id: string }>('POST', '/lists', input),
+  tables: () => request<TableSummary[]>('GET', '/tables'),
+  table: (id: string) => request<TableDetail>('GET', `/tables/${id}`),
+  tableFeed: (id: string, cursor?: string) => request<Page<FeedItem>>('GET', `/tables/${id}/feed${qs({ cursor })}`),
+  createTable: (input: { name: string; emoji: string; memberIds: string[] }) => request<{ id: string }>('POST', '/tables', input),
+  updateTable: (id: string, input: { name?: string; emoji?: string }) => request<{ id: string }>('PATCH', `/tables/${id}`, input),
+  deleteTable: (id: string) => request<void>('DELETE', `/tables/${id}`),
+  addTableMembers: (id: string, userIds: string[]) => request<{ added: number }>('POST', `/tables/${id}/members`, { userIds }),
+  removeTableMember: (id: string, userId: string) => request<void>('DELETE', `/tables/${id}/members/${userId}`),
   list: (id: string) => request<RestaurantList>('GET', `/lists/${id}`),
   updateList: (id: string, input: { title?: string; description?: string; audience?: 'friends' | 'private' }) =>
     request<{ id: string }>('PATCH', `/lists/${id}`, input),

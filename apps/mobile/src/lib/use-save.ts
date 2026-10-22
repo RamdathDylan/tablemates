@@ -13,7 +13,7 @@ export function useSaveToggle() {
       saved ? api.unsavePlace(restaurantId) : api.savePlace(restaurantId),
     onSuccess: (_, { restaurantId, saved, name }) => {
       toast(saved ? 'Removed from Want to try' : `Saved${name ? ` ${name}` : ''} to Want to try`, saved ? 'neutral' : 'success');
-      for (const key of [qk.saved, qk.feed, qk.restaurant(restaurantId), ['map']]) {
+      for (const key of [qk.saved, qk.feed, qk.restaurant(restaurantId), ['map'], qk.tables]) {
         queryClient.invalidateQueries({ queryKey: key });
       }
     },

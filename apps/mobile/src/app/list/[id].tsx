@@ -68,7 +68,15 @@ export default function ListScreen() {
       <View style={{ gap: space[2] }}>
         <Text variant="display">{l.title}</Text>
         <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip label={l.audience === 'private' ? 'Only you' : 'Friends'} icon={l.audience === 'private' ? 'lock-closed' : 'people'} />
+          {l.table ? (
+            <Chip
+              label={`${l.table.emoji} ${l.table.name}`}
+              accessibilityLabel={`Shared with ${l.table.name}. Open the table`}
+              onPress={() => router.push({ pathname: '/table/[id]', params: { id: l.table!.id } })}
+            />
+          ) : (
+            <Chip label={l.audience === 'private' ? 'Only you' : 'Friends'} icon={l.audience === 'private' ? 'lock-closed' : 'people'} />
+          )}
           <Text variant="caption" tone="muted">
             {l.isOwner ? 'Your list' : `By ${l.owner.displayName}`} · {l.itemCount} place{l.itemCount === 1 ? '' : 's'}
           </Text>
@@ -88,6 +96,17 @@ export default function ListScreen() {
               onPress={() => router.navigate({ pathname: '/map', params: { list: l.id } })}
             />
             <Button title="Delete list" variant="ghost" size="sm" onPress={() => del.mutate()} />
+          </>
+        ) : l.table ? (
+          <>
+            <Button title="Save all to Want to try" icon="bookmark-outline" variant="secondary" size="sm" loading={saveAll.isPending} onPress={() => saveAll.mutate()} />
+            <Button
+              title="View on map"
+              icon="map-outline"
+              variant="ghost"
+              size="sm"
+              onPress={() => router.navigate({ pathname: '/map', params: { list: l.id } })}
+            />
           </>
         ) : (
           <>
@@ -115,7 +134,7 @@ export default function ListScreen() {
         <EmptyState
           icon="list"
           title="Nothing here yet"
-          message={l.isOwner ? 'Add places from any restaurant page.' : `${l.owner.displayName} hasn't added anything yet.`}
+          message={l.canEdit ? 'Add places from any restaurant page.' : `${l.owner.displayName} hasn't added anything yet.`}
         />
       ) : (
         l.items.map((item) => (
@@ -133,7 +152,7 @@ export default function ListScreen() {
                   “{item.note}”
                 </Text>
               )}
-              {l.isOwner && (
+              {l.canEdit && (
                 <IconButton
                   icon="trash-outline"
                   size="sm"
