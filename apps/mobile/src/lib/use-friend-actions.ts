@@ -10,7 +10,7 @@ export function useFriendActions() {
   const toast = useToast();
 
   const onSettled = () => {
-    for (const key of [qk.friends, qk.friendRequests, qk.feed, ['userSearch'], ['profile'], ['visits'], ['restaurant']]) {
+    for (const key of [qk.friends, qk.friendRequests, qk.notifications, qk.feed, ['userSearch'], ['profile'], ['visits'], ['restaurant']]) {
       queryClient.invalidateQueries({ queryKey: key });
     }
   };

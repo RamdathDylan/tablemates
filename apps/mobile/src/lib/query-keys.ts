@@ -9,4 +9,5 @@ export const qk = {
   userSearch: (q: string) => ['userSearch', q] as const,
   places: (q: string) => ['places', q] as const,
   restaurant: (id: string) => ['restaurant', id] as const,
+  notifications: ['notifications'] as const,
 };

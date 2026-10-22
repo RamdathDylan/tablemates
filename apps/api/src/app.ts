@@ -8,6 +8,7 @@ import { AppError, isUniqueViolation, unauthorized } from './lib/errors';
 import { authRoutes } from './routes/auth';
 import { feedRoutes } from './routes/feed';
 import { friendRoutes } from './routes/friends';
+import { notificationRoutes } from './routes/notifications';
 import { placeRoutes } from './routes/places';
 import { userRoutes } from './routes/users';
 import { visitRoutes } from './routes/visits';
@@ -65,6 +66,7 @@ export async function buildApp({ corsOrigins, logger = false, ...deps }: AppOpti
     });
     userRoutes(authed, deps);
     friendRoutes(authed, deps);
+    notificationRoutes(authed, deps);
     placeRoutes(authed, deps);
     visitRoutes(authed, deps);
     feedRoutes(authed, deps);

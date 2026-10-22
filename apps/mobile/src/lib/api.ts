@@ -7,6 +7,7 @@ import type {
   FriendshipStatus,
   LoginInput,
   Me,
+  NotificationSummary,
   Page,
   PlaceResult,
   Profile,
@@ -147,6 +148,9 @@ export const api = {
   acceptFriendRequest: (id: string) => request<{ status: 'friends' }>('POST', `/friends/requests/${id}/accept`),
   declineFriendRequest: (id: string) => request<void>('POST', `/friends/requests/${id}/decline`),
   removeFriend: (userId: string) => request<void>('DELETE', `/friends/${userId}`),
+
+  notificationSummary: () => request<NotificationSummary>('GET', '/notifications/summary'),
+  markNotificationsRead: (ids: string[]) => request<void>('POST', '/notifications/read', { ids }),
 
   searchPlaces: (q: string) => request<PlaceResult[]>('GET', `/places/search${qs({ q })}`),
   restaurant: (id: string) => request<RestaurantDetail>('GET', `/restaurants/${id}`),
