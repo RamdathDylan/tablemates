@@ -84,7 +84,8 @@ The client and server share one package of request schemas and response types, s
 
 ```sh
 pnpm install
-cp .env.example apps/api/.env   # set JWT_SECRET; GOOGLE_PLACES_API_KEY enables restaurant search
+cp apps/api/.env.example apps/api/.env         # set JWT_SECRET; GOOGLE_PLACES_API_KEY enables search
+cp apps/mobile/.env.example apps/mobile/.env   # optional: Google Maps keys for the map
 pnpm db:up                      # Postgres, a local email inbox (Mailpit) and local photo storage (RustFS)
 pnpm db:migrate
 pnpm dev:api                    # http://localhost:4000
