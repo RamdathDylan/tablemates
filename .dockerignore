@@ -1,0 +1,13 @@
+# Keep the build context small and free of local secrets.
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+docs
+coverage
+**/dist
+**/.expo
+apps/mobile/src
+apps/mobile/assets

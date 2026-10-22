@@ -5,3 +5,19 @@ packages:
 onlyBuiltDependencies:
   - '@node-rs/argon2'
   - esbuild
+
+# Advisories accepted after review. Each one must say why it is safe and when to
+# look again; anything not listed here fails `pnpm audit` in CI.
+auditConfig:
+  ignoreGhsas:
+    # node-forge, via expo > @expo/cli. Used by the Expo dev tooling for local
+    # HTTPS certificates; it never runs in the API or ships in the app bundle.
+    # No patched release upstream yet. Review by 2027-01-31.
+    - GHSA-86w9-cpqp-85rv
+    # braces, via expo > metro. Metro's file watcher at build time only; inputs
+    # are this repository's own globs, not user input. No patched release
+    # upstream yet. Review by 2027-01-31.
+    - GHSA-vfj7-8cjw-p6xm
+    # esbuild dev server, via drizzle-kit (development dependency). drizzle-kit
+    # never starts esbuild's dev server. Review by 2027-01-31.
+    - GHSA-67mh-4wv8-2f99

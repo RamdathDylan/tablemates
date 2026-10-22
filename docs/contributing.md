@@ -12,6 +12,7 @@ This guide describes how changes get from an idea to `main`.
 | `fix/` | Bug fixes |
 | `docs/` | Documentation only |
 | `chore/` | Maintenance with no behavior change: dependencies, copy, tooling |
+| `ci/` | The CI pipeline and other automation |
 
 2. **Separate fixes.** If you find an unrelated bug while working on something, fix it on its own `fix/` branch with its own pull request.
 3. **Small, frequent pull requests.** Open a PR as soon as one coherent piece of work is complete and passes the checks.
@@ -19,7 +20,7 @@ This guide describes how changes get from an idea to `main`.
 
 ## Before opening a pull request
 
-Every change must pass:
+Every change must pass the [CI pipeline](ci.md). To run the main checks locally first:
 
 ```sh
 pnpm typecheck
