@@ -340,19 +340,25 @@ function VisitForm({
       )}
 
       <Section title="Who were you with?">
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
-          {companions.map((c) => (
-            <Chip
-              key={c.id}
-              label={c.displayName}
-              icon="close"
-              tone="accent"
-              accessibilityLabel={`Remove ${c.displayName}`}
-              onPress={() => setCompanions(companions.filter((x) => x.id !== c.id))}
-            />
-          ))}
-          <Chip label="Add people" icon="person-add" onPress={() => setPicking(true)} />
-        </View>
+        {audience === 'private' ? (
+          <Text variant="caption" tone="muted">
+            Only me visits are just for you, so you can’t tag anyone. Choose Friends or Close friends to tag the people you ate with.
+          </Text>
+        ) : (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+            {companions.map((c) => (
+              <Chip
+                key={c.id}
+                label={c.displayName}
+                icon="close"
+                tone="accent"
+                accessibilityLabel={`Remove ${c.displayName}`}
+                onPress={() => setCompanions(companions.filter((x) => x.id !== c.id))}
+              />
+            ))}
+            <Chip label="Add people" icon="person-add" onPress={() => setPicking(true)} />
+          </View>
+        )}
         <FriendPicker
           visible={picking}
           title="Who were you with?"
@@ -367,7 +373,14 @@ function VisitForm({
       </Section>
 
       <Section title="Who can see this">
-        <AudiencePicker value={audience} onChange={setAudience} />
+        <AudiencePicker
+          value={audience}
+          onChange={(a) => {
+            setAudience(a);
+            // A private visit can't tag anyone.
+            if (a === 'private') setCompanions([]);
+          }}
+        />
       </Section>
 
       {error && (

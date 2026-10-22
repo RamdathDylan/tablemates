@@ -24,7 +24,8 @@ describe('year in review', () => {
     await log(alice!, 'luigi', '2025-12-30', 4); // last year: Luigi's isn't new in 2026
     await log(alice!, 'luigi', '2026-01-03', 3, { companionIds: [bob!.id] }); // a Saturday
     await log(alice!, 'luigi', '2026-03-14', 4, { audience: 'private' });
-    await log(alice!, 'sushi', '2026-03-20', 5, { companionIds: [bob!.id, carol!.id] });
+    // The previous visit was private, so pick the audience explicitly: a private visit can't tag anyone.
+    await log(alice!, 'sushi', '2026-03-20', 5, { companionIds: [bob!.id, carol!.id], audience: 'friends' });
     await log(alice!, 'taco', '2026-10-02');
     await log(bob!, 'taco', '2026-06-01', 5, { companionIds: [alice!.id] }); // bob tagged alice
     await log(carol!, 'sushi', '2026-05-05', 1); // not alice's visit

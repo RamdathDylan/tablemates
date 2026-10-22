@@ -8,11 +8,11 @@ import {
   type TaggedVisit,
   type Visit,
 } from '@tablemates/shared';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
-import { restaurants, reviews, users, visitCompanions, visits } from '../db/schema';
+import { notifications, restaurants, reviews, users, visitCompanions, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
@@ -174,7 +174,7 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
       .innerJoin(visits, eq(visitCompanions.visitId, visits.id))
       .innerJoin(restaurants, eq(visits.restaurantId, restaurants.id))
       .innerJoin(users, eq(visits.userId, users.id))
-      .where(and(eq(visitCompanions.userId, req.userId), isNull(visitCompanions.linkedVisitId)))
+      .where(and(eq(visitCompanions.userId, req.userId), isNull(visitCompanions.linkedVisitId), ne(visits.audience, 'private')))
       .orderBy(desc(visits.visitedAt));
     return rows.map((r) => ({
       visitId: r.visit.id,
@@ -206,8 +206,16 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
         .where(and(eq(visitCompanions.visitId, input.fromVisitId), eq(visitCompanions.userId, req.userId)));
       if (!row) throw notFound('Tagged visit not found');
       source = row;
-      if (!companionIds.includes(row.authorId)) companionIds.push(row.authorId);
     }
+
+    const [me] = await db.select({ defaultAudience: users.defaultAudience }).from(users).where(eq(users.id, req.userId));
+    const audience = input.audience ?? me!.defaultAudience;
+    // "Only me" means only me: a private visit can't tag anyone.
+    if (audience === 'private' && companionIds.length) {
+      throw badRequest('Remove tagged friends to keep this visit to yourself');
+    }
+    // Logging your side of a tagged visit tags its author back, unless yours is private.
+    if (source && audience !== 'private' && !companionIds.includes(source.authorId)) companionIds.push(source.authorId);
     if (companionIds.length) {
       const rels = await relationshipsWith(db, req.userId, companionIds);
       if (companionIds.some((id) => rels.get(id)?.status !== 'friends')) throw badRequest('You can only tag friends');
@@ -216,11 +224,6 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
     const restaurant = await ensureRestaurant(db, places, input.googlePlaceId);
     const afterMayorship = await watchMayorship(db, req.userId, restaurant.id);
     const result = await db.transaction(async (tx) => {
-      const [me] = await tx
-        .select({ defaultAudience: users.defaultAudience })
-        .from(users)
-        .where(eq(users.id, req.userId));
-      const audience = input.audience ?? me!.defaultAudience;
       const [visit] = await tx
         .insert(visits)
         .values({ userId: req.userId, restaurantId: restaurant.id, visitedAt: input.visitedAt, audience })
@@ -282,14 +285,28 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
 
   /** Changes who can see a visit you logged. */
   app.patch('/visits/:id', async (req) => {
-    const { audience } = parse(updateVisitInput, req.body);
-    const [row] = await db
-      .update(visits)
-      .set({ audience })
-      .where(and(eq(visits.id, idParam(req.params)), eq(visits.userId, req.userId)))
-      .returning({ id: visits.id, audience: visits.audience });
-    if (!row) throw notFound('Visit not found');
-    return row;
+    const { audience, removeCompanions } = parse(updateVisitInput, req.body);
+    const visitId = idParam(req.params);
+    return db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(visits)
+        .set({ audience })
+        .where(and(eq(visits.id, visitId), eq(visits.userId, req.userId)))
+        .returning({ id: visits.id, audience: visits.audience });
+      if (!row) throw notFound('Visit not found');
+      if (audience === 'private') {
+        const tagged = await tx.select({ id: visitCompanions.userId }).from(visitCompanions).where(eq(visitCompanions.visitId, visitId));
+        // Never drop tagged friends silently: the caller must confirm it.
+        if (tagged.length && !removeCompanions) {
+          throw badRequest('This visit has tagged friends. Confirm removing them to make it Only me');
+        }
+        if (tagged.length) {
+          await tx.delete(visitCompanions).where(eq(visitCompanions.visitId, visitId));
+          await tx.delete(notifications).where(and(eq(notifications.visitId, visitId), eq(notifications.type, 'tagged')));
+        }
+      }
+      return row;
+    });
   });
 
   app.delete('/visits/:id', async (req, reply) => {

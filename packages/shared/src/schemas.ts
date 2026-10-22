@@ -245,7 +245,14 @@ export const createVisitInput = z.object({
   review: reviewInput.optional(),
 });
 
-export const updateVisitInput = z.object({ audience: z.enum(visitAudiences) });
+export const updateVisitInput = z.object({
+  audience: z.enum(visitAudiences),
+  /**
+   * Required to make a visit with tagged friends "Only me": confirms removing
+   * them, since a private visit has no companions.
+   */
+  removeCompanions: z.boolean().default(false),
+});
 export type CreateVisitInput = z.input<typeof createVisitInput>;
 
 // Spelled out (no defaults) so a partial update never wipes fields it didn't mention.
