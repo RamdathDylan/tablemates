@@ -21,6 +21,9 @@ export const toMe = (u: UserRow): T.Me => ({
   email: u.email,
   bio: u.bio,
   homeCity: u.homeCity,
+  emailVerified: u.emailVerifiedAt !== null,
+  defaultAudience: u.defaultAudience,
+  timezone: u.timezone,
   createdAt: u.createdAt.toISOString(),
 });
 
@@ -33,15 +36,23 @@ export const toRestaurant = (r: RestaurantRow): T.Restaurant => ({
   lng: r.lng,
   priceLevel: r.priceLevel,
   cuisine: r.cuisine,
+  hours: r.openingHours ?? null,
+  utcOffsetMinutes: r.utcOffsetMinutes,
+  phone: r.phone,
+  website: r.website,
+  mapsUrl: r.mapsUrl,
+  neighborhood: r.neighborhood,
 });
 
-export const toReview = (r: ReviewRow): T.Review => ({
+/** Dishes and photos live in their own tables; load them (dishesFor, photosFor) and pass them in. */
+export const toReview = (r: ReviewRow, dishes: T.Dish[], photos: T.Photo[] = []): T.Review => ({
   id: r.id,
   visitId: r.visitId,
   rating: r.rating,
   body: r.body,
   recommends: r.recommends,
-  dishes: r.dishes,
+  dishes,
+  photos,
   createdAt: r.createdAt.toISOString(),
   updatedAt: r.updatedAt.toISOString(),
 });

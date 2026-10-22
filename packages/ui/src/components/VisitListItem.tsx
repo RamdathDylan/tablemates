@@ -14,10 +14,12 @@ export interface VisitListItemProps {
   /** Omit for a visit logged without a review. */
   rating?: number;
   recommends?: boolean;
+  /** Replaces the date line, e.g. "Saved Oct 21" on a want-to-try list. */
+  subtitle?: string;
   onPress?: () => void;
 }
 
-export function VisitListItem({ restaurantName, visitedAt, rating, recommends, onPress }: VisitListItemProps) {
+export function VisitListItem({ restaurantName, visitedAt, rating, recommends, subtitle, onPress }: VisitListItemProps) {
   const { colors } = useTheme();
   return (
     <Pressable
@@ -41,8 +43,7 @@ export function VisitListItem({ restaurantName, visitedAt, rating, recommends, o
           {restaurantName}
         </Text>
         <Text variant="caption" tone="muted">
-          {formatDate(visitedAt)}
-          {rating === undefined ? ' · No review yet' : ''}
+          {subtitle ?? `${formatDate(visitedAt)}${rating === undefined ? ' · No review yet' : ''}`}
         </Text>
       </View>
       {rating !== undefined && <Rating value={rating} size="sm" showValue={false} />}

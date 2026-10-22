@@ -4,6 +4,7 @@
  */
 import {
   Avatar,
+  Badge,
   Button,
   Card,
   Chip,
@@ -13,6 +14,7 @@ import {
   FriendRow,
   IconButton,
   Input,
+  MapPin,
   palette,
   radius,
   Rating,
@@ -138,7 +140,7 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
         <TextArea label="Text area" placeholder="Notes for your friends…" />
       </Section>
 
-      <Section title="Avatar · chip · rating">
+      <Section title="Avatar · chip · badge · rating">
         <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'center' }}>
           <Avatar name="Maya Chen" size="sm" />
           <Avatar name="Jordan Lee" size="md" />
@@ -151,6 +153,11 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
           <Chip label="Tiramisu" tone="accent" />
           <Chip label="Friends" tone="success" icon="checkmark" />
           <Chip label="Open now" selected={filter} onPress={() => setFilter(!filter)} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'center' }}>
+          <Badge count={1} />
+          <Badge count={7} />
+          <Badge count={24} />
         </View>
         <Rating value={3.5} />
         <Rating value={rating} onChange={setRating} size="lg" />
@@ -188,7 +195,10 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
           rating={5}
           recommends
           body="Best cacio e pepe in the city. Sit at the bar and ask for the off-menu negroni."
-          dishes={['Cacio e pepe', 'Tiramisu']}
+          dishes={[
+            { name: 'Cacio e pepe', rating: 5 },
+            { name: 'Tiramisu', rating: null },
+          ]}
           visitedAt="2026-10-12"
           onPressAuthor={() => {}}
           onPressRestaurant={() => {}}
@@ -202,6 +212,14 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
           <Divider inset={12} />
           <FriendRow user={{ displayName: 'Alex Kim', username: 'alex' }} status="friends" />
         </Card>
+        <View style={{ flexDirection: 'row', gap: space[4], alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <MapPin kind="mine" rating={4} recommended />
+          <MapPin kind="friends" rating={4.5} />
+          <MapPin kind="both" rating={5} recommended />
+          <MapPin kind="friends" rating={null} />
+          <MapPin kind="both" rating={3.5} selected />
+          <MapPin kind="mine" rating={4.5} crowned />
+        </View>
         <Card padding={0} style={{ paddingVertical: 4 }}>
           <VisitListItem restaurantName="Luigi's Trattoria" visitedAt="2026-10-12" rating={5} recommends onPress={() => {}} />
           <Divider inset={3} />

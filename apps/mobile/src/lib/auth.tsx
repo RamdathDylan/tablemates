@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { api, refreshSession, setSessionExpiredHandler } from './api';
+import { unregisterPush } from './push';
 
 type AuthState =
   | { status: 'loading'; user: null }
@@ -15,6 +16,7 @@ interface AuthContextValue {
   signIn: (input: LoginInput) => Promise<void>;
   signUp: (input: SignupInput) => Promise<void>;
   signOut: () => Promise<void>;
+  verifyEmail: (code: string) => Promise<void>;
   /** Replace the cached user after a profile edit. */
   setUser: (user: Me) => void;
   finishOnboarding: () => void;
@@ -50,8 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ status: 'signedIn', user, onboarding: true });
       },
       signOut: async () => {
+        await unregisterPush();
         await api.logout();
         signedOut();
+      },
+      verifyEmail: async (code) => {
+        const user = await api.verifyEmail(code);
+        setState((s) => (s.status === 'signedIn' ? { ...s, user } : s));
       },
       setUser: (user) => setState((s) => ({ status: 'signedIn', user, onboarding: s.status === 'signedIn' && s.onboarding })),
       finishOnboarding: () => setState((s) => (s.status === 'signedIn' ? { ...s, onboarding: false } : s)),

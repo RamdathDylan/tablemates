@@ -1,6 +1,7 @@
 /**
  * The single place that decides who can see whose visits and reviews.
- * TableMates' core rule: you only see recommendations from accepted friends.
+ * TableMates' core rule: you only see recommendations from accepted friends,
+ * and each visit's audience (friends, close friends, or private) narrows that.
  * Every query that reads visits or reviews must filter through these helpers.
  */
 import type { FriendshipStatus } from '@tablemates/shared';
@@ -8,7 +9,7 @@ import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 
 import type { Db } from '../db/client';
-import { friendships } from '../db/schema';
+import { closeFriends, friendships, visitCompanions, visits } from '../db/schema';
 
 /** Subquery yielding the ids of the viewer's accepted friends. */
 export function friendIdsOf(viewerId: string): SQL {
@@ -24,9 +25,40 @@ export function friendAuthorFilter(authorColumn: PgColumn, viewerId: string): SQ
   return sql`${authorColumn} in (${friendIdsOf(viewerId)})`;
 }
 
-/** Rows authored by the viewer or the viewer's friends. */
-export function visibleAuthorFilter(authorColumn: PgColumn, viewerId: string): SQL {
-  return or(eq(authorColumn, viewerId), friendAuthorFilter(authorColumn, viewerId))!;
+/**
+ * Visits whose audience admits the viewer, assuming the viewer is the author's
+ * friend: "friends" visits, "close_friends" visits when the author listed them,
+ * and any visit the viewer was tagged on (they were there).
+ * Never used alone; combine with a friendship check.
+ */
+export function audienceAdmits(viewerId: string): SQL {
+  return sql`(${visits.audience} = 'friends'
+    or (${visits.audience} = 'close_friends' and exists (
+      select 1 from ${closeFriends}
+      where ${closeFriends.ownerId} = ${visits.userId} and ${closeFriends.friendId} = ${viewerId}))
+    or exists (
+      select 1 from ${visitCompanions}
+      where ${visitCompanions.visitId} = ${visits.id} and ${visitCompanions.userId} = ${viewerId}))`;
+}
+
+/** Friends' visits the viewer may see. Used for the feed and friends-only views. */
+export function friendVisitFilter(viewerId: string): SQL {
+  return and(friendAuthorFilter(visits.userId, viewerId), audienceAdmits(viewerId))!;
+}
+
+/** The viewer's own visits plus the friends' visits they may see. */
+export function visibleVisitFilter(viewerId: string): SQL {
+  return or(eq(visits.userId, viewerId), friendVisitFilter(viewerId))!;
+}
+
+/**
+ * One person's visits as the viewer may see them. Callers must already have
+ * checked the two are friends (or the same person) with canSeeActivityOf.
+ */
+export function visitsOfFilter(ownerId: string, viewerId: string): SQL {
+  return ownerId === viewerId
+    ? eq(visits.userId, ownerId)
+    : and(eq(visits.userId, ownerId), audienceAdmits(viewerId))!;
 }
 
 export interface Relationship {

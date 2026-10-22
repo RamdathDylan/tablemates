@@ -16,5 +16,27 @@ services:
       timeout: 3s
       retries: 20
 
+  # Local email inbox: the API sends verification codes here in development.
+  # Web UI and HTTP API at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '8025:8025'
+
+  # Local S3-compatible photo storage (production uses Cloudflare R2 through the same API).
+  # The API creates the bucket and its CORS rule on startup. Console: http://localhost:9001
+  storage:
+    image: rustfs/rustfs:latest
+    command: /data
+    environment:
+      RUSTFS_ACCESS_KEY: tablemates
+      RUSTFS_SECRET_KEY: tablemates-dev
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - storage-data:/data
+
 volumes:
   db-data:
+  storage-data:

@@ -47,7 +47,14 @@ export function Chip({ label, tone = 'neutral', icon, onPress, selected, accessi
     </>
   );
 
-  if (!onPress) return <View style={box}>{content}</View>;
+  if (!onPress) {
+    // A static chip can still need a spoken label (e.g. a countdown "4:59" read as "4 minutes 59 seconds").
+    return (
+      <View style={box} accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel}>
+        {content}
+      </View>
+    );
+  }
   return (
     <Pressable
       role="button"

@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tablemates",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -33,7 +33,27 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "TableMates uses your location to center the map and find restaurants near you."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C23A22"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TableMates lets you add food photos to your reviews.",
+          "cameraPermission": "TableMates lets you take photos of your food for reviews and plate checks.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

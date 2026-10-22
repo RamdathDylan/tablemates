@@ -10,7 +10,7 @@ export function useFriendActions() {
   const toast = useToast();
 
   const onSettled = () => {
-    for (const key of [qk.friends, qk.friendRequests, qk.feed, ['userSearch'], ['profile'], ['visits'], ['restaurant']]) {
+    for (const key of [qk.friends, qk.friendRequests, qk.notifications, qk.inbox, qk.feed, ['userSearch'], ['profile'], ['visits'], ['restaurant']]) {
       queryClient.invalidateQueries({ queryKey: key });
     }
   };
@@ -32,6 +32,13 @@ export function useFriendActions() {
     }),
     decline: useMutation({
       mutationFn: (requestId: string) => api.declineFriendRequest(requestId),
+      onError,
+      onSettled,
+    }),
+    toggleClose: useMutation({
+      mutationFn: ({ userId, close }: { userId: string; close: boolean; name: string }) =>
+        close ? api.removeCloseFriend(userId) : api.addCloseFriend(userId),
+      onSuccess: (_, { close, name }) => toast(close ? `${name} removed from close friends` : `${name} added to close friends`),
       onError,
       onSettled,
     }),

@@ -5,6 +5,7 @@ import { space } from '../tokens';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { Chip } from './Chip';
+import { IconButton } from './IconButton';
 import { focusRing, type PressState } from './internal';
 import { Text } from './Text';
 
@@ -19,9 +20,25 @@ export interface FriendRowProps {
   onDecline?: () => void;
   /** Disables actions while a request is in flight. */
   busy?: boolean;
+  /** Extra line under the username, e.g. "92% taste match". */
+  meta?: string;
+  /** For friends: shows a star that adds or removes them from close friends. */
+  closeFriend?: boolean;
+  onToggleClose?: () => void;
 }
 
-export function FriendRow({ user, status, onPress, onAdd, onAccept, onDecline, busy }: FriendRowProps) {
+export function FriendRow({
+  user,
+  status,
+  onPress,
+  onAdd,
+  onAccept,
+  onDecline,
+  busy,
+  closeFriend,
+  onToggleClose,
+  meta,
+}: FriendRowProps) {
   const { colors } = useTheme();
 
   return (
@@ -30,7 +47,7 @@ export function FriendRow({ user, status, onPress, onAdd, onAccept, onDecline, b
         onPress={onPress}
         disabled={!onPress}
         role={onPress ? 'link' : undefined}
-        accessibilityLabel={`${user.displayName}, @${user.username}`}
+        accessibilityLabel={`${user.displayName}, @${user.username}${meta ? `, ${meta}` : ''}`}
         style={(state: PressState) => [
           { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[3], borderRadius: 8 },
           focusRing(state, colors),
@@ -42,6 +59,7 @@ export function FriendRow({ user, status, onPress, onAdd, onAccept, onDecline, b
           </Text>
           <Text variant="caption" tone="muted" numberOfLines={1}>
             @{user.username}
+            {meta ? ` · ${meta}` : ''}
           </Text>
         </View>
       </Pressable>
@@ -78,7 +96,16 @@ export function FriendRow({ user, status, onPress, onAdd, onAccept, onDecline, b
           />
         </View>
       )}
-      {status === 'friends' && <Chip label="Friends" tone="success" icon="checkmark" />}
+      {status === 'friends' && !onToggleClose && <Chip label="Friends" tone="success" icon="checkmark" />}
+      {status === 'friends' && onToggleClose && (
+        <IconButton
+          icon={closeFriend ? 'star' : 'star-outline'}
+          accessibilityLabel={closeFriend ? `Remove ${user.displayName} from close friends` : `Add ${user.displayName} to close friends`}
+          aria-pressed={!!closeFriend}
+          disabled={busy}
+          onPress={onToggleClose}
+        />
+      )}
     </View>
   );
 }

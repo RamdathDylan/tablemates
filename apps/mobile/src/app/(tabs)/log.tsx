@@ -1,10 +1,11 @@
-import type { PlaceResult } from '@tablemates/shared';
+import type { Dish, Friend, PlaceResult, Streak } from '@tablemates/shared';
 import {
   Button,
   Card,
   Chip,
   EmptyState,
   Icon,
+  IconButton,
   Input,
   Rating,
   RestaurantCard,
@@ -18,10 +19,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { AudiencePicker } from '@/components/audience-picker';
+import { FriendPicker } from '@/components/friend-picker';
+import { PhotoStrip, type StripPhoto } from '@/components/photo-strip';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
+import { STREAK_MILESTONES, useStreak } from '@/components/streak';
 import { api, ApiError } from '@/lib/api';
-import { useMe } from '@/lib/auth';
+import { useLocation } from '@/lib/location';
+import { useAuth, useMe } from '@/lib/auth';
 import { qk } from '@/lib/query-keys';
 import { useDebounced } from '@/lib/use-debounced';
 
@@ -36,7 +42,15 @@ type Picked = Pick<PlaceResult, 'googlePlaceId' | 'name' | 'address'> & Partial<
 
 export default function LogScreen() {
   // The restaurant page links here with a place already chosen.
-  const params = useLocalSearchParams<{ googlePlaceId?: string; name?: string; address?: string }>();
+  const params = useLocalSearchParams<{
+    googlePlaceId?: string;
+    name?: string;
+    address?: string;
+    /** Set when logging your side of a visit a friend tagged you on. */
+    from?: string;
+    date?: string;
+    by?: string;
+  }>();
   const [picked, setPicked] = useState<Picked | null>(null);
   const place: Picked | null =
     picked ??
@@ -48,10 +62,19 @@ export default function LogScreen() {
     <Screen title="Log a visit">
       {place ? (
         <VisitForm
+          key={params.from ?? place.googlePlaceId}
           place={place}
+          tag={!picked && params.from ? { visitId: params.from, date: params.date, by: params.by } : undefined}
           onChangePlace={() => {
             setPicked(null);
-            router.setParams({ googlePlaceId: undefined, name: undefined, address: undefined });
+            router.setParams({
+              googlePlaceId: undefined,
+              name: undefined,
+              address: undefined,
+              from: undefined,
+              date: undefined,
+              by: undefined,
+            });
           }}
         />
       ) : (
@@ -64,9 +87,10 @@ export default function LogScreen() {
 function PlaceSearch({ onPick }: { onPick: (place: PlaceResult) => void }) {
   const [query, setQuery] = useState('');
   const q = useDebounced(query.trim(), 350);
+  const location = useLocation();
   const results = useQuery({
-    queryKey: qk.places(q),
-    queryFn: () => api.searchPlaces(q),
+    queryKey: [...qk.places(q), location.coords],
+    queryFn: () => api.searchPlaces(q, location.coords),
     enabled: q.length >= 2,
     staleTime: 5 * 60_000,
   });
@@ -83,6 +107,19 @@ function PlaceSearch({ onPick }: { onPick: (place: PlaceResult) => void }) {
         autoFocus
         returnKeyType="search"
       />
+      {location.coords ? (
+        <Text variant="caption" tone="muted">
+          Showing restaurants near you first.
+        </Text>
+      ) : location.permission === 'undetermined' ? (
+        <Button
+          title="Use my location for nearby results"
+          icon="navigate"
+          variant="ghost"
+          size="sm"
+          onPress={() => location.request()}
+        />
+      ) : null}
       {q.length < 2 ? (
         <EmptyState
           icon="restaurant-outline"
@@ -111,15 +148,45 @@ function PlaceSearch({ onPick }: { onPick: (place: PlaceResult) => void }) {
   );
 }
 
-function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () => void }) {
+function VisitForm({
+  place,
+  tag,
+  onChangePlace,
+}: {
+  place: Picked;
+  tag?: { visitId: string; date?: string; by?: string };
+  onChangePlace: () => void;
+}) {
   const me = useMe();
+  const { setUser } = useAuth();
   const toast = useToast();
+  const [audience, setAudience] = useState(me.defaultAudience);
   const queryClient = useQueryClient();
-  const [visitedAt, setVisitedAt] = useState(localDate());
+  const [visitedAt, setVisitedAt] = useState(tag?.date ?? localDate());
+
+  // Loaded up front so there's a "before" to compare with after saving.
+  useStreak();
+  /** Celebrates when this visit is the week's first and lands the streak on a milestone. */
+  async function celebrateStreak() {
+    const before = queryClient.getQueryData<Streak>(qk.streak);
+    const after = await queryClient.fetchQuery({ queryKey: qk.streak, queryFn: api.streak, staleTime: 0 });
+    if (before && !before.thisWeekDone && after.thisWeekDone && STREAK_MILESTONES.includes(after.current)) {
+      toast(`🔥 ${after.current}-week streak! Keep it going`, 'success');
+    }
+  }
+  const [companions, setCompanions] = useState<Friend[]>([]);
+  const [picking, setPicking] = useState(false);
+  const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
+  // "You've been here 3 times. Last time you gave it 4★."
+  const mine = useQuery({ queryKey: qk.myVisits, queryFn: api.myVisits });
+  const previous = (mine.data ?? []).filter((v) => v.restaurant.googlePlaceId === place.googlePlaceId);
+  const lastRated = previous.find((v) => v.review);
   const [rating, setRating] = useState(0);
   const [recommends, setRecommends] = useState<boolean | null>(null);
-  const [dishes, setDishes] = useState<string[]>([]);
+  const [dishes, setDishes] = useState<Dish[]>([]);
   const [dishDraft, setDishDraft] = useState('');
+  const [photos, setPhotos] = useState<StripPhoto[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [body, setBody] = useState('');
   const [error, setError] = useState<string>();
 
@@ -128,13 +195,28 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
       api.createVisit({
         googlePlaceId: place.googlePlaceId,
         visitedAt,
-        review: rating ? { rating, recommends: !!recommends, dishes, body } : undefined,
+        audience,
+        companionIds: companions.map((c) => c.id),
+        fromVisitId: tag?.visitId,
+        review: rating
+          ? { rating, recommends: !!recommends, dishes, body, photoIds: photos.flatMap((p) => (p.id ? [p.id] : [])) }
+          : undefined,
       }),
     onSuccess: (visit) => {
+      // The server remembers this choice for next time; mirror it locally.
+      if (visit.audience !== me.defaultAudience) setUser({ ...me, defaultAudience: visit.audience });
       queryClient.invalidateQueries({ queryKey: qk.myVisits });
+      queryClient.invalidateQueries({ queryKey: qk.myVisitsAt(visit.restaurant.id) });
+      queryClient.invalidateQueries({ queryKey: ['badges'] });
+      queryClient.invalidateQueries({ queryKey: qk.notifications });
+      queryClient.invalidateQueries({ queryKey: qk.tagged });
       queryClient.invalidateQueries({ queryKey: qk.profile(me.username) });
       queryClient.invalidateQueries({ queryKey: qk.restaurant(visit.restaurant.id) });
-      toast(visit.review ? 'Review shared with your friends' : 'Visit logged', 'success');
+      toast(
+        visit.audience === 'private' ? 'Saved privately' : visit.review ? 'Review shared with your friends' : 'Visit logged',
+        'success',
+      );
+      void celebrateStreak();
       onChangePlace();
       router.push({ pathname: '/restaurant/[id]', params: { id: visit.restaurant.id } });
     },
@@ -143,7 +225,9 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
 
   function addDish() {
     const dish = dishDraft.trim();
-    if (dish && !dishes.includes(dish) && dishes.length < 10) setDishes([...dishes, dish]);
+    if (dish && !dishes.some((d) => d.name.toLowerCase() === dish.toLowerCase()) && dishes.length < 10) {
+      setDishes([...dishes, { name: dish, rating: null }]);
+    }
     setDishDraft('');
   }
 
@@ -170,6 +254,19 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
         </View>
         <Button title="Change" variant="ghost" size="sm" onPress={onChangePlace} />
       </Card>
+
+      {previous.length > 0 && (
+        <Text variant="caption" tone="muted">
+          You’ve been here {previous.length === 1 ? 'once' : `${previous.length} times`}.
+          {lastRated?.review ? ` Last time you gave it ${lastRated.review.rating}★.` : ''}
+        </Text>
+      )}
+
+      {tag && (
+        <Text variant="caption" tone="muted">
+          Logging your side of {tag.by ?? 'a friend'}’s visit. It’ll show as “with {tag.by ?? 'them'}”.
+        </Text>
+      )}
 
       <Section title="When">
         <View style={{ flexDirection: 'row', gap: space[2] }}>
@@ -208,24 +305,70 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
               <Button title="Add" variant="secondary" onPress={addDish} disabled={!dishDraft.trim()} />
             </View>
             {dishes.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+              <View style={{ gap: space[2] }}>
                 {dishes.map((d) => (
-                  <Chip
-                    key={d}
-                    label={d}
-                    icon="close"
-                    tone="accent"
-                    accessibilityLabel={`Remove ${d}`}
-                    onPress={() => setDishes(dishes.filter((x) => x !== d))}
-                  />
+                  <View key={d.name} style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
+                    <Text variant="bodyStrong" style={{ minWidth: 96 }}>
+                      {d.name}
+                    </Text>
+                    <Rating
+                      value={d.rating ?? 0}
+                      size="md"
+                      onChange={(rating) => setDishes(dishes.map((x) => (x.name === d.name ? { ...x, rating } : x)))}
+                    />
+                    <IconButton
+                      icon="close"
+                      size="sm"
+                      accessibilityLabel={`Remove ${d.name}`}
+                      onPress={() => setDishes(dishes.filter((x) => x.name !== d.name))}
+                    />
+                  </View>
                 ))}
+                <Text variant="caption" tone="muted">
+                  Stars are optional. They help friends pick the best dish.
+                </Text>
               </View>
             )}
+          </Section>
+
+          <Section title="Photos">
+            <PhotoStrip photos={photos} onChange={setPhotos} max={6} onUploadingChange={setUploading} />
           </Section>
 
           <TextArea label="Notes for your friends" value={body} onChangeText={setBody} maxLength={2000} placeholder="Go on a weeknight, sit at the bar…" />
         </>
       )}
+
+      <Section title="Who were you with?">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+          {companions.map((c) => (
+            <Chip
+              key={c.id}
+              label={c.displayName}
+              icon="close"
+              tone="accent"
+              accessibilityLabel={`Remove ${c.displayName}`}
+              onPress={() => setCompanions(companions.filter((x) => x.id !== c.id))}
+            />
+          ))}
+          <Chip label="Add people" icon="person-add" onPress={() => setPicking(true)} />
+        </View>
+        <FriendPicker
+          visible={picking}
+          title="Who were you with?"
+          actionLabel={(f) => `Tag ${f.displayName}`}
+          friends={(friends.data ?? []).filter((f) => !companions.some((c) => c.id === f.id))}
+          onClose={() => setPicking(false)}
+          onPick={(f) => {
+            setCompanions([...companions, f as Friend]);
+            setPicking(false);
+          }}
+        />
+      </Section>
+
+      <Section title="Who can see this">
+        <AudiencePicker value={audience} onChange={setAudience} />
+      </Section>
 
       {error && (
         <Text tone="danger" role="alert">
@@ -233,9 +376,10 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
         </Text>
       )}
       <Button
-        title={rating ? 'Share with friends' : 'Save visit without a review'}
+        title={audience === 'private' ? 'Save privately' : rating ? 'Share with friends' : 'Save visit without a review'}
         onPress={submit}
         loading={save.isPending}
+        disabled={uploading}
         fullWidth
         size="lg"
       />

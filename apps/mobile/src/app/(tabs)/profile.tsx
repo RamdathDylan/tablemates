@@ -1,9 +1,28 @@
-import { Button, EmptyState, Input, Sheet, space, TextArea, useToast } from '@tablemates/ui';
+import {
+  Button,
+  Card,
+  Divider,
+  EmptyState,
+  formatDate,
+  Input,
+  Text,
+  Sheet,
+  space,
+  TextArea,
+  useToast,
+  VisitListItem,
+} from '@tablemates/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { View } from 'react-native';
 
+import { FavoritesRow } from '@/components/favorites';
+import { GoalCard } from '@/components/goal';
+import { MyListsSection } from '@/components/lists';
+import { NotificationSettings } from '@/components/notification-settings';
+import { Passport } from '@/components/passport';
+import { AvatarPicker } from '@/components/avatar-picker';
 import { ProfileHeader } from '@/components/profile-header';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
@@ -20,7 +39,7 @@ export default function ProfileScreen() {
   const visits = useQuery({ queryKey: qk.myVisits, queryFn: api.myVisits });
 
   return (
-    <Screen>
+    <Screen documentTitle="Profile">
       {profile.isPending ? (
         <LoadingCards count={1} />
       ) : profile.isError ? (
@@ -36,6 +55,20 @@ export default function ProfileScreen() {
           }
         />
       )}
+
+      {profile.data && <FavoritesRow favorites={profile.data.favorites ?? []} own username={me.username} />}
+      {profile.data && <GoalCard profile={profile.data} />}
+
+      <Button
+        title={`Your ${new Date().getFullYear()} in food`}
+        icon="sparkles"
+        variant="secondary"
+        onPress={() => router.push('/wrapped')}
+        style={{ alignSelf: 'center' }}
+      />
+
+      {/* Pending tags are a to-do, so they come before history. */}
+      <TaggedIn />
 
       <Section title="Your visits">
         {visits.isPending ? (
@@ -54,6 +87,14 @@ export default function ProfileScreen() {
         )}
       </Section>
 
+      <WantToTry />
+
+      <MyListsSection />
+
+      <Passport username={me.username} own />
+
+      <NotificationSettings />
+
       {__DEV__ && (
         <Button title="Open style guide" variant="ghost" icon="color-palette-outline" onPress={() => router.push('/styleguide')} style={{ alignSelf: 'center' }} />
       )}
@@ -71,7 +112,6 @@ function EditProfileSheet({ visible, onClose }: { visible: boolean; onClose: () 
   const [displayName, setDisplayName] = useState(me.displayName);
   const [homeCity, setHomeCity] = useState(me.homeCity ?? '');
   const [bio, setBio] = useState(me.bio);
-  const [avatarUrl, setAvatarUrl] = useState(me.avatarUrl ?? '');
 
   const save = useMutation({
     mutationFn: () =>
@@ -79,7 +119,6 @@ function EditProfileSheet({ visible, onClose }: { visible: boolean; onClose: () 
         displayName: displayName.trim(),
         homeCity: homeCity.trim() || null,
         bio: bio.trim(),
-        avatarUrl: avatarUrl.trim() || null,
       }),
     onSuccess: (user) => {
       setUser(user);
@@ -97,18 +136,93 @@ function EditProfileSheet({ visible, onClose }: { visible: boolean; onClose: () 
       title="Edit profile"
       footer={<Button title="Save" onPress={() => save.mutate()} loading={save.isPending} fullWidth size="lg" />}>
       <View style={{ gap: space[4] }}>
+        <AvatarPicker me={me} />
         <Input label="Name" value={displayName} onChangeText={setDisplayName} error={fieldErrors.displayName} />
         <Input label="Home city" value={homeCity} onChangeText={setHomeCity} icon="location-outline" />
         <TextArea label="Bio" value={bio} onChangeText={setBio} maxLength={280} helperText={`${bio.length}/280`} />
-        <Input
-          label="Photo URL"
-          value={avatarUrl}
-          onChangeText={setAvatarUrl}
-          autoCapitalize="none"
-          keyboardType="url"
-          error={fieldErrors.avatarUrl ?? (save.isError && !Object.keys(fieldErrors).length ? save.error.message : undefined)}
-        />
+        {save.isError && !Object.keys(fieldErrors).length && (
+          <Text tone="danger" role="alert">
+            {save.error.message}
+          </Text>
+        )}
       </View>
     </Sheet>
+  );
+}
+
+function WantToTry() {
+  const saved = useQuery({ queryKey: qk.saved, queryFn: api.saved });
+  if (!saved.data?.length) return null;
+  return (
+    <Section title={`Want to try · ${saved.data.length}`}>
+      <Card padding={0} style={{ paddingVertical: 4 }}>
+        {saved.data.map((s, i) => (
+          <Fragment key={s.restaurant.id}>
+            {i > 0 && <Divider inset={3} />}
+            <VisitListItem
+              restaurantName={s.restaurant.name}
+              visitedAt={s.savedAt}
+              subtitle={`Saved ${formatDate(s.savedAt)}`}
+              onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: s.restaurant.id } })}
+            />
+          </Fragment>
+        ))}
+      </Card>
+    </Section>
+  );
+}
+
+/** Visits friends tagged you on: log your own rating or remove the tag. */
+function TaggedIn() {
+  const queryClient = useQueryClient();
+  const tagged = useQuery({ queryKey: qk.tagged, queryFn: api.tagged });
+  const untag = useMutation({
+    mutationFn: api.untag,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.tagged }),
+  });
+  if (!tagged.data?.length) return null;
+  return (
+    <Section title={`Tagged in · ${tagged.data.length}`}>
+      <Card style={{ gap: space[3] }}>
+        {tagged.data.map((t, i) => (
+          <Fragment key={t.visitId}>
+            {i > 0 && <Divider />}
+            <View style={{ gap: space[2] }}>
+              <Text variant="bodyStrong">{t.restaurant.name}</Text>
+              <Text variant="caption" tone="muted">
+                {t.by.displayName} tagged you · {formatDate(t.visitedAt)}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: space[2] }}>
+                <Button
+                  title="Add your rating"
+                  size="sm"
+                  icon="star"
+                  onPress={() =>
+                    router.navigate({
+                      pathname: '/log',
+                      params: {
+                        googlePlaceId: t.restaurant.googlePlaceId,
+                        name: t.restaurant.name,
+                        address: t.restaurant.address,
+                        from: t.visitId,
+                        date: t.visitedAt,
+                        by: t.by.displayName,
+                      },
+                    })
+                  }
+                />
+                <Button
+                  title="Remove tag"
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={`Remove your tag from ${t.by.displayName}'s ${t.restaurant.name} visit`}
+                  onPress={() => untag.mutate(t.visitId)}
+                />
+              </View>
+            </View>
+          </Fragment>
+        ))}
+      </Card>
+    </Section>
   );
 }

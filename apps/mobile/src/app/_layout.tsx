@@ -1,13 +1,15 @@
 import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { fontFamily, ThemeProvider, ToastProvider, useTheme } from '@tablemates/ui';
+import { fontFamily, ThemeProvider, ToastProvider, useBreakpoint, useTheme } from '@tablemates/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { phoneTabBarHeight } from '@/components/app-tab-bar';
 import { ApiError } from '@/lib/api';
 import { AuthProvider, useAuth } from '@/lib/auth';
 
@@ -35,15 +37,23 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+      {/* TableMates ships in light mode. Dark tokens stay in @tablemates/ui for a future opt-in setting. */}
+      <ThemeProvider scheme="light">
         <AuthProvider>
-          <ToastProvider>
+          <Toasts>
             <RootNavigator fontsLoaded={fontsLoaded} />
-          </ToastProvider>
+          </Toasts>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+/** Keeps toasts above the phone tab bar instead of underneath it. */
+function Toasts({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  const phone = useBreakpoint() === 'phone';
+  return <ToastProvider bottomInset={phone ? phoneTabBarHeight(insets.bottom) : insets.bottom}>{children}</ToastProvider>;
 }
 
 function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
@@ -51,7 +61,9 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { colors, scheme } = useTheme();
   const ready = fontsLoaded && state.status !== 'loading';
   const signedIn = state.status === 'signedIn';
-  const onboarding = signedIn && state.onboarding;
+  const unverified = signedIn && !state.user.emailVerified;
+  const onboarding = signedIn && !unverified && state.onboarding;
+  const inApp = signedIn && !unverified && !onboarding;
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -88,13 +100,20 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
           contentStyle: { backgroundColor: colors.bg },
         }}>
         {/* Each auth state leaves exactly one group available, so guard redirects are unambiguous. */}
-        <Stack.Protected guard={signedIn && !onboarding}>
+        <Stack.Protected guard={inApp}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="restaurant/[id]" options={{ title: '' }} />
           <Stack.Screen name="user/[username]" options={{ title: '' }} />
+          <Stack.Screen name="plan/[id]" options={{ title: '' }} />
+          <Stack.Screen name="list/[id]" options={{ title: '' }} />
+          <Stack.Screen name="table/[id]" options={{ title: '' }} />
+          <Stack.Screen name="wrapped" options={{ title: 'Year in food' }} />
           <Stack.Protected guard={__DEV__}>
             <Stack.Screen name="(dev)/styleguide" options={{ title: 'Style guide' }} />
           </Stack.Protected>
+        </Stack.Protected>
+        <Stack.Protected guard={unverified}>
+          <Stack.Screen name="verify-email" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={onboarding}>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />

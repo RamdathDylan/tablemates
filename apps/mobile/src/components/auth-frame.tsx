@@ -8,7 +8,7 @@ import { Screen } from '@/components/screen';
 export function AuthFrame({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen>
+      <Screen documentTitle={title}>
         <View style={{ gap: space[2], marginTop: space[10], marginBottom: space[4] }}>
           <Text variant="overline" tone="primary">
             TableMates
