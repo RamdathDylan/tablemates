@@ -4,14 +4,14 @@ import { and, asc, desc, eq, gt, inArray, lt, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
-import { closeFriends, photos, restaurants, stories, storyViews, users } from '../db/schema';
+import { photos, restaurants, stories, storyViews, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { forbidden, notFound, parse } from '../lib/errors';
 import { notify } from '../lib/notify';
 import { idParam } from '../lib/params';
 import { ownReadyPhotos, signPhoto } from '../lib/photos';
 import { toPublicUser } from '../lib/serialize';
-import { friendIdsOf } from '../lib/visibility';
+import { friendContentFilter } from '../lib/visibility';
 import type { Storage } from '../storage/types';
 import { ensureRestaurant } from './visits';
 
@@ -22,13 +22,7 @@ const userColumns = { id: users.id, username: users.username, displayName: users
 function visibleStories(viewerId: string) {
   return or(
     eq(stories.authorId, viewerId),
-    and(
-      sql`${stories.authorId} in (${friendIdsOf(viewerId)})`,
-      or(
-        eq(stories.audience, 'friends'),
-        sql`exists (select 1 from ${closeFriends} where ${closeFriends.ownerId} = ${stories.authorId} and ${closeFriends.friendId} = ${viewerId})`,
-      ),
-    ),
+    friendContentFilter(stories.authorId, stories.audience, viewerId),
   )!;
 }
 

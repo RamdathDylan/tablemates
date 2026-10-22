@@ -57,6 +57,14 @@ describe('friend challenges', () => {
     expect(await board(w.carol, w.id)).toEqual([['bob', 2], ['maya', 1]]);
   });
 
+  it('counts only visits shared with all friends, so close-friends visits stay off the leaderboard', async () => {
+    const w = await world('visits', 5);
+    await w.log(w.bob, 'a', '2026-10-02');
+    await w.log(w.bob, 'b', '2026-10-03', { audience: 'close_friends' });
+    await w.log(w.bob, 'c', '2026-10-04', { audience: 'private' });
+    expect(await board(w.carol, w.id)).toEqual([['bob', 1], ['maya', 0]]);
+  });
+
   it('counts cuisines, visits, and reviews too', async () => {
     const cuisines = await world('cuisines', 3);
     await cuisines.log(cuisines.bob, 'a', '2026-10-02');
