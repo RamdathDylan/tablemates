@@ -7,6 +7,7 @@
 | [Privacy model](privacy.md) | Who can see what, where it's enforced, and how it's tested |
 | [API reference](api.md) | Authentication, errors, pagination and every endpoint |
 | [Development](development.md) | Local setup, configuration, database changes, testing and troubleshooting |
+| [Continuous integration](ci.md) | The GitHub Actions pipeline, its security checks, and how it extends to deployment |
 | [Deployment](deployment.md) | Production services, configuration and the release checklist |
 | [Contributing](contributing.md) | Branching, pull requests and the checks every change must pass |
 | [Design system](../packages/ui/README.md) | Tokens, components and accessibility rules |

@@ -104,6 +104,8 @@ pnpm test        # API integration tests against Postgres, plus the design-token
 - **API tests:** integration tests run against a real Postgres database. They cover privacy for every feature, authorization, and background jobs run with a fixed clock.
 - **Accessibility:** a test checks every color pair in the design system against WCAG AA. Components ship with screen-reader labels and visible keyboard focus.
 
+GitHub Actions runs these on every pull request, together with a dependency audit, secret scanning, CodeQL, workflow linting, and a build and vulnerability scan of the API container image. See [docs/ci.md](docs/ci.md).
+
 ## Documentation
 
 | Guide | For |
@@ -113,6 +115,7 @@ pnpm test        # API integration tests against Postgres, plus the design-token
 | [Privacy model](docs/privacy.md) | Who can see what, and how that's enforced and tested |
 | [API reference](docs/api.md) | Endpoints, authentication, errors and pagination |
 | [Development](docs/development.md) | Local setup, configuration, testing and conventions |
+| [Continuous integration](docs/ci.md) | The checks every pull request must pass, including security scans |
 | [Deployment](docs/deployment.md) | Running TableMates in production |
 | [Contributing](docs/contributing.md) | Branching, pull requests and the checks every change must pass |
 | [Design system](packages/ui/README.md) | Tokens, components and accessibility rules |
