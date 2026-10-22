@@ -9,6 +9,7 @@ import { AppError, isUniqueViolation, unauthorized } from './lib/errors';
 import { authRoutes, verificationRoutes, type RateLimit } from './routes/auth';
 import { feedRoutes } from './routes/feed';
 import { friendRoutes } from './routes/friends';
+import { mapRoutes } from './routes/map';
 import { notificationRoutes } from './routes/notifications';
 import { placeRoutes } from './routes/places';
 import { userRoutes } from './routes/users';
@@ -90,6 +91,7 @@ export async function buildApp({
     placeRoutes(authed, deps);
     visitRoutes(authed, deps);
     feedRoutes(authed, deps);
+    mapRoutes(authed, deps);
   });
 
   return app;
