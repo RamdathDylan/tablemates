@@ -29,6 +29,13 @@
       "when": 1792635684562,
       "tag": "0003_saved_places",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792637528872,
+      "tag": "0004_visit_privacy",
+      "breakpoints": true
     }
   ]
 }

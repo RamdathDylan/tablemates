@@ -7,7 +7,7 @@ import { restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { forbidden, parse } from '../lib/errors';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
-import { canSeeActivityOf, friendAuthorFilter, visibleAuthorFilter } from '../lib/visibility';
+import { canSeeActivityOf, friendVisitFilter, visibleVisitFilter, visitsOfFilter } from '../lib/visibility';
 
 /** Upper bound on visits read per request; plenty for a friend group, and keeps the query cheap. */
 const MAX_VISITS = 2000;
@@ -157,16 +157,16 @@ export function mapRoutes(app: FastifyInstance, { db }: Deps) {
         author = eq(visits.userId, me);
         break;
       case 'friends':
-        author = friendAuthorFilter(visits.userId, me);
+        author = friendVisitFilter(me);
         break;
       case 'friend':
         if (!(await canSeeActivityOf(db, me, q.friendId!)) || q.friendId === me) {
           throw forbidden('You can only filter by people you are friends with');
         }
-        author = eq(visits.userId, q.friendId!);
+        author = visitsOfFilter(q.friendId!, me);
         break;
       default:
-        author = visibleAuthorFilter(visits.userId, me);
+        author = visibleVisitFilter(me);
     }
 
     const origin = q.lat !== undefined && q.lng !== undefined ? { lat: q.lat, lng: q.lng } : undefined;

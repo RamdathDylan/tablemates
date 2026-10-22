@@ -9,6 +9,8 @@ export interface PublicUser {
 
 export interface Me extends PublicUser {
   email: string;
+  /** Preselected audience for the next visit (the last one used). */
+  defaultAudience: 'friends' | 'close_friends' | 'private';
   bio: string;
   homeCity: string | null;
   emailVerified: boolean;
@@ -25,6 +27,11 @@ export interface Profile extends PublicUser {
   requestId: string | null;
   /** Only present when the viewer is the user or a friend. */
   stats?: { visits: number; reviews: number; friends: number };
+}
+
+export interface Friend extends PublicUser {
+  /** On the viewer's close-friends list. */
+  closeFriend: boolean;
 }
 
 export interface UserSearchResult extends PublicUser {
@@ -88,6 +95,7 @@ export interface Review {
 export interface Visit {
   id: string;
   visitedAt: string;
+  audience: 'friends' | 'close_friends' | 'private';
   restaurant: Restaurant;
   review: Review | null;
 }

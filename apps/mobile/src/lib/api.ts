@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   CreateVisitInput,
   FeedItem,
+  Friend,
   FriendRequest,
   FriendshipStatus,
   LoginInput,
@@ -13,7 +14,6 @@ import type {
   Page,
   PlaceResult,
   Profile,
-  PublicUser,
   RestaurantDetail,
   SavedPlace,
   Review,
@@ -23,6 +23,7 @@ import type {
   UpdateReviewInput,
   UserSearchResult,
   Visit,
+  VisitAudience,
 } from '@tablemates/shared';
 
 import { API_URL, isWeb } from './config';
@@ -154,7 +155,9 @@ export const api = {
     request<Visit[]>('GET', `/users/${encodeURIComponent(username)}/visits`),
   searchUsers: (q: string) => request<UserSearchResult[]>('GET', `/users/search${qs({ q })}`),
 
-  friends: () => request<PublicUser[]>('GET', '/friends'),
+  friends: () => request<Friend[]>('GET', '/friends'),
+  addCloseFriend: (userId: string) => request<void>('PUT', `/me/close-friends/${userId}`),
+  removeCloseFriend: (userId: string) => request<void>('DELETE', `/me/close-friends/${userId}`),
   friendRequests: () => request<FriendRequest[]>('GET', '/friends/requests'),
   sendFriendRequest: (username: string) =>
     request<{ status: FriendshipStatus; requestId: string }>('POST', '/friends/requests', { username }),
@@ -177,6 +180,8 @@ export const api = {
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   createVisit: (input: CreateVisitInput) => request<Visit>('POST', '/visits', input),
   deleteVisit: (id: string) => request<void>('DELETE', `/visits/${id}`),
+  setVisitAudience: (id: string, audience: VisitAudience) =>
+    request<{ id: string; audience: VisitAudience }>('PATCH', `/visits/${id}`, { audience }),
   addReview: (visitId: string, input: ReviewInput) =>
     request<Review>('POST', `/visits/${visitId}/review`, input),
   updateReview: (id: string, input: UpdateReviewInput) => request<Review>('PATCH', `/reviews/${id}`, input),

@@ -51,11 +51,18 @@ export const reviewInput = z.object({
 });
 export type ReviewInput = z.input<typeof reviewInput>;
 
+export const visitAudiences = ['friends', 'close_friends', 'private'] as const;
+export type VisitAudience = (typeof visitAudiences)[number];
+
 export const createVisitInput = z.object({
   googlePlaceId: z.string().min(1).max(300),
   visitedAt: z.iso.date(),
+  /** Defaults to the user's last choice. */
+  audience: z.enum(visitAudiences).optional(),
   review: reviewInput.optional(),
 });
+
+export const updateVisitInput = z.object({ audience: z.enum(visitAudiences) });
 export type CreateVisitInput = z.input<typeof createVisitInput>;
 
 export const updateReviewInput = reviewInput.partial();

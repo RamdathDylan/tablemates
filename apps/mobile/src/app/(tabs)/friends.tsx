@@ -96,6 +96,11 @@ function FriendsAndRequests() {
       )}
 
       <Section title={`Your friends · ${friends.data.length}`}>
+        {friends.data.length > 0 && (
+          <Text variant="caption" tone="muted">
+            Star close friends to share visits with just them.
+          </Text>
+        )}
         {friends.data.length === 0 ? (
           <EmptyState
             icon="people-outline"
@@ -105,7 +110,15 @@ function FriendsAndRequests() {
         ) : (
           <List>
             {friends.data.map((u) => (
-              <FriendRow key={u.id} user={u} status="friends" onPress={() => openProfile(u.username)} />
+              <FriendRow
+                key={u.id}
+                user={u}
+                status="friends"
+                onPress={() => openProfile(u.username)}
+                closeFriend={u.closeFriend}
+                busy={actions.toggleClose.isPending && actions.toggleClose.variables?.userId === u.id}
+                onToggleClose={() => actions.toggleClose.mutate({ userId: u.id, close: u.closeFriend, name: u.displayName })}
+              />
             ))}
           </List>
         )}

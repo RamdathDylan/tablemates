@@ -12,7 +12,7 @@ import { friendships, reviews, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { forbidden, notFound, parse } from '../lib/errors';
 import { toMe, toPublicUser } from '../lib/serialize';
-import { relationshipsWith, relationshipWith } from '../lib/visibility';
+import { relationshipsWith, relationshipWith, visitsOfFilter } from '../lib/visibility';
 import { listVisits } from './visits';
 
 const publicColumns = {
@@ -81,12 +81,13 @@ export function userRoutes(app: FastifyInstance, { db }: Deps) {
     };
     if (rel.status === 'self' || rel.status === 'friends') {
       const [[v], [r], [f]] = await Promise.all([
-        db.select({ n: count() }).from(visits).where(eq(visits.userId, user.id)),
+        // Counts only what the viewer could actually open.
+        db.select({ n: count() }).from(visits).where(visitsOfFilter(user.id, req.userId)),
         db
           .select({ n: count() })
           .from(reviews)
           .innerJoin(visits, eq(reviews.visitId, visits.id))
-          .where(eq(visits.userId, user.id)),
+          .where(visitsOfFilter(user.id, req.userId)),
         db
           .select({ n: count() })
           .from(friendships)
@@ -108,6 +109,6 @@ export function userRoutes(app: FastifyInstance, { db }: Deps) {
     if (rel.status !== 'self' && rel.status !== 'friends') {
       throw forbidden('Add this person as a friend to see their visits');
     }
-    return listVisits(db, user.id);
+    return listVisits(db, user.id, req.userId);
   });
 }
