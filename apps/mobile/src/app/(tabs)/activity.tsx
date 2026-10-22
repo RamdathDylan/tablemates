@@ -39,6 +39,7 @@ const icons: Record<NotificationItem['type'], IconName> = {
   story_reaction: 'happy',
   plate_prompt: 'camera',
   table_invite: 'restaurant',
+  checkin: 'location',
 };
 
 function message(n: NotificationItem) {
@@ -60,6 +61,8 @@ function message(n: NotificationItem) {
       return `${who} invited you to “${n.excerpt ?? 'a dinner plan'}”`;
     case 'plan_decided':
       return `“${n.excerpt ?? 'Your plan'}” is happening at ${n.restaurant?.name ?? 'the winning spot'}`;
+    case 'checkin':
+      return `${who} is out now at ${n.restaurant?.name ?? 'a restaurant'}`;
     case 'table_invite':
       return `${who} added you to their table ${n.excerpt ?? ''}`.trimEnd();
     case 'plate_prompt':

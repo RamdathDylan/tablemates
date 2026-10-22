@@ -105,6 +105,7 @@ export const notificationType = pgEnum('notification_type', [
   'story_reaction',
   'plate_prompt',
   'table_invite',
+  'checkin',
 ]);
 
 /**
@@ -501,6 +502,28 @@ export const reviewDishes = pgTable(
 );
 
 export const storyAudience = pgEnum('story_audience', ['friends', 'close_friends']);
+
+/**
+ * "Out now": a live, opt-in check-in at a restaurant. Never inferred from
+ * location; it ends when the person ends it or when it expires.
+ */
+export const checkins = pgTable(
+  'checkins',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id')
+      .notNull()
+      .references(() => restaurants.id, { onDelete: 'cascade' }),
+    audience: storyAudience('audience').notNull().default('friends'),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    expiresAt: timestamptz('expires_at').notNull(),
+    endedAt: timestamptz('ended_at'),
+  },
+  (t) => [index('checkins_user_idx').on(t.userId, t.expiresAt)],
+);
 
 /** 24-hour photo posts ("Tonight"), optionally tied to a restaurant. */
 export const stories = pgTable(

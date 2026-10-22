@@ -2,7 +2,8 @@ import { MapPin, palette } from '@tablemates/ui';
 import { AdvancedMarker, APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { useEffect } from 'react';
 
-import { mappable, pinKind, pinLabel, type TableMapProps } from './shared';
+import { CheckinMarker, checkinLabel } from '../out-now';
+import { framePoints, mappable, mappableCheckins, pinKind, pinLabel, type TableMapProps } from './shared';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 // Advanced markers require a Map ID; Google's demo ID works for development.
@@ -11,7 +12,7 @@ const MAP_ID = process.env.EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 /** Web map, via the Google Maps JavaScript API. */
 export const mapsAvailable = API_KEY.length > 0;
 
-export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser }: TableMapProps) {
+export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin }: TableMapProps) {
   const pins = mappable(places);
   return (
     <APIProvider apiKey={API_KEY}>
@@ -25,7 +26,7 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
         disableDefaultUI
         zoomControl
         onClick={() => onSelect(null)}>
-        <FitToPins places={places} />
+        <FitToPins places={places} checkins={checkins} />
         <PanToSelected places={places} selectedId={selectedId} />
         <CenterOnUser location={userLocation} trigger={centerOnUser} />
         {userLocation && (
@@ -55,25 +56,37 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
             </AdvancedMarker>
           );
         })}
+        {mappableCheckins(checkins).map((c) => (
+          // Above the restaurant's own pin, so both stay visible.
+          <AdvancedMarker
+            key={c.id}
+            position={{ lat: c.restaurant.lat, lng: c.restaurant.lng }}
+            title={checkinLabel(c)}
+            zIndex={3}
+            anchorPoint={['50%', '160%']}
+            onClick={() => onOpenCheckin?.(c)}>
+            <CheckinMarker checkin={c} />
+          </AdvancedMarker>
+        ))}
       </Map>
     </APIProvider>
   );
 }
 
 /** Re-frames the map whenever the set of pins changes (e.g. a filter changed). */
-function FitToPins({ places }: { places: TableMapProps['places'] }) {
+function FitToPins({ places, checkins }: Pick<TableMapProps, 'places' | 'checkins'>) {
   const map = useMap();
-  const pins = mappable(places);
-  const key = pins.map((p) => p.restaurant.id).join(',');
+  const pins = framePoints(places, checkins);
+  const key = pins.map((p) => p.id).join(',');
   useEffect(() => {
     if (!map || !pins.length) return;
     if (pins.length === 1) {
-      map.setCenter({ lat: pins[0]!.restaurant.lat, lng: pins[0]!.restaurant.lng });
+      map.setCenter({ lat: pins[0]!.lat, lng: pins[0]!.lng });
       map.setZoom(15);
       return;
     }
-    const lats = pins.map((p) => p.restaurant.lat);
-    const lngs = pins.map((p) => p.restaurant.lng);
+    const lats = pins.map((p) => p.lat);
+    const lngs = pins.map((p) => p.lng);
     map.fitBounds(
       { north: Math.max(...lats), south: Math.min(...lats), east: Math.max(...lngs), west: Math.min(...lngs) },
       64,

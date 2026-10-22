@@ -41,6 +41,7 @@ import type {
   Visit,
   VisitAudience,
   Wrapped,
+  CheckinsResponse,
   TableDetail,
   TableSummary,
 } from '@tablemates/shared';
@@ -224,6 +225,10 @@ export const api = {
   userLists: (username: string) => request<ListSummary[]>('GET', `/users/${encodeURIComponent(username)}/lists`),
   createList: (input: { title: string; description?: string; audience: 'friends' | 'private'; tableId?: string }) =>
     request<{ id: string }>('POST', '/lists', input),
+  checkins: () => request<CheckinsResponse>('GET', '/checkins'),
+  checkIn: (input: { restaurantId: string; audience: 'friends' | 'close_friends'; hours: number; notifyCloseFriends: boolean }) =>
+    request<{ id: string }>('POST', '/checkins', input),
+  endCheckin: () => request<void>('DELETE', '/checkins/me'),
   tables: () => request<TableSummary[]>('GET', '/tables'),
   table: (id: string) => request<TableDetail>('GET', `/tables/${id}`),
   tableFeed: (id: string, cursor?: string) => request<Page<FeedItem>>('GET', `/tables/${id}/feed${qs({ cursor })}`),

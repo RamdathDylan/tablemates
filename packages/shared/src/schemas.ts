@@ -68,6 +68,7 @@ export const notificationTypes = [
   'story_reaction',
   'plate_prompt',
   'table_invite',
+  'checkin',
 ] as const;
 
 export const tableInput = z.object({
@@ -93,6 +94,18 @@ export const storyInput = z.object({
   caption: z.string().trim().max(140).default(''),
   audience: z.enum(['friends', 'close_friends']).default('friends'),
 });
+
+export const checkinInput = z
+  .object({
+    restaurantId: z.uuid().optional(),
+    googlePlaceId: z.string().min(1).max(300).optional(),
+    audience: z.enum(['friends', 'close_friends']).default('friends'),
+    /** How long it stays up: 1 to 6 hours. */
+    hours: z.number().int().min(1).max(6).default(3),
+    /** Push close friends "Maya is at Joe's". Off unless asked. */
+    notifyCloseFriends: z.boolean().default(false),
+  })
+  .refine((c) => c.restaurantId || c.googlePlaceId, { message: 'Pick a restaurant', path: ['restaurantId'] });
 
 export const storyReactionInput = z.object({ emoji: z.enum(storyReactions) });
 

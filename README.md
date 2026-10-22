@@ -58,6 +58,8 @@ Each visit also has an audience: **Friends** (the default), **Close friends** (o
 
 **Tables** (friend groups) never widen that. A table's feed shows members' reviews only where the viewer could already see them, and only the owner's friends can be seated. Table lists are visible to current members only. `apps/api/test/tables.test.ts` covers these cases.
 
+**Out now** check-ins are opt-in and are never inferred from location. They expire on their own (after 1–6 hours), use the same friends and close-friends audiences as stories, and push only to close friends, and only when asked. `apps/api/test/checkins.test.ts` covers these cases.
+
 A pending request grants nothing, and unfriending hides reviews again right away (and clears close-friend status). `apps/api/test/visibility.test.ts` covers these cases.
 
 ## Auth

@@ -141,6 +141,13 @@
       "when": 1792645451917,
       "tag": "0019_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792646211102,
+      "tag": "0020_out_now",
+      "breakpoints": true
     }
   ]
 }

@@ -103,7 +103,8 @@ export type NotificationType =
   | 'badge'
   | 'story_reaction'
   | 'plate_prompt'
-  | 'table_invite';
+  | 'table_invite'
+  | 'checkin';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -214,6 +215,22 @@ export interface Story {
   expiresAt: string;
   /** The viewer has seen it. */
   seen: boolean;
+}
+
+/** A live "Out now" check-in. */
+export interface Checkin {
+  id: string;
+  user: PublicUser;
+  restaurant: Restaurant;
+  audience: 'friends' | 'close_friends';
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface CheckinsResponse {
+  mine: Checkin | null;
+  /** Friends out right now, newest first. */
+  friends: Checkin[];
 }
 
 /** One person's active stories, oldest first (the order they play in). */
