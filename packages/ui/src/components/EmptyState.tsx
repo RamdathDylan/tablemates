@@ -36,7 +36,9 @@ export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
           {message}
         </Text>
       )}
-      {action && <Button title={action.label} onPress={action.onPress} style={{ marginTop: space[2] }} />}
+      {action && (
+        <Button title={action.label} onPress={action.onPress} style={{ marginTop: space[2], alignSelf: 'center' }} />
+      )}
     </View>
   );
 }
