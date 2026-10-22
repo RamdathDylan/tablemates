@@ -29,7 +29,7 @@ export interface ButtonProps extends Omit<PressableProps, 'children' | 'style'> 
 }
 
 const sizes = {
-  sm: { height: 36, paddingHorizontal: space[3], icon: 16, text: 'label' as const },
+  sm: { height: 40, paddingHorizontal: space[3], icon: 16, text: 'label' as const },
   md: { height: 44, paddingHorizontal: space[4], icon: 18, text: 'bodyStrong' as const },
   lg: { height: 52, paddingHorizontal: space[6], icon: 20, text: 'bodyStrong' as const },
 };

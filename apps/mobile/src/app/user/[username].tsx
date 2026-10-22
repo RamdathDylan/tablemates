@@ -53,7 +53,7 @@ export default function UserScreen() {
     ) : null;
 
   return (
-    <Screen header>
+    <Screen header documentTitle={p.displayName}>
       <Stack.Screen options={{ title: `@${p.username}` }} />
       <ProfileHeader profile={p} actions={friendAction} />
       {canSee ? (

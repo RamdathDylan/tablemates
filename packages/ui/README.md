@@ -23,18 +23,19 @@ To see everything live, run the app in dev and open **Profile → Open style gui
 | Radius | `sm` 6, `md` 10, `lg` 16, `full` | |
 | Elevation | `elevation(0–3, colors.shadow)` | Returns a CSS `boxShadow` string. |
 | Motion | `duration.fast/base/slow` = 120/200/320ms; `easing.standard/decelerate/accelerate` | Skeleton respects reduced motion. |
-| Layout | `minTouchTarget` 44, `maxContentWidth` 640 | |
+| Layout | `minTouchTarget` 44, `maxContentWidth` 720, `breakpoints.tablet` 768, `breakpoints.desktop` 1024 | `useBreakpoint()` returns `'phone' \| 'tablet' \| 'desktop'`. |
 
 ## Components
 
-Every component reads its colors from the theme, works on web, and shows a visible focus ring for keyboard users on web.
+Every component reads its colors from the theme, works on web, and shows a visible focus ring for keyboard users on web. App-level pressables should use the exported `focusRing(state, colors)` helper so they match.
 
 ### Primitives
 
 | Component | Variants / props | States | Accessibility |
 |---|---|---|---|
 | `Text` | `variant`, `tone` (default, muted, subtle, primary, danger, success, inverse), `align` | — | Heading variants are announced as headings. |
-| `Button` | `variant` primary · secondary · ghost · danger; `size` sm 36 · md 44 · lg 52; `icon`, `fullWidth` | hover/pressed, disabled, `loading` (spinner, keeps width) | `role="button"`; `aria-busy` while loading; the `sm` size gets `hitSlop` up to 44px. |
+| `Button` | `variant` primary · secondary · ghost · danger; `size` sm 40 · md 44 · lg 52; `icon`, `fullWidth` | hover/pressed, disabled, `loading` (spinner, keeps width) | `role="button"`; `aria-busy` while loading; the `sm` size gets `hitSlop` up to 44px. |
+| `Badge` | `count`, `max` (default 9, shows "9+") | Hidden at 0 | Hidden from screen readers: put the count in the parent's label ("Friends, 2 pending requests"). |
 | `IconButton` | `variant` ghost · secondary · primary; `size` | hover/pressed, disabled | `accessibilityLabel` is **required**. |
 | `Input` / `TextArea` | `label`, `helperText`, `error`, `icon`, `hideLabel` | focus (2px blue), error (2px red with message), disabled | The label is announced even when hidden; the error message has `role="alert"`. |
 | `Avatar` | `size` sm 32 · md 40 · lg 56 · xl 88; `uri`, `ring`, `decorative` | Image, or initials on a tint chosen from the name | Use `decorative` when the name is shown next to the avatar. |

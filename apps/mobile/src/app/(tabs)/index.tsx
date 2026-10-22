@@ -6,11 +6,13 @@ import { FlatList, RefreshControl, View } from 'react-native';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { useContentStyle } from '@/components/screen';
 import { api } from '@/lib/api';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { qk } from '@/lib/query-keys';
 
 export default function FeedScreen() {
   const { colors } = useTheme();
   const content = useContentStyle();
+  useDocumentTitle('Feed');
   const feed = useInfiniteQuery({
     queryKey: qk.feed,
     queryFn: ({ pageParam }) => api.feed(pageParam),

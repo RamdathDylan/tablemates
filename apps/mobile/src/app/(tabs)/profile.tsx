@@ -20,7 +20,7 @@ export default function ProfileScreen() {
   const visits = useQuery({ queryKey: qk.myVisits, queryFn: api.myVisits });
 
   return (
-    <Screen>
+    <Screen documentTitle="Profile">
       {profile.isPending ? (
         <LoadingCards count={1} />
       ) : profile.isError ? (

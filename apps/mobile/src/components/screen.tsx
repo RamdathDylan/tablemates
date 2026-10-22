@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { ScrollView, View, type RefreshControlProps, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useDocumentTitle } from '@/lib/use-document-title';
+
 /**
  * Content column for every screen: page gutters, safe-area padding when there's
  * no navigation header, and a max width so web/tablet layouts don't sprawl.
@@ -22,12 +24,15 @@ export function useContentStyle({ header = false }: { header?: boolean } = {}): 
 
 export function Screen({
   title,
+  documentTitle,
   header,
   children,
   refreshControl,
 }: {
-  /** Large page title, for screens without a navigation header. */
+  /** Large page title, for screens without a navigation header. Also used as the browser tab title. */
   title?: string;
+  /** Browser tab title when it differs from `title` (or there is no visible title). */
+  documentTitle?: string;
   /** True when a navigation header already handles the top safe area. */
   header?: boolean;
   children: ReactNode;
@@ -35,6 +40,7 @@ export function Screen({
 }) {
   const { colors } = useTheme();
   const content = useContentStyle({ header });
+  useDocumentTitle(documentTitle ?? title);
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
