@@ -6,6 +6,11 @@ onlyBuiltDependencies:
   - '@node-rs/argon2'
   - esbuild
 
+# Refuse to install any package version published less than a day ago, which
+# guards against compromised releases that are pulled shortly after publishing.
+# Dependabot applies the same rule, plus a 7-day cooldown (.github/dependabot.yml).
+minimumReleaseAge: 1440
+
 # Advisories accepted after review. Each one must say why it is safe and when to
 # look again; anything not listed here fails `pnpm audit` in CI.
 auditConfig:

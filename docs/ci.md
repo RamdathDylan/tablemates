@@ -39,7 +39,11 @@ flowchart LR
 - **Scanner images pinned by digest:** gitleaks, Trivy, actionlint and zizmor run from their official images instead of marketplace actions.
 - **The same applies to service containers and the API's base image.**
 - **Least privilege:** the workflows default to `contents: read`. Only CodeQL gets `security-events: write`, and checkouts don't keep credentials (`persist-credentials: false`).
-- **Dependabot** proposes weekly updates for npm packages, GitHub Actions, the Compose services and the API's base image ([`.github/dependabot.yml`](../.github/dependabot.yml)). Security updates open as soon as an advisory is published.
+- **Dependabot** proposes weekly updates for npm packages, GitHub Actions, the Compose services and the API's base image ([`.github/dependabot.yml`](../.github/dependabot.yml)).
+  - Routine updates wait 7 days after release. Security updates open as soon as an advisory is published.
+  - Action updates arrive as a single grouped PR.
+  - Major Postgres and Node.js versions are excluded, because those are planned upgrades.
+- **Minimum release age:** pnpm refuses to install any package version published less than a day ago (`minimumReleaseAge` in `pnpm-workspace.yaml`). This blocks newly published malicious releases. A version range whose lowest version is younger than that can't be resolved until it matures.
 - **Repository settings:** secret scanning with push protection, Dependabot alerts and private vulnerability reporting are enabled.
 
 ## Running the checks locally
