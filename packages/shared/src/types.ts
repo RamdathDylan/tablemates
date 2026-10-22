@@ -37,6 +37,8 @@ export interface Profile extends PublicUser {
   streak?: Streak;
   /** This year's goal, if set. Only for yourself and friends. */
   goal?: Goal | null;
+  /** Places where they're mayor of the viewer's circle. Only for yourself and friends. */
+  mayorOf?: number;
 }
 
 /** A yearly target for new places. `done` counts places first visited that year. */
@@ -125,7 +127,8 @@ export type NotificationType =
   | 'table_invite'
   | 'checkin'
   | 'streak_nudge'
-  | 'goal_reached';
+  | 'goal_reached'
+  | 'mayor_lost';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -339,6 +342,8 @@ export interface RestaurantDetail {
   topDishes: TopDish[];
   /** Photos from reviews the viewer can see, newest first. */
   photos: (Photo & { author: PublicUser })[];
+  /** Most visits here in the last 60 days among the viewer and their friends (2+). */
+  mayor: { user: PublicUser; visits: number } | null;
 }
 
 export interface AskReply {
@@ -507,6 +512,8 @@ export interface MapPlace {
   distanceKm: number | null;
   /** On the viewer's want-to-try list. Saved places appear even before anyone visits. */
   saved: boolean;
+  /** The place's mayor in the viewer's circle, if any. */
+  mayor: PublicUser | null;
 }
 
 export interface ApiError {

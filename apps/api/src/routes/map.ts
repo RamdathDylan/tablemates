@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { listItems, lists, restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { forbidden, notFound, parse } from '../lib/errors';
+import { mayorships } from '../lib/mayors';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
 import { canSeeList } from './lists';
 import { canSeeActivityOf, friendVisitFilter, visibleVisitFilter, visitsOfFilter } from '../lib/visibility';
@@ -112,6 +113,7 @@ function summarize(rows: Row[], viewerId: string, origin?: { lat: number; lng: n
         : null,
       distanceKm: distanceFrom(origin, r),
       saved: false,
+      mayor: null,
     };
   });
 }
@@ -132,6 +134,7 @@ function unvisited(r: typeof restaurants.$inferSelect, origin: { lat: number; ln
     latestReview: null,
     distanceKm: distanceFrom(origin, r),
     saved,
+    mayor: null,
   };
 }
 
@@ -171,15 +174,17 @@ export function mapRoutes(app: FastifyInstance, { db }: Deps) {
     }
 
     const origin = q.lat !== undefined && q.lng !== undefined ? { lat: q.lat, lng: q.lng } : undefined;
-    const [rows, saved] = await Promise.all([
+    const [rows, saved, mayors] = await Promise.all([
       selectVisits(db, author),
       db
         .select({ restaurant: restaurants })
         .from(savedPlaces)
         .innerJoin(restaurants, eq(savedPlaces.restaurantId, restaurants.id))
         .where(eq(savedPlaces.userId, me)),
+      mayorships(db, me),
     ]);
     let places = summarize(rows, me, origin);
+    for (const p of places) p.mayor = mayors.get(p.restaurant.id)?.user ?? null;
     const savedIds = new Set(saved.map((s) => s.restaurant.id));
     for (const p of places) p.saved = savedIds.has(p.restaurant.id);
     // Your list is yours: saved-but-unvisited places join the views that include you.

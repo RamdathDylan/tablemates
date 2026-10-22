@@ -110,6 +110,7 @@ export const notificationType = pgEnum('notification_type', [
   'checkin',
   'streak_nudge',
   'goal_reached',
+  'mayor_lost',
 ]);
 
 /**

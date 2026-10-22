@@ -68,6 +68,12 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         body: `It's ${n.restaurantName ?? 'decided'}!`,
         data: { type: n.type, planId: n.planId ?? '' },
       };
+    case 'mayor_lost':
+      return {
+        title: '👑 You lost a crown',
+        body: `${n.actorName} took ${n.restaurantName ?? 'a place'} from you`,
+        data: { type: n.type, restaurantId: n.restaurantId ?? '' },
+      };
     case 'goal_reached':
       return {
         title: '🎯 Goal reached!',

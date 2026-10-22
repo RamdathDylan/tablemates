@@ -1,5 +1,5 @@
 import type { Profile } from '@tablemates/shared';
-import { Avatar, Icon, space, Text } from '@tablemates/ui';
+import { Avatar, Chip, Icon, space, Text } from '@tablemates/ui';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
@@ -27,9 +27,15 @@ export function ProfileHeader({ profile, actions }: { profile: Profile; actions?
           {profile.bio}
         </Text>
       )}
-      {!!profile.streak?.current && (
-        <View style={{ alignSelf: 'center' }}>
+      {(!!profile.streak?.current || !!profile.mayorOf) && (
+        <View style={{ flexDirection: 'row', gap: space[2], alignSelf: 'center' }}>
           <StreakChip streak={profile.streak} own={own} />
+          {!!profile.mayorOf && (
+            <Chip
+              label={`👑 Mayor of ${profile.mayorOf}`}
+              accessibilityLabel={`Mayor of ${profile.mayorOf} place${profile.mayorOf === 1 ? '' : 's'}`}
+            />
+          )}
         </View>
       )}
       {profile.stats && (

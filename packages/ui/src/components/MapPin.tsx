@@ -16,6 +16,8 @@ export interface MapPinProps {
   recommended?: boolean;
   /** On the viewer's want-to-try list. */
   saved?: boolean;
+  /** The viewer is mayor here: a crown sits on the pin. */
+  crowned?: boolean;
   selected?: boolean;
 }
 
@@ -24,7 +26,7 @@ export interface MapPinProps {
  * Tomato = you've been, saffron = friends only, tomato with a saffron ring = both.
  * The map supplies the accessible label (the restaurant summary); the pin is visual.
  */
-export function MapPin({ kind, rating, recommended, saved, selected }: MapPinProps) {
+export function MapPin({ kind, rating, recommended, saved, crowned, selected }: MapPinProps) {
   const { colors } = useTheme();
   const fill = kind === 'friends' ? palette.saffron[400] : kind === 'saved' ? palette.stone[800] : colors.primary;
   const fg = kind === 'friends' ? palette.stone[900] : kind === 'saved' ? palette.stone[0] : colors.onPrimary;
@@ -32,6 +34,7 @@ export function MapPin({ kind, rating, recommended, saved, selected }: MapPinPro
 
   return (
     <View aria-hidden style={{ alignItems: 'center', transform: [{ scale: selected ? 1.15 : 1 }] }}>
+      {crowned && <Text style={{ fontSize: 14, lineHeight: 16, marginBottom: -4, zIndex: 1 }}>👑</Text>}
       <View
         style={{
           flexDirection: 'row',

@@ -32,6 +32,7 @@ import { mapsAvailable, TableMap } from '@/components/map/table-map';
 import { useCheckins } from '@/components/out-now';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { api } from '@/lib/api';
+import { useMe } from '@/lib/auth';
 import { useLocation } from '@/lib/location';
 import { qk } from '@/lib/query-keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
@@ -112,6 +113,7 @@ export default function MapScreen() {
   });
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
   const checkins = useCheckins();
+  const me = useMe();
   // Friends out now follow the people filters: one friend, or none on "Just me" and list views.
   const outNow = (checkins.data?.friends ?? []).filter((c) =>
     params.list || scope === 'me' ? false : scope === 'friend' ? c.user.id === params.friend : true,
@@ -277,6 +279,7 @@ export default function MapScreen() {
         userLocation={location.coords}
         centerOnUser={centerKey}
         checkins={outNow}
+        viewerId={me.id}
         onOpenCheckin={(c) => router.push({ pathname: '/restaurant/[id]', params: { id: c.restaurant.id } })}
       />
       <View style={{ position: 'absolute', top: space[3], right: space[3] }}>

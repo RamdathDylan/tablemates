@@ -42,7 +42,7 @@ export default function RestaurantScreen() {
     );
   }
 
-  const { restaurant: r, reviews, friendStats, saved, topDishes, photos } = detail.data;
+  const { restaurant: r, reviews, friendStats, saved, topDishes, photos, mayor } = detail.data;
   const gallery = photos.map((p) => ({ url: p.url, caption: `${p.author.displayName}` }));
   const price = priceLabel(r.priceLevel);
 
@@ -68,6 +68,11 @@ export default function RestaurantScreen() {
         <HoursList restaurant={r} />
       </View>
 
+      {mayor && (
+        <Text>
+          👑 {mayor.user.displayName} is the mayor · {mayor.visits} visits in the last 60 days
+        </Text>
+      )}
       {friendStats.visits > 0 && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], flexWrap: 'wrap' }}>
           {friendStats.averageRating !== null && <Rating value={friendStats.averageRating} />}
