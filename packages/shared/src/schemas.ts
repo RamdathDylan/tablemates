@@ -165,6 +165,8 @@ export const mapPlacesQuery = z
     cuisine: z.string().trim().min(1).max(40).optional(),
     /** Only places on the viewer's want-to-try list. */
     saved: queryBoolean.optional(),
+    /** Only places on this list (one the viewer may see). */
+    listId: z.uuid().optional(),
     sort: z.enum(mapSorts).default('recommended'),
     lat: z.coerce.number().min(-90).max(90).optional(),
     lng: z.coerce.number().min(-180).max(180).optional(),
@@ -182,10 +184,25 @@ export interface MapPlacesQuery {
   minRating?: number;
   cuisine?: string;
   saved?: boolean;
+  listId?: string;
   sort?: (typeof mapSorts)[number];
   lat?: number;
   lng?: number;
 }
+
+export const listInput = z.object({
+  title: z.string().trim().min(1, 'Name the list').max(60),
+  description: z.string().trim().max(280).default(''),
+  audience: z.enum(['friends', 'private']).default('friends'),
+});
+
+export const updateListInput = z.object({
+  title: z.string().trim().min(1).max(60).optional(),
+  description: z.string().trim().max(280).optional(),
+  audience: z.enum(['friends', 'private']).optional(),
+});
+
+export const listItemInput = z.object({ note: z.string().trim().max(200).default('') });
 
 export const feedQuery = z.object({
   cursor: z.string().optional(),

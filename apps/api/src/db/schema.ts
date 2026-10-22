@@ -371,6 +371,55 @@ export const closeFriends = pgTable(
   (t) => [primaryKey({ columns: [t.ownerId, t.friendId] })],
 );
 
+export const listAudience = pgEnum('list_audience', ['friends', 'private']);
+
+/** A curated, shareable list of restaurants ("Date night", "Best tacos"). */
+export const lists = pgTable(
+  'lists',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description').notNull().default(''),
+    audience: listAudience('audience').notNull().default('friends'),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    updatedAt: timestamptz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('lists_owner_idx').on(t.ownerId)],
+);
+
+export const listItems = pgTable(
+  'list_items',
+  {
+    listId: uuid('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id')
+      .notNull()
+      .references(() => restaurants.id, { onDelete: 'cascade' }),
+    note: text('note').notNull().default(''),
+    addedAt: timestamptz('added_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.listId, t.restaurantId] })],
+);
+
+/** Friends following someone's list, so it shows on their profile and map. */
+export const listFollows = pgTable(
+  'list_follows',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    listId: uuid('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.listId] })],
+);
+
 /** A user's private "want to try" list. */
 export const savedPlaces = pgTable(
   'saved_places',

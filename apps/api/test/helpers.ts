@@ -96,7 +96,7 @@ export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
 
   beforeEach(async () => {
     await ctx.db.execute(
-      sql`truncate users, review_dishes, plans, plan_members, plan_options, plan_votes, asks, ask_replies, push_tokens, reactions, comments, visit_companions, friendships, notifications, email_verification_codes, saved_places, close_friends, restaurants, visits, reviews, refresh_tokens cascade`,
+      sql`truncate users, lists, list_items, list_follows, review_dishes, plans, plan_members, plan_options, plan_votes, asks, ask_replies, push_tokens, reactions, comments, visit_companions, friendships, notifications, email_verification_codes, saved_places, close_friends, restaurants, visits, reviews, refresh_tokens cascade`,
     );
     ctx.places.places.clear();
     ctx.places.getCalls = 0;
