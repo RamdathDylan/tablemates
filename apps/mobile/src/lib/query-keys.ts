@@ -15,4 +15,5 @@ export const qk = {
   map: (params: object) => ['map', params] as const,
   saved: ['saved'] as const,
   tagged: ['tagged'] as const,
+  asks: ['asks'] as const,
 };

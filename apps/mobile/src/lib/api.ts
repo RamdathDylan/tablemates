@@ -1,5 +1,6 @@
 import type {
   ApiError as ApiErrorBody,
+  Ask,
   Comment,
   AuthResponse,
   CreateVisitInput,
@@ -189,6 +190,12 @@ export const api = {
   unsavePlace: (restaurantId: string) => request<void>('DELETE', `/restaurants/${restaurantId}/save`),
   mapPlaces: (query: MapPlacesQuery) => request<MapPlace[]>('GET', `/map/places${qs({ ...query })}`),
 
+  asks: () => request<Ask[]>('GET', '/asks'),
+  createAsk: (input: { question: string; areaLabel?: string }) => request<{ id: string }>('POST', '/asks', input),
+  closeAsk: (id: string) => request<void>('DELETE', `/asks/${id}`),
+  replyToAsk: (id: string, input: { restaurantId?: string; googlePlaceId?: string; note?: string }) =>
+    request<{ id: string }>('POST', `/asks/${id}/replies`, input),
+  deleteAskReply: (askId: string, id: string) => request<void>('DELETE', `/asks/${askId}/replies/${id}`),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),

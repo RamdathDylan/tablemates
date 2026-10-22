@@ -15,6 +15,7 @@ const labels: Record<NotificationType, string> = {
   reaction: 'Reactions to your reviews',
   comment: 'Comments',
   tagged: 'Tags on visits',
+  ask_reply: 'Answers to your questions',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

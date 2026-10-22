@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 
 import { ActivityBell } from '@/components/activity-bell';
+import { AsksSection } from '@/components/asks';
 import { CommentsSheet } from '@/components/comments-sheet';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { useContentStyle } from '@/components/screen';
@@ -39,12 +40,15 @@ export default function FeedScreen() {
       keyExtractor={(item) => item.review.id}
       refreshControl={<RefreshControl refreshing={feed.isRefetching} onRefresh={() => void feed.refetch()} />}
       ListHeaderComponent={
+        <View style={{ gap: space[4] }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space[3] }}>
           <View style={{ flex: 1, gap: space[1] }}>
             <Text variant="title">From your friends</Text>
             <Text tone="muted">Only people you’ve added can recommend here.</Text>
           </View>
           {bp === 'phone' && <ActivityBell />}
+        </View>
+        <AsksSection />
         </View>
       }
       ListEmptyComponent={

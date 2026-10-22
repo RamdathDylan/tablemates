@@ -18,6 +18,7 @@ export interface NotifyInput {
   restaurantId?: string;
   commentId?: string;
   visitId?: string;
+  askId?: string;
   reaction?: 'yum' | 'going';
 }
 

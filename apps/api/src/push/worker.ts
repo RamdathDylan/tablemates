@@ -42,6 +42,12 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         body: `${n.actorName} tagged you. Add your rating?`,
         data: { type: n.type, screen: 'tagged' },
       };
+    case 'ask_reply':
+      return {
+        title: 'Your friends answered',
+        body: `${n.actorName} suggested ${n.restaurantName ?? 'a place'}`,
+        data: { type: n.type, screen: 'feed' },
+      };
     case 'saved_place_reviewed':
       return {
         title: n.restaurantName ?? 'A place you saved',

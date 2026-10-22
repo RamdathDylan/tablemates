@@ -41,7 +41,30 @@ export type UpdateProfileInput = z.infer<typeof updateProfileInput>;
 
 export const friendRequestInput = z.object({ username });
 
-export const notificationTypes = ['friend_request', 'friend_accepted', 'saved_place_reviewed', 'reaction', 'comment', 'tagged'] as const;
+export const notificationTypes = [
+  'friend_request',
+  'friend_accepted',
+  'saved_place_reviewed',
+  'reaction',
+  'comment',
+  'tagged',
+  'ask_reply',
+] as const;
+
+export const askInput = z.object({
+  question: z.string().trim().min(5, 'Ask a little more').max(200),
+  areaLabel: z.string().trim().max(60).optional(),
+  /** How long friends can reply, in days. */
+  days: z.number().int().min(1).max(30).default(7),
+});
+
+export const askReplyInput = z
+  .object({
+    restaurantId: z.uuid().optional(),
+    googlePlaceId: z.string().min(1).max(300).optional(),
+    note: z.string().trim().max(200).default(''),
+  })
+  .refine((r) => r.restaurantId || r.googlePlaceId, { message: 'Pick a restaurant' });
 
 export const reactionKinds = ['yum', 'going'] as const;
 
