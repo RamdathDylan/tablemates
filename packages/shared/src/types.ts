@@ -29,6 +29,8 @@ export interface Profile extends PublicUser {
   stats?: { visits: number; reviews: number; friends: number };
   /** How your ratings compare. Only for friends. */
   taste?: TasteMatch;
+  /** Pinned all-time favorites, in order. Only for yourself and friends. */
+  favorites?: Favorite[];
 }
 
 export interface Friend extends PublicUser {
@@ -192,6 +194,12 @@ export interface Photo {
   url: string;
   width: number | null;
   height: number | null;
+}
+
+export interface Favorite {
+  restaurant: Restaurant;
+  /** A photo from the owner's own reviews there, if the viewer may see one. */
+  photo: Photo | null;
 }
 
 export interface Dish {

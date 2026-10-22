@@ -1,4 +1,5 @@
 import {
+  favoritesInput,
   updateProfileInput,
   userSearchQuery,
   username as usernameSchema,
@@ -13,6 +14,7 @@ import type { Deps } from '../deps';
 import { forbidden, notFound, parse } from '../lib/errors';
 import { toMe, toPublicUser } from '../lib/serialize';
 import { passport } from '../lib/badges';
+import { favoritesFor, setFavorites } from '../lib/favorites';
 import { ownReadyPhotos } from '../lib/photos';
 import { tasteWith } from '../lib/taste';
 import { relationshipsWith, relationshipWith, visitsOfFilter } from '../lib/visibility';
@@ -52,6 +54,12 @@ export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: 
     const [user] = await db.update(users).set(input).where(eq(users.id, req.userId)).returning();
     if (!user) throw notFound('User not found');
     return toMe(user);
+  });
+
+  app.put('/me/favorites', async (req) => {
+    const { restaurantIds } = parse(favoritesInput, req.body);
+    await setFavorites(db, req.userId, restaurantIds);
+    return favoritesFor(db, storage, req.userId, req.userId);
   });
 
   app.get('/users/search', async (req): Promise<UserSearchResult[]> => {
@@ -110,6 +118,7 @@ export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: 
       ]);
       profile.stats = { visits: v!.n, reviews: r!.n, friends: f!.n };
       if (rel.status === 'friends') profile.taste = await tasteWith(db, req.userId, user.id);
+      profile.favorites = await favoritesFor(db, storage, user.id, req.userId);
     }
     return profile;
   });

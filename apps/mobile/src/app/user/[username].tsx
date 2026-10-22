@@ -2,6 +2,7 @@ import { Button, EmptyState } from '@tablemates/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
+import { FavoritesRow } from '@/components/favorites';
 import { UserListsSection } from '@/components/lists';
 import { Passport } from '@/components/passport';
 import { ProfileHeader } from '@/components/profile-header';
@@ -59,6 +60,7 @@ export default function UserScreen() {
     <Screen header documentTitle={p.displayName}>
       <Stack.Screen options={{ title: `@${p.username}` }} />
       <ProfileHeader profile={p} actions={friendAction} />
+      {p.favorites && <FavoritesRow favorites={p.favorites} own={p.friendship === 'self'} username={p.username} />}
       {p.taste && <TasteCard taste={p.taste} name={p.displayName} />}
       {canSee && <UserListsSection username={p.username} />}
       {canSee && <Passport username={p.username} own={p.friendship === 'self'} />}

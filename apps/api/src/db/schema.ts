@@ -460,6 +460,25 @@ export const reviewDishes = pgTable(
   ],
 );
 
+/** Up to four pinned all-time favorites shown atop a profile (Letterboxd-style). */
+export const favorites = pgTable(
+  'favorites',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    restaurantId: uuid('restaurant_id')
+      .notNull()
+      .references(() => restaurants.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.position] }),
+    uniqueIndex('favorites_once_idx').on(t.userId, t.restaurantId),
+    check('favorites_position_range', sql`${t.position} between 1 and 4`),
+  ],
+);
+
 /** Badges a user has earned. Definitions live in code (lib/badges.ts). */
 export const userBadges = pgTable(
   'user_badges',
