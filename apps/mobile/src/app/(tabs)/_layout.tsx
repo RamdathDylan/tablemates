@@ -37,6 +37,8 @@ export default function TabLayout() {
             : 'Friends',
         }}
       />
+      {/* Reached from the sidebar's Activity item or the phone Feed's bell, not a tab button. */}
+      <Tabs.Screen name="activity" options={{ title: 'Activity' }} />
       <Tabs.Screen name="profile" options={tab('Profile', 'Profile', 'person-circle-outline', 'person-circle')} />
     </Tabs>
   );

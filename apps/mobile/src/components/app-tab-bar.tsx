@@ -15,6 +15,10 @@ import type { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { useNotificationSummary } from '@/lib/notifications';
+
+import { activityLabel } from './activity-bell';
+
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 /**
@@ -26,6 +30,9 @@ export function AppTabBar({ state, descriptors, emitter, navigateToTab, insets }
   const { colors } = useTheme();
   const bp = useBreakpoint();
   const sidebar = bp !== 'phone';
+  const unread = useNotificationSummary().data?.unread ?? 0;
+  const activity = state.routes.find((r) => r.name === 'activity');
+  const onActivity = state.routes[state.index]?.name === 'activity';
 
   return (
     <View
@@ -55,6 +62,7 @@ export function AppTabBar({ state, descriptors, emitter, navigateToTab, insets }
       }>
       {sidebar && <Brand compact={bp === 'tablet'} />}
       {state.routes.map((route, index) => {
+        if (route.name === 'activity') return null;
         const { options } = descriptors[route.key]!;
         const focused = index === state.index;
         const label = typeof options.tabBarLabel === 'string' ? options.tabBarLabel : (options.title ?? route.name);
@@ -78,6 +86,18 @@ export function AppTabBar({ state, descriptors, emitter, navigateToTab, insets }
           />
         );
       })}
+      {sidebar && activity && (
+        // Phones reach Activity from the Feed's bell instead of a fifth bottom-bar button.
+        <TabItem
+          bp={bp}
+          label="Activity"
+          accessibilityLabel={activityLabel(unread)}
+          focused={onActivity}
+          badge={unread}
+          onPress={() => navigateToTab(activity.key)}
+          icon={(color) => <Icon name={unread ? 'notifications' : 'notifications-outline'} size={24} color={color} />}
+        />
+      )}
     </View>
   );
 }

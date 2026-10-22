@@ -14,6 +14,7 @@ import type { Deps } from '../deps';
 import { conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toRestaurant, toReview } from '../lib/serialize';
+import { notifySaversOfReview } from '../lib/notify';
 import { visitsOfFilter } from '../lib/visibility';
 import type { PlacesProvider } from '../places/types';
 
@@ -114,6 +115,7 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
             .values({ visitId: visit!.id, ...input.review })
             .returning()
         : [];
+      if (review) await notifySaversOfReview(tx, visit!.id, review.id);
       return { visit: visit!, review };
     });
     reply.status(201);
@@ -157,7 +159,11 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
       .where(and(eq(visits.id, visitId), eq(visits.userId, req.userId)));
     if (!visit) throw notFound('Visit not found');
     try {
-      const [review] = await db.insert(reviews).values({ visitId, ...input }).returning();
+      const review = await db.transaction(async (tx) => {
+        const [created] = await tx.insert(reviews).values({ visitId, ...input }).returning();
+        await notifySaversOfReview(tx, visitId, created!.id);
+        return created;
+      });
       reply.status(201);
       return toReview(review!);
     } catch (err) {

@@ -36,6 +36,13 @@
       "when": 1792637528872,
       "tag": "0004_visit_privacy",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792637839367,
+      "tag": "0005_activity_inbox",
+      "breakpoints": true
     }
   ]
 }

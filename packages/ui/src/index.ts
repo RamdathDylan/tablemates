@@ -1,6 +1,6 @@
 export * from './tokens';
 export { ThemeProvider, useTheme, type ColorScheme, type Theme } from './theme';
-export { formatDate, priceLabel } from './format';
+export { formatDate, priceLabel, timeAgo } from './format';
 export { useBreakpoint, type Breakpoint } from './responsive';
 export { focusRing, type PressState } from './components/internal';
 
