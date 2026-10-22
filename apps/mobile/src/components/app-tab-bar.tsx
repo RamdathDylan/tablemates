@@ -21,6 +21,13 @@ import { activityLabel } from './activity-bell';
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
+const PHONE_ITEM_HEIGHT = 56;
+
+/** Height of the phone bottom bar, so overlays (toasts) can sit above it. */
+export function phoneTabBarHeight(bottomInset: number) {
+  return space[2] + PHONE_ITEM_HEIGHT + Math.max(bottomInset, space[2]) + 1;
+}
+
 /**
  * App navigation. Phones get a tall bottom bar; tablets an icon rail; desktops
  * a labeled sidebar. Every item is at least 48px tall with a visible focus ring,
@@ -170,7 +177,7 @@ function TabItem({ bp, label, accessibilityLabel, focused, badge, onPress, icon 
               alignItems: 'center',
               justifyContent: 'center',
               gap: space[1],
-              minHeight: bp === 'phone' ? 56 : 64,
+              minHeight: bp === 'phone' ? PHONE_ITEM_HEIGHT : 64,
               borderRadius: radius.md,
             },
         desktop && focused && { backgroundColor: colors.primarySoft },

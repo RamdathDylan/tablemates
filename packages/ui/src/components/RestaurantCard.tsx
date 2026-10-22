@@ -35,7 +35,7 @@ export function RestaurantCard({
   const price = priceLabel(priceLevel);
   const summary =
     friendStats && friendStats.recommends > 0
-      ? `${friendStats.recommends} friend${friendStats.recommends === 1 ? '' : 's'} recommend`
+      ? `${friendStats.recommends} ${friendStats.recommends === 1 ? 'friend recommends' : 'friends recommend'}`
       : friendStats && friendStats.visits > 0
         ? `${friendStats.visits} friend visit${friendStats.visits === 1 ? '' : 's'}`
         : null;
