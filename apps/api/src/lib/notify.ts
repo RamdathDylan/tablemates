@@ -1,8 +1,8 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
-import { closeFriends, notifications, savedPlaces, visits } from '../db/schema';
-import { friendIdsOf } from './visibility';
+import { notifications, savedPlaces, visits } from '../db/schema';
+import { visitVisibleTo } from './visibility';
 
 /** A transaction or the db itself. */
 type Tx = Pick<Db, 'insert' | 'select' | 'delete'>;
@@ -49,21 +49,12 @@ export async function notify(tx: Tx, input: NotifyInput | NotifyInput[]) {
  * friend just reviewed it. Uses the same audience rules as the feed.
  */
 export async function notifySaversOfReview(tx: Tx, visitId: string, reviewId: string) {
-  const [visit] = await tx.select().from(visits).where(eq(visits.id, visitId));
-  if (!visit || visit.audience === 'private') return;
-
+  const [visit] = await tx.select({ userId: visits.userId, restaurantId: visits.restaurantId }).from(visits).where(eq(visits.id, visitId));
+  if (!visit) return;
   const savers = await tx
     .select({ userId: savedPlaces.userId })
     .from(savedPlaces)
-    .where(
-      and(
-        eq(savedPlaces.restaurantId, visit.restaurantId),
-        sql`${savedPlaces.userId} in (${friendIdsOf(visit.userId)})`,
-        visit.audience === 'close_friends'
-          ? sql`exists (select 1 from ${closeFriends} where ${closeFriends.ownerId} = ${visit.userId} and ${closeFriends.friendId} = ${savedPlaces.userId})`
-          : undefined,
-      ),
-    );
+    .where(and(eq(savedPlaces.restaurantId, visit.restaurantId), visitVisibleTo(visitId, savedPlaces.userId)));
   await notify(
     tx,
     savers.map((s) => ({

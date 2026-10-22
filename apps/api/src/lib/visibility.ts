@@ -1,18 +1,25 @@
 /**
- * The single place that decides who can see whose visits and reviews.
- * TableMates' core rule: you only see recommendations from accepted friends,
- * and each visit's audience (friends, close friends, or private) narrows that.
- * Every query that reads visits or reviews must filter through these helpers.
+ * The single place that decides who can see whose visits, reviews, stories and
+ * check-ins. TableMates' core rule: you only see activity from accepted
+ * friends, and each item's audience (friends, close friends, or private)
+ * narrows that. Every query that reads that content filters through these
+ * helpers; a test fails if audience SQL is written anywhere else.
  */
 import type { FriendshipStatus } from '@tablemates/shared';
-import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 
 import type { Db } from '../db/client';
 import { closeFriends, friendships, visitCompanions, visits } from '../db/schema';
 
+/**
+ * Who is asking: a user id, or a column holding one (for example to find every
+ * user who may see an item, as alerts do).
+ */
+export type Viewer = string | SQLWrapper;
+
 /** Subquery yielding the ids of the viewer's accepted friends. */
-export function friendIdsOf(viewerId: string): SQL {
+export function friendIdsOf(viewerId: Viewer): SQL {
   return sql`select case when ${friendships.requesterId} = ${viewerId}
       then ${friendships.addresseeId} else ${friendships.requesterId} end
     from ${friendships}
@@ -21,7 +28,7 @@ export function friendIdsOf(viewerId: string): SQL {
 }
 
 /** Rows authored by the viewer's friends (not the viewer). Used for the feed. */
-export function friendAuthorFilter(authorColumn: PgColumn, viewerId: string): SQL {
+export function friendAuthorFilter(authorColumn: PgColumn, viewerId: Viewer): SQL {
   return sql`${authorColumn} in (${friendIdsOf(viewerId)})`;
 }
 
@@ -31,19 +38,49 @@ export function friendAuthorFilter(authorColumn: PgColumn, viewerId: string): SQ
  * and non-private visits the viewer was tagged on (they were there).
  * "Only me" visits admit nobody. Never used alone; combine with a friendship check.
  */
-export function audienceAdmits(viewerId: string): SQL {
-  return sql`(${visits.audience} = 'friends'
-    or (${visits.audience} = 'close_friends' and exists (
-      select 1 from ${closeFriends}
-      where ${closeFriends.ownerId} = ${visits.userId} and ${closeFriends.friendId} = ${viewerId}))
+export function audienceAdmits(viewerId: Viewer): SQL {
+  return sql`(${friendsOrCloseFriends(visits.audience, visits.userId, viewerId)}
     or (${visits.audience} <> 'private' and exists (
       select 1 from ${visitCompanions}
       where ${visitCompanions.visitId} = ${visits.id} and ${visitCompanions.userId} = ${viewerId})))`;
 }
 
+/**
+ * The audience rule shared by every kind of content: "friends" admits any
+ * friend, "close_friends" admits friends the author starred. Anything else
+ * (such as "private") admits nobody. Combine with a friendship check.
+ */
+function friendsOrCloseFriends(audience: PgColumn, author: PgColumn, viewerId: Viewer): SQL {
+  return sql`(${audience} = 'friends'
+    or (${audience} = 'close_friends' and exists (
+      select 1 from ${closeFriends}
+      where ${closeFriends.ownerId} = ${author} and ${closeFriends.friendId} = ${viewerId})))`;
+}
+
+/**
+ * Friends' stories, check-ins and other audience-scoped content the viewer may
+ * see: the author is a friend and the item's audience includes the viewer.
+ */
+export function friendContentFilter(author: PgColumn, audience: PgColumn, viewerId: Viewer): SQL {
+  return and(friendAuthorFilter(author, viewerId), friendsOrCloseFriends(audience, author, viewerId))!;
+}
+
 /** Friends' visits the viewer may see. Used for the feed and friends-only views. */
-export function friendVisitFilter(viewerId: string): SQL {
+export function friendVisitFilter(viewerId: Viewer): SQL {
   return and(friendAuthorFilter(visits.userId, viewerId), audienceAdmits(viewerId))!;
+}
+
+/** True when this visit is visible to the viewer as a friend (not as its author). */
+export function visitVisibleTo(visitId: string, viewerId: Viewer): SQL {
+  return sql`exists (select 1 from ${visits} where ${visits.id} = ${visitId} and ${friendVisitFilter(viewerId)})`;
+}
+
+/**
+ * Visits every one of the author's friends may see. Used where results are shown
+ * to a group whose members aren't all close friends (challenge leaderboards).
+ */
+export function sharedWithAllFriends(): SQL {
+  return eq(visits.audience, 'friends');
 }
 
 /** The viewer's own visits plus the friends' visits they may see. */

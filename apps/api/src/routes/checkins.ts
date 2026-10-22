@@ -9,7 +9,7 @@ import type { Deps } from '../deps';
 import { notFound, parse } from '../lib/errors';
 import { notify } from '../lib/notify';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
-import { friendIdsOf } from '../lib/visibility';
+import { friendContentFilter, friendIdsOf } from '../lib/visibility';
 import { ensureRestaurant } from './visits';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -19,13 +19,7 @@ const active = (now: Date) => and(isNull(checkins.endedAt), gt(checkins.expiresA
 
 /** Friends' check-ins whose audience includes the viewer (same rule as stories). */
 function friendsCheckins(viewerId: string) {
-  return and(
-    sql`${checkins.userId} in (${friendIdsOf(viewerId)})`,
-    or(
-      eq(checkins.audience, 'friends'),
-      sql`exists (select 1 from ${closeFriends} where ${closeFriends.ownerId} = ${checkins.userId} and ${closeFriends.friendId} = ${viewerId})`,
-    ),
-  )!;
+  return friendContentFilter(checkins.userId, checkins.audience, viewerId);
 }
 
 async function selectCheckins(db: Db, where: ReturnType<typeof and>): Promise<Checkin[]> {

@@ -1,17 +1,19 @@
 /** Counting progress in friend challenges, and the job that wraps them up. */
 import type { ChallengeMetric } from '@tablemates/shared';
-import { and, eq, gte, inArray, isNull, lt, lte, ne } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
 import { challengeMembers, challenges, restaurants, reviews, visits } from '../db/schema';
 import { evaluateBadges } from './badges';
 import { notify } from './notify';
+import { sharedWithAllFriends } from './visibility';
 
 type ChallengeRow = typeof challenges.$inferSelect;
 
 /**
- * Each person's count for a challenge. Only visits not marked private count,
- * so a private log never shows up as activity on a leaderboard.
+ * Each person's count for a challenge. Only visits shared with all friends
+ * count: members see each other's totals, so private and close-friends visits
+ * never show up as leaderboard activity.
  */
 export async function challengeCounts(db: Pick<Db, 'select' | 'selectDistinct'>, challenge: ChallengeRow, userIds: string[]): Promise<Map<string, number>> {
   const counts = new Map(userIds.map((id) => [id, 0]));
@@ -24,7 +26,7 @@ export async function challengeCounts(db: Pick<Db, 'select' | 'selectDistinct'>,
     .where(
       and(
         inArray(visits.userId, userIds),
-        ne(visits.audience, 'private'),
+        sharedWithAllFriends(),
         gte(visits.visitedAt, challenge.startsOn),
         lte(visits.visitedAt, challenge.endsOn),
       ),

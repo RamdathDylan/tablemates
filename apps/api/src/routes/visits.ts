@@ -8,7 +8,7 @@ import {
   type TaggedVisit,
   type Visit,
 } from '@tablemates/shared';
-import { and, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
@@ -23,7 +23,7 @@ import { watchMayorship } from '../lib/mayors';
 import { dishesFor, setDishes } from '../lib/dishes';
 import { photosFor, setReviewPhotos } from '../lib/photos';
 import { notify, notifySaversOfReview } from '../lib/notify';
-import { relationshipsWith, visitsOfFilter } from '../lib/visibility';
+import { audienceAdmits, relationshipsWith, visitsOfFilter } from '../lib/visibility';
 import type { PlacesProvider } from '../places/types';
 import type { Storage } from '../storage/types';
 
@@ -174,7 +174,7 @@ export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps)
       .innerJoin(visits, eq(visitCompanions.visitId, visits.id))
       .innerJoin(restaurants, eq(visits.restaurantId, restaurants.id))
       .innerJoin(users, eq(visits.userId, users.id))
-      .where(and(eq(visitCompanions.userId, req.userId), isNull(visitCompanions.linkedVisitId), ne(visits.audience, 'private')))
+      .where(and(eq(visitCompanions.userId, req.userId), isNull(visitCompanions.linkedVisitId), audienceAdmits(req.userId)))
       .orderBy(desc(visits.visitedAt));
     return rows.map((r) => ({
       visitId: r.visit.id,
