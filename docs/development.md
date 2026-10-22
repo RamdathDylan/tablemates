@@ -57,6 +57,16 @@ pnpm db:migrate   # applies apps/api/drizzle/*.sql
 
 Data persists in Docker volumes. To reset the database, run `docker compose down -v` and then `pnpm db:up && pnpm db:migrate`.
 
+The services listen on `127.0.0.1` only, because their credentials are public development defaults. To upload photos from a phone on your network, expose storage on your computer's LAN address in a local `docker-compose.override.yml` (ignored by git), and set `S3_PUBLIC_ENDPOINT` to the same address:
+
+```yaml
+# docker-compose.override.yml
+services:
+  storage:
+    ports: !override
+      - '192.168.1.20:9000:9000'
+```
+
 ## Configuration
 
 ### API (`apps/api/.env`)
