@@ -108,6 +108,7 @@ export default function RestaurantScreen() {
               dishes={item.review.dishes}
               visitedAt={item.visitedAt}
               onPressAuthor={() => router.push({ pathname: '/user/[username]', params: { username: item.author.username } })}
+              companions={item.companions.map((c) => c.displayName)}
               engagement={item.engagement}
               onReact={(kind) => react.mutate({ reviewId: item.review.id, kind, on: item.engagement.mine.includes(kind) })}
               onOpenComments={() => setThread({ reviewId: item.review.id, title: `${item.author.displayName} at ${r.name}` })}

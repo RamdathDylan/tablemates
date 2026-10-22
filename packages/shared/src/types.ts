@@ -62,7 +62,13 @@ export interface NotificationSummary {
   unreadAccepted: { id: string; user: PublicUser; createdAt: string }[];
 }
 
-export type NotificationType = 'friend_request' | 'friend_accepted' | 'saved_place_reviewed' | 'reaction' | 'comment';
+export type NotificationType =
+  | 'friend_request'
+  | 'friend_accepted'
+  | 'saved_place_reviewed'
+  | 'reaction'
+  | 'comment'
+  | 'tagged';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -141,6 +147,7 @@ export interface Visit {
   id: string;
   visitedAt: string;
   audience: 'friends' | 'close_friends' | 'private';
+  companions: PublicUser[];
   restaurant: Restaurant;
   review: Review | null;
 }
@@ -153,6 +160,8 @@ export interface FeedItem {
   /** Whether the viewer has this restaurant on their want-to-try list. */
   saved: boolean;
   engagement: Engagement;
+  /** Friends tagged on the visit. */
+  companions: PublicUser[];
 }
 
 export interface Page<T> {
@@ -166,6 +175,14 @@ export interface RestaurantDetail {
   reviews: FeedItem[];
   friendStats: { visits: number; recommends: number; averageRating: number | null };
   saved: boolean;
+}
+
+/** A visit a friend tagged you on that you haven't logged yourself yet. */
+export interface TaggedVisit {
+  visitId: string;
+  visitedAt: string;
+  restaurant: Restaurant;
+  by: PublicUser;
 }
 
 export interface SavedPlace {

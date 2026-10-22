@@ -1,4 +1,4 @@
-import type { PlaceResult } from '@tablemates/shared';
+import type { Friend, PlaceResult } from '@tablemates/shared';
 import {
   Button,
   Card,
@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AudiencePicker } from '@/components/audience-picker';
+import { FriendPicker } from '@/components/friend-picker';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api, ApiError } from '@/lib/api';
@@ -38,7 +39,15 @@ type Picked = Pick<PlaceResult, 'googlePlaceId' | 'name' | 'address'> & Partial<
 
 export default function LogScreen() {
   // The restaurant page links here with a place already chosen.
-  const params = useLocalSearchParams<{ googlePlaceId?: string; name?: string; address?: string }>();
+  const params = useLocalSearchParams<{
+    googlePlaceId?: string;
+    name?: string;
+    address?: string;
+    /** Set when logging your side of a visit a friend tagged you on. */
+    from?: string;
+    date?: string;
+    by?: string;
+  }>();
   const [picked, setPicked] = useState<Picked | null>(null);
   const place: Picked | null =
     picked ??
@@ -50,10 +59,19 @@ export default function LogScreen() {
     <Screen title="Log a visit">
       {place ? (
         <VisitForm
+          key={params.from ?? place.googlePlaceId}
           place={place}
+          tag={!picked && params.from ? { visitId: params.from, date: params.date, by: params.by } : undefined}
           onChangePlace={() => {
             setPicked(null);
-            router.setParams({ googlePlaceId: undefined, name: undefined, address: undefined });
+            router.setParams({
+              googlePlaceId: undefined,
+              name: undefined,
+              address: undefined,
+              from: undefined,
+              date: undefined,
+              by: undefined,
+            });
           }}
         />
       ) : (
@@ -127,13 +145,24 @@ function PlaceSearch({ onPick }: { onPick: (place: PlaceResult) => void }) {
   );
 }
 
-function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () => void }) {
+function VisitForm({
+  place,
+  tag,
+  onChangePlace,
+}: {
+  place: Picked;
+  tag?: { visitId: string; date?: string; by?: string };
+  onChangePlace: () => void;
+}) {
   const me = useMe();
   const { setUser } = useAuth();
   const toast = useToast();
   const [audience, setAudience] = useState(me.defaultAudience);
   const queryClient = useQueryClient();
-  const [visitedAt, setVisitedAt] = useState(localDate());
+  const [visitedAt, setVisitedAt] = useState(tag?.date ?? localDate());
+  const [companions, setCompanions] = useState<Friend[]>([]);
+  const [picking, setPicking] = useState(false);
+  const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
   const [rating, setRating] = useState(0);
   const [recommends, setRecommends] = useState<boolean | null>(null);
   const [dishes, setDishes] = useState<string[]>([]);
@@ -147,12 +176,15 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
         googlePlaceId: place.googlePlaceId,
         visitedAt,
         audience,
+        companionIds: companions.map((c) => c.id),
+        fromVisitId: tag?.visitId,
         review: rating ? { rating, recommends: !!recommends, dishes, body } : undefined,
       }),
     onSuccess: (visit) => {
       // The server remembers this choice for next time; mirror it locally.
       if (visit.audience !== me.defaultAudience) setUser({ ...me, defaultAudience: visit.audience });
       queryClient.invalidateQueries({ queryKey: qk.myVisits });
+      queryClient.invalidateQueries({ queryKey: qk.tagged });
       queryClient.invalidateQueries({ queryKey: qk.profile(me.username) });
       queryClient.invalidateQueries({ queryKey: qk.restaurant(visit.restaurant.id) });
       toast(
@@ -194,6 +226,12 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
         </View>
         <Button title="Change" variant="ghost" size="sm" onPress={onChangePlace} />
       </Card>
+
+      {tag && (
+        <Text variant="caption" tone="muted">
+          Logging your side of {tag.by ?? 'a friend'}’s visit. It’ll show as “with {tag.by ?? 'them'}”.
+        </Text>
+      )}
 
       <Section title="When">
         <View style={{ flexDirection: 'row', gap: space[2] }}>
@@ -250,6 +288,33 @@ function VisitForm({ place, onChangePlace }: { place: Picked; onChangePlace: () 
           <TextArea label="Notes for your friends" value={body} onChangeText={setBody} maxLength={2000} placeholder="Go on a weeknight, sit at the bar…" />
         </>
       )}
+
+      <Section title="Who were you with?">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+          {companions.map((c) => (
+            <Chip
+              key={c.id}
+              label={c.displayName}
+              icon="close"
+              tone="accent"
+              accessibilityLabel={`Remove ${c.displayName}`}
+              onPress={() => setCompanions(companions.filter((x) => x.id !== c.id))}
+            />
+          ))}
+          <Chip label="Add people" icon="person-add" onPress={() => setPicking(true)} />
+        </View>
+        <FriendPicker
+          visible={picking}
+          title="Who were you with?"
+          actionLabel={(f) => `Tag ${f.displayName}`}
+          friends={(friends.data ?? []).filter((f) => !companions.some((c) => c.id === f.id))}
+          onClose={() => setPicking(false)}
+          onPick={(f) => {
+            setCompanions([...companions, f as Friend]);
+            setPicking(false);
+          }}
+        />
+      </Section>
 
       <Section title="Who can see this">
         <AudiencePicker value={audience} onChange={setAudience} />

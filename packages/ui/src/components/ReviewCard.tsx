@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native';
 
-import { formatDate } from '../format';
+import { formatDate, joinNames } from '../format';
 import { useTheme } from '../theme';
 import { space } from '../tokens';
 import { Avatar } from './Avatar';
@@ -25,6 +25,8 @@ export interface ReviewCardProps {
   /** Shows a bookmark button for the want-to-try list. */
   saved?: boolean;
   onToggleSave?: () => void;
+  /** Names of friends tagged on the visit. */
+  companions?: string[];
   /** Reaction and comment counts; shows the response bar when set. */
   engagement?: { yum: number; going: number; mine: ('yum' | 'going')[]; comments: number };
   onReact?: (kind: 'yum' | 'going') => void;
@@ -46,6 +48,7 @@ export function ReviewCard({
   engagement,
   onReact,
   onOpenComments,
+  companions = [],
 }: ReviewCardProps) {
   const { colors } = useTheme();
 
@@ -78,6 +81,7 @@ export function ReviewCard({
           </Text>
           <Text variant="caption" tone="subtle">
             Visited {formatDate(visitedAt)}
+            {companions.length > 0 && ` · with ${joinNames(companions)}`}
           </Text>
         </View>
         {onToggleSave && (

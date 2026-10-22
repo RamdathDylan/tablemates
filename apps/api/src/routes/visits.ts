@@ -3,19 +3,21 @@ import {
   reviewInput,
   updateReviewInput,
   updateVisitInput,
+  type PublicUser,
+  type TaggedVisit,
   type Visit,
 } from '@tablemates/shared';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
-import { restaurants, reviews, users, visits } from '../db/schema';
+import { restaurants, reviews, users, visitCompanions, visits } from '../db/schema';
 import type { Deps } from '../deps';
-import { conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
+import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
-import { toRestaurant, toReview } from '../lib/serialize';
-import { notifySaversOfReview } from '../lib/notify';
-import { visitsOfFilter } from '../lib/visibility';
+import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
+import { notify, notifySaversOfReview } from '../lib/notify';
+import { relationshipsWith, visitsOfFilter } from '../lib/visibility';
 import type { PlacesProvider } from '../places/types';
 
 /** Google's terms allow caching place details for up to 30 days. */
@@ -59,6 +61,23 @@ export async function ensureRestaurant(db: Db, places: PlacesProvider, googlePla
   return row!;
 }
 
+/** Who was tagged on each visit. */
+export async function companionsFor(db: Db, visitIds: string[]): Promise<Map<string, PublicUser[]>> {
+  const result = new Map<string, PublicUser[]>(visitIds.map((id) => [id, []]));
+  if (!visitIds.length) return result;
+  const rows = await db
+    .select({
+      visitId: visitCompanions.visitId,
+      user: { id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl },
+    })
+    .from(visitCompanions)
+    .innerJoin(users, eq(visitCompanions.userId, users.id))
+    .where(inArray(visitCompanions.visitId, visitIds))
+    .orderBy(users.displayName);
+  for (const r of rows) result.get(r.visitId)!.push(toPublicUser(r.user));
+  return result;
+}
+
 /** A user's visits as the viewer may see them. Callers must check friendship first. */
 export async function listVisits(db: Db, userId: string, viewerId: string): Promise<Visit[]> {
   const rows = await db
@@ -69,10 +88,12 @@ export async function listVisits(db: Db, userId: string, viewerId: string): Prom
     .where(visitsOfFilter(userId, viewerId))
     .orderBy(desc(visits.visitedAt), desc(visits.createdAt))
     .limit(200);
+  const companions = await companionsFor(db, rows.map((r) => r.visit.id));
   return rows.map(({ visit, restaurant, review }) => ({
     id: visit.id,
     visitedAt: visit.visitedAt,
     audience: visit.audience,
+    companions: companions.get(visit.id)!,
     restaurant: toRestaurant(restaurant),
     review: review ? toReview(review) : null,
   }));
@@ -92,8 +113,57 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
 
   app.get('/me/visits', async (req) => listVisits(db, req.userId, req.userId));
 
+  /** Visits friends tagged you on that you haven't logged yourself. */
+  app.get('/me/tagged', async (req): Promise<TaggedVisit[]> => {
+    const rows = await db
+      .select({
+        visit: visits,
+        restaurant: restaurants,
+        by: { id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl },
+      })
+      .from(visitCompanions)
+      .innerJoin(visits, eq(visitCompanions.visitId, visits.id))
+      .innerJoin(restaurants, eq(visits.restaurantId, restaurants.id))
+      .innerJoin(users, eq(visits.userId, users.id))
+      .where(and(eq(visitCompanions.userId, req.userId), isNull(visitCompanions.linkedVisitId)))
+      .orderBy(desc(visits.visitedAt));
+    return rows.map((r) => ({
+      visitId: r.visit.id,
+      visitedAt: r.visit.visitedAt,
+      restaurant: toRestaurant(r.restaurant),
+      by: toPublicUser(r.by),
+    }));
+  });
+
+  /** Remove yourself from a visit someone tagged you on. */
+  app.delete('/visits/:id/companions/me', async (req, reply) => {
+    await db
+      .delete(visitCompanions)
+      .where(and(eq(visitCompanions.visitId, idParam(req.params)), eq(visitCompanions.userId, req.userId)));
+    return reply.status(204).send();
+  });
+
   app.post('/visits', async (req, reply): Promise<Visit> => {
     const input = parse(createVisitInput, req.body);
+    const companionIds = [...new Set(input.companionIds)].filter((id) => id !== req.userId);
+
+    // Logging your side of a visit you were tagged on: it must be yours to link.
+    let source: { id: string; authorId: string } | undefined;
+    if (input.fromVisitId) {
+      const [row] = await db
+        .select({ id: visits.id, authorId: visits.userId })
+        .from(visitCompanions)
+        .innerJoin(visits, eq(visitCompanions.visitId, visits.id))
+        .where(and(eq(visitCompanions.visitId, input.fromVisitId), eq(visitCompanions.userId, req.userId)));
+      if (!row) throw notFound('Tagged visit not found');
+      source = row;
+      if (!companionIds.includes(row.authorId)) companionIds.push(row.authorId);
+    }
+    if (companionIds.length) {
+      const rels = await relationshipsWith(db, req.userId, companionIds);
+      if (companionIds.some((id) => rels.get(id)?.status !== 'friends')) throw badRequest('You can only tag friends');
+    }
+
     const restaurant = await ensureRestaurant(db, places, input.googlePlaceId);
     const result = await db.transaction(async (tx) => {
       const [me] = await tx
@@ -116,6 +186,28 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
             .returning()
         : [];
       if (review) await notifySaversOfReview(tx, visit!.id, review.id);
+      if (companionIds.length) {
+        await tx.insert(visitCompanions).values(companionIds.map((userId) => ({ visitId: visit!.id, userId })));
+        // The author of the source visit already knows; everyone else hears they were tagged.
+        await notify(
+          tx,
+          companionIds
+            .filter((id) => id !== source?.authorId)
+            .map((userId) => ({
+              userId,
+              type: 'tagged' as const,
+              actorId: req.userId,
+              visitId: visit!.id,
+              restaurantId: restaurant.id,
+            })),
+        );
+      }
+      if (source) {
+        await tx
+          .update(visitCompanions)
+          .set({ linkedVisitId: visit!.id })
+          .where(and(eq(visitCompanions.visitId, source.id), eq(visitCompanions.userId, req.userId)));
+      }
       return { visit: visit!, review };
     });
     reply.status(201);
@@ -123,6 +215,7 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
       id: result.visit.id,
       visitedAt: result.visit.visitedAt,
       audience: result.visit.audience,
+      companions: (await companionsFor(db, [result.visit.id])).get(result.visit.id)!,
       restaurant: toRestaurant(restaurant),
       review: result.review ? toReview(result.review) : null,
     };

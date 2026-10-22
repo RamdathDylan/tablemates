@@ -90,6 +90,7 @@ export const notificationType = pgEnum('notification_type', [
   'saved_place_reviewed',
   'reaction',
   'comment',
+  'tagged',
 ]);
 
 /**
@@ -113,6 +114,7 @@ export const notifications = pgTable(
     reviewId: uuid('review_id').references(() => reviews.id, { onDelete: 'cascade' }),
     restaurantId: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'cascade' }),
     commentId: uuid('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
+    visitId: uuid('visit_id').references(() => visits.id, { onDelete: 'cascade' }),
     reaction: reactionKind('reaction'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),
@@ -222,6 +224,25 @@ export const comments = pgTable(
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },
   (t) => [index('comments_review_idx').on(t.reviewId, t.createdAt)],
+);
+
+/**
+ * Friends tagged on a visit ("with Maya and Bob"). A tagged friend can always
+ * see that visit, and can log their own linked visit from it.
+ */
+export const visitCompanions = pgTable(
+  'visit_companions',
+  {
+    visitId: uuid('visit_id')
+      .notNull()
+      .references(() => visits.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** The tagged friend's own visit, once they add their rating. */
+    linkedVisitId: uuid('linked_visit_id').references(() => visits.id, { onDelete: 'set null' }),
+  },
+  (t) => [primaryKey({ columns: [t.visitId, t.userId] }), index('visit_companions_user_idx').on(t.userId)],
 );
 
 /** People a user shares close-friends-only visits with. Always a subset of their friends. */

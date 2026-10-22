@@ -14,4 +14,5 @@ export const qk = {
   comments: (reviewId: string) => ['comments', reviewId] as const,
   map: (params: object) => ['map', params] as const,
   saved: ['saved'] as const,
+  tagged: ['tagged'] as const,
 };

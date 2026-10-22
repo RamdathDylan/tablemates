@@ -5,6 +5,7 @@ import {
   EmptyState,
   formatDate,
   Input,
+  Text,
   Sheet,
   space,
   TextArea,
@@ -49,6 +50,9 @@ export default function ProfileScreen() {
           }
         />
       )}
+
+      {/* Pending tags are a to-do, so they come before history. */}
+      <TaggedIn />
 
       <Section title="Your visits">
         {visits.isPending ? (
@@ -145,6 +149,61 @@ function WantToTry() {
               subtitle={`Saved ${formatDate(s.savedAt)}`}
               onPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: s.restaurant.id } })}
             />
+          </Fragment>
+        ))}
+      </Card>
+    </Section>
+  );
+}
+
+/** Visits friends tagged you on: log your own rating or remove the tag. */
+function TaggedIn() {
+  const queryClient = useQueryClient();
+  const tagged = useQuery({ queryKey: qk.tagged, queryFn: api.tagged });
+  const untag = useMutation({
+    mutationFn: api.untag,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.tagged }),
+  });
+  if (!tagged.data?.length) return null;
+  return (
+    <Section title={`Tagged in · ${tagged.data.length}`}>
+      <Card style={{ gap: space[3] }}>
+        {tagged.data.map((t, i) => (
+          <Fragment key={t.visitId}>
+            {i > 0 && <Divider />}
+            <View style={{ gap: space[2] }}>
+              <Text variant="bodyStrong">{t.restaurant.name}</Text>
+              <Text variant="caption" tone="muted">
+                {t.by.displayName} tagged you · {formatDate(t.visitedAt)}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: space[2] }}>
+                <Button
+                  title="Add your rating"
+                  size="sm"
+                  icon="star"
+                  onPress={() =>
+                    router.navigate({
+                      pathname: '/log',
+                      params: {
+                        googlePlaceId: t.restaurant.googlePlaceId,
+                        name: t.restaurant.name,
+                        address: t.restaurant.address,
+                        from: t.visitId,
+                        date: t.visitedAt,
+                        by: t.by.displayName,
+                      },
+                    })
+                  }
+                />
+                <Button
+                  title="Remove tag"
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={`Remove your tag from ${t.by.displayName}'s ${t.restaurant.name} visit`}
+                  onPress={() => untag.mutate(t.visitId)}
+                />
+              </View>
+            </View>
           </Fragment>
         ))}
       </Card>

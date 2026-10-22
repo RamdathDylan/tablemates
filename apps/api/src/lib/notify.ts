@@ -17,6 +17,7 @@ export interface NotifyInput {
   reviewId?: string;
   restaurantId?: string;
   commentId?: string;
+  visitId?: string;
   reaction?: 'yum' | 'going';
 }
 

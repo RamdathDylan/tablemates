@@ -41,7 +41,7 @@ export type UpdateProfileInput = z.infer<typeof updateProfileInput>;
 
 export const friendRequestInput = z.object({ username });
 
-export const notificationTypes = ['friend_request', 'friend_accepted', 'saved_place_reviewed', 'reaction', 'comment'] as const;
+export const notificationTypes = ['friend_request', 'friend_accepted', 'saved_place_reviewed', 'reaction', 'comment', 'tagged'] as const;
 
 export const reactionKinds = ['yum', 'going'] as const;
 
@@ -75,6 +75,10 @@ export const createVisitInput = z.object({
   visitedAt: z.iso.date(),
   /** Defaults to the user's last choice. */
   audience: z.enum(visitAudiences).optional(),
+  /** Friends who came along. */
+  companionIds: z.array(z.uuid()).max(10).default([]),
+  /** Logging your own visit from one you were tagged on links the two. */
+  fromVisitId: z.uuid().optional(),
   review: reviewInput.optional(),
 });
 

@@ -31,6 +31,7 @@ const icons: Record<NotificationItem['type'], IconName> = {
   saved_place_reviewed: 'bookmark',
   reaction: 'heart',
   comment: 'chatbubble',
+  tagged: 'pricetag',
 };
 
 function message(n: NotificationItem) {
@@ -48,10 +49,13 @@ function message(n: NotificationItem) {
         : `${who} said yum to your ${n.restaurant?.name ?? ''} review`;
     case 'comment':
       return `${who} commented: “${n.excerpt ?? ''}”`;
+    case 'tagged':
+      return `${who} tagged you at ${n.restaurant?.name ?? 'a restaurant'}. Add your rating?`;
   }
 }
 
 function open(n: NotificationItem) {
+  if (n.type === 'tagged') return router.navigate('/profile');
   if (n.type !== 'friend_request' && n.type !== 'friend_accepted' && n.restaurant) {
     router.push({ pathname: '/restaurant/[id]', params: { id: n.restaurant.id } });
   } else {

@@ -3,17 +3,21 @@ import { Avatar, Input, Sheet, space, Text, useTheme, focusRing, type PressState
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-/** Choose one friend to filter the map by. */
+/** Choose a friend from a searchable list (map filter, tagging companions). */
 export function FriendPicker({
   visible,
   friends,
   onPick,
   onClose,
+  title = "Show one friend's places",
+  actionLabel = (f) => `Show ${f.displayName}'s places`,
 }: {
   visible: boolean;
   friends: PublicUser[];
   onPick: (friend: PublicUser) => void;
   onClose: () => void;
+  title?: string;
+  actionLabel?: (friend: PublicUser) => string;
 }) {
   const { colors } = useTheme();
   const [q, setQ] = useState('');
@@ -22,7 +26,7 @@ export function FriendPicker({
   );
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Show one friend's places">
+    <Sheet visible={visible} onClose={onClose} title={title}>
       {friends.length > 6 && <Input label="Search friends" hideLabel icon="search" placeholder="Search friends" value={q} onChangeText={setQ} />}
       {friends.length === 0 && <Text tone="muted">Add friends to filter the map by them.</Text>}
       <View role="list">
@@ -30,7 +34,7 @@ export function FriendPicker({
           <Pressable
             key={f.id}
             role="button"
-            accessibilityLabel={`Show ${f.displayName}'s places`}
+            accessibilityLabel={actionLabel(f)}
             onPress={() => onPick(f)}
             style={(state: PressState) => [
               {

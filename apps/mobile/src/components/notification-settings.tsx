@@ -14,6 +14,7 @@ const labels: Record<NotificationType, string> = {
   saved_place_reviewed: 'Reviews of places you saved',
   reaction: 'Reactions to your reviews',
   comment: 'Comments',
+  tagged: 'Tags on visits',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */
