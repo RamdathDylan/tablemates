@@ -90,6 +90,23 @@ describe('stories', () => {
     expect([...ctx.storage.objects.keys()].filter((k) => k.startsWith('story/'))).toEqual([]);
   });
 
+  it('expires each story exactly once when two instances run the job together', async () => {
+    const w = await world();
+    await post(w.alice);
+    await post(w.alice);
+    await ctx.db.execute(sql`update stories set expires_at = now() - interval '1 minute'`);
+    const deleted: string[] = [];
+    const remove = ctx.storage.delete.bind(ctx.storage);
+    ctx.storage.delete = async (keys) => {
+      deleted.push(...keys);
+      return remove(keys);
+    };
+    const counts = await Promise.all([expireStories(ctx.db, ctx.storage), expireStories(ctx.db, ctx.storage)]);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(2);
+    expect(deleted).toHaveLength(2);
+    expect(new Set(deleted).size).toBe(2);
+  });
+
   it('lets the author delete a story early', async () => {
     const w = await world();
     const id = await post(w.alice);
