@@ -2,7 +2,7 @@ import { Redis } from 'ioredis';
 
 import { buildApp } from './app';
 import { createDb } from './db/client';
-import { env } from './env';
+import { env, productionConfigProblems } from './env';
 import { TokenService } from './lib/tokens';
 import { VerificationService } from './lib/verification';
 import { MailpitMailer, ResendMailer } from './mail/providers';
@@ -24,6 +24,21 @@ function createMailer() {
     return new ResendMailer(resendApiKey, from);
   }
   return new MailpitMailer(mailpitUrl, from);
+}
+
+// Refuse to start in production with settings published in this repository.
+if (env.isProduction) {
+  const problems = productionConfigProblems({
+    jwtSecret: env.jwtSecret,
+    databaseUrl: env.databaseUrl,
+    s3: env.s3,
+    mailProvider: env.mail.provider,
+    corsOrigins: env.corsOrigins,
+  });
+  if (problems.length) {
+    console.error(`Refusing to start: unsafe production configuration.\n- ${problems.join('\n- ')}`);
+    process.exit(1);
+  }
 }
 
 const { db } = createDb(env.databaseUrl);
