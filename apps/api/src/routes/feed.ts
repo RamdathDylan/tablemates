@@ -1,5 +1,5 @@
 /** Feed and restaurant detail: the friends-only reads of reviews. */
-import { feedQuery, forYouQuery, type Dish, type ForYouItem, type Photo, type FeedItem, type Page, type RestaurantDetail, type TopDish } from '@tablemates/shared';
+import { blendQuery, feedQuery, forYouQuery, type Blend, type Dish, type ForYouItem, type Photo, type FeedItem, type Page, type RestaurantDetail, type TopDish } from '@tablemates/shared';
 import { and, avg, count, desc, eq, sql, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
@@ -8,16 +8,16 @@ import { restaurants, reviewDishes, reviews, savedPlaces, users, visits } from '
 import type { Deps } from '../deps';
 import type { Storage } from '../storage/types';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
-import { notFound, parse } from '../lib/errors';
+import { badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
-import { friendVisitFilter, visibleVisitFilter } from '../lib/visibility';
+import { friendVisitFilter, relationshipsWith, visibleVisitFilter } from '../lib/visibility';
 import { engagementFor } from './engagement';
 import { companionsFor, withEssentials } from './visits';
 import { dishesFor } from '../lib/dishes';
 import { photosFor } from '../lib/photos';
 import { mayorAt } from '../lib/mayors';
-import { forYou } from '../lib/taste';
+import { blend, forYou } from '../lib/taste';
 
 export async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
   const rows = await db
@@ -125,6 +125,15 @@ export function feedRoutes(app: FastifyInstance, { db, places, storage }: Deps) 
       nextCursor:
         rows.length > limit && last ? encodeCursor(last.review.createdAt, last.review.id) : null,
     };
+  });
+
+  /** Places you and up to 5 friends should try together. */
+  app.get('/blend', async (req): Promise<Blend> => {
+    const friendIds = parse(blendQuery, req.query).with.filter((id) => id !== req.userId);
+    if (!friendIds.length) throw badRequest('Pick at least one friend');
+    const rels = await relationshipsWith(db, req.userId, friendIds);
+    if (friendIds.some((id) => rels.get(id)?.status !== 'friends')) throw forbidden('You can only blend with friends');
+    return blend(db, req.userId, friendIds);
   });
 
   /** Places friends you agree with loved and you haven't tried. */

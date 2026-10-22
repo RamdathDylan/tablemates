@@ -402,6 +402,22 @@ export interface Plan extends PlanSummary {
   isCreator: boolean;
 }
 
+/** A Spotify-style Blend: places the group should try together. */
+export interface Blend {
+  participants: PublicUser[];
+  /** Average taste match across every pair with enough shared ratings, or null. */
+  match: number | null;
+  places: BlendPlace[];
+}
+
+export interface BlendPlace {
+  restaurant: Restaurant;
+  /** Participants who rated it 4★ or more. */
+  lovedBy: { user: PublicUser; rating: number }[];
+  /** Participants who haven't been. */
+  newTo: PublicUser[];
+}
+
 export type ChallengeMetric = 'new_places' | 'cuisines' | 'visits' | 'reviews';
 
 export interface ChallengeSummary {

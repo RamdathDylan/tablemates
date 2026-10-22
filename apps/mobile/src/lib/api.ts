@@ -41,6 +41,7 @@ import type {
   Visit,
   VisitAudience,
   Wrapped,
+  Blend,
   Challenge,
   ChallengeMetric,
   ChallengeSummary,
@@ -233,6 +234,7 @@ export const api = {
   streak: () => request<Streak>('GET', '/me/streak'),
   setGoal: (year: number, target: number) => request<Goal>('PUT', `/me/goals/${year}`, { target }),
   deleteGoal: (year: number) => request<void>('DELETE', `/me/goals/${year}`),
+  blend: (friendIds: string[]) => request<Blend>('GET', `/blend${qs({ with: friendIds.join(',') })}`),
   challenges: () => request<ChallengeSummary[]>('GET', '/challenges'),
   challenge: (id: string) => request<Challenge>('GET', `/challenges/${id}`),
   createChallenge: (input: { title: string; metric: ChallengeMetric; target: number; startsOn: string; endsOn: string; memberIds: string[] }) =>
