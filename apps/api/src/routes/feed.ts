@@ -11,6 +11,7 @@ import { notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
 import { friendVisitFilter, visibleVisitFilter } from '../lib/visibility';
+import { engagementFor } from './engagement';
 
 async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
   const rows = await db
@@ -37,7 +38,15 @@ async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined,
   return rows;
 }
 
-const toFeedItem = (row: Awaited<ReturnType<typeof selectFeedItems>>[number]): FeedItem => ({
+type FeedRow = Awaited<ReturnType<typeof selectFeedItems>>[number];
+
+/** Serializes rows and attaches reaction/comment counts. */
+async function toFeedItems(db: Db, viewerId: string, rows: FeedRow[]): Promise<FeedItem[]> {
+  const engagement = await engagementFor(db, viewerId, rows.map((r) => r.review.id));
+  return rows.map((row) => ({ ...toFeedItem(row), engagement: engagement.get(row.review.id)! }));
+}
+
+const toFeedItem = (row: FeedRow): Omit<FeedItem, 'engagement'> => ({
   review: toReview(row.review),
   visitedAt: row.visitedAt,
   author: toPublicUser(row.author),
@@ -60,7 +69,7 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
     const page = rows.slice(0, limit);
     const last = page.at(-1);
     return {
-      items: page.map(toFeedItem),
+      items: await toFeedItems(db, req.userId, page),
       nextCursor:
         rows.length > limit && last ? encodeCursor(last.review.createdAt, last.review.id) : null,
     };
@@ -90,7 +99,7 @@ export function feedRoutes(app: FastifyInstance, { db }: Deps) {
     ]);
     return {
       restaurant: toRestaurant(restaurant),
-      reviews: rows.map(toFeedItem),
+      reviews: await toFeedItems(db, req.userId, rows),
       friendStats: {
         visits: stats?.visits ?? 0,
         recommends: stats?.recommends ?? 0,

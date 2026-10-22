@@ -1,18 +1,23 @@
 import { Button, Chip, EmptyState, Icon, priceLabel, Rating, ReviewCard, space, Text } from '@tablemates/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { View } from 'react-native';
 
+import { CommentsSheet } from '@/components/comments-sheet';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/query-keys';
+import { useReaction } from '@/lib/use-engagement';
 import { useSaveToggle } from '@/lib/use-save';
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const detail = useQuery({ queryKey: qk.restaurant(id), queryFn: () => api.restaurant(id) });
   const save = useSaveToggle();
+  const react = useReaction();
+  const [thread, setThread] = useState<{ reviewId: string; title: string } | null>(null);
 
   if (detail.isPending) {
     return (
@@ -103,10 +108,14 @@ export default function RestaurantScreen() {
               dishes={item.review.dishes}
               visitedAt={item.visitedAt}
               onPressAuthor={() => router.push({ pathname: '/user/[username]', params: { username: item.author.username } })}
+              engagement={item.engagement}
+              onReact={(kind) => react.mutate({ reviewId: item.review.id, kind, on: item.engagement.mine.includes(kind) })}
+              onOpenComments={() => setThread({ reviewId: item.review.id, title: `${item.author.displayName} at ${r.name}` })}
             />
           ))
         )}
       </Section>
+      {thread && <CommentsSheet reviewId={thread.reviewId} title={thread.title} onClose={() => setThread(null)} />}
     </Screen>
   );
 }

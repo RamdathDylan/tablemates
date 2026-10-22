@@ -8,7 +8,7 @@ import {
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { friendships, notifications, restaurants, users } from '../db/schema';
+import { comments, friendships, notifications, restaurants, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
 import { parse } from '../lib/errors';
@@ -76,18 +76,20 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         actor: { id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl },
         restaurant: { id: restaurants.id, name: restaurants.name },
         friendshipStatus: friendships.status,
+        excerpt: comments.body,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))
       .leftJoin(restaurants, eq(notifications.restaurantId, restaurants.id))
       .leftJoin(friendships, eq(notifications.friendshipId, friendships.id))
+      .leftJoin(comments, eq(notifications.commentId, comments.id))
       .where(and(...conditions))
       .orderBy(desc(notifications.createdAt), desc(notifications.id))
       .limit(limit + 1);
     const page = rows.slice(0, limit);
     const last = page.at(-1);
     return {
-      items: page.map(({ n, actor, restaurant, friendshipStatus }) => ({
+      items: page.map(({ n, actor, restaurant, friendshipStatus, excerpt }) => ({
         id: n.id,
         type: n.type,
         actor: toPublicUser(actor),
@@ -96,6 +98,8 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         restaurant: restaurant?.id ? restaurant : null,
         reviewId: n.reviewId,
         pendingRequestId: n.type === 'friend_request' && friendshipStatus === 'pending' ? n.friendshipId : null,
+        reaction: n.reaction,
+        excerpt: excerpt ? (excerpt.length > 80 ? `${excerpt.slice(0, 79)}…` : excerpt) : null,
       })),
       nextCursor: rows.length > limit && last ? encodeCursor(last.n.createdAt, last.n.id) : null,
     };

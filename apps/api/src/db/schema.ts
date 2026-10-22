@@ -82,10 +82,14 @@ export const friendships = pgTable(
   ],
 );
 
+export const reactionKind = pgEnum('reaction_kind', ['yum', 'going']);
+
 export const notificationType = pgEnum('notification_type', [
   'friend_accepted',
   'friend_request',
   'saved_place_reviewed',
+  'reaction',
+  'comment',
 ]);
 
 /**
@@ -108,6 +112,8 @@ export const notifications = pgTable(
     // What the alert is about, when it's about a review or place.
     reviewId: uuid('review_id').references(() => reviews.id, { onDelete: 'cascade' }),
     restaurantId: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'cascade' }),
+    commentId: uuid('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
+    reaction: reactionKind('reaction'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),
     /** Set by the push worker once delivery was attempted (outbox pattern). */
@@ -184,6 +190,38 @@ export const reviews = pgTable(
     index('reviews_created_idx').on(t.createdAt, t.id),
     check('reviews_rating_range', sql`${t.rating} between 1 and 5`),
   ],
+);
+
+/** Quick responses to a review: "Yum" (looks great) and "Going" (adding it to my plans). */
+export const reactions = pgTable(
+  'reactions',
+  {
+    reviewId: uuid('review_id')
+      .notNull()
+      .references(() => reviews.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: reactionKind('kind').notNull(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.reviewId, t.userId, t.kind] })],
+);
+
+export const comments = pgTable(
+  'comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reviewId: uuid('review_id')
+      .notNull()
+      .references(() => reviews.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('comments_review_idx').on(t.reviewId, t.createdAt)],
 );
 
 /** People a user shares close-friends-only visits with. Always a subset of their friends. */

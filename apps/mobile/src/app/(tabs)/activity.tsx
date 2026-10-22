@@ -29,6 +29,8 @@ const icons: Record<NotificationItem['type'], IconName> = {
   friend_request: 'person-add',
   friend_accepted: 'people',
   saved_place_reviewed: 'bookmark',
+  reaction: 'heart',
+  comment: 'chatbubble',
 };
 
 function message(n: NotificationItem) {
@@ -40,11 +42,17 @@ function message(n: NotificationItem) {
       return `${who} accepted your friend request`;
     case 'saved_place_reviewed':
       return `${who} reviewed ${n.restaurant?.name ?? 'a place'} from your Want to try list`;
+    case 'reaction':
+      return n.reaction === 'going'
+        ? `${who} is going to ${n.restaurant?.name ?? 'a place'} after your review`
+        : `${who} said yum to your ${n.restaurant?.name ?? ''} review`;
+    case 'comment':
+      return `${who} commented: “${n.excerpt ?? ''}”`;
   }
 }
 
 function open(n: NotificationItem) {
-  if (n.type === 'saved_place_reviewed' && n.restaurant) {
+  if (n.type !== 'friend_request' && n.type !== 'friend_accepted' && n.restaurant) {
     router.push({ pathname: '/restaurant/[id]', params: { id: n.restaurant.id } });
   } else {
     router.push({ pathname: '/user/[username]', params: { username: n.actor.username } });
