@@ -107,6 +107,7 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
           <Stack.Screen name="plan/[id]" options={{ title: '' }} />
           <Stack.Screen name="list/[id]" options={{ title: '' }} />
           <Stack.Screen name="table/[id]" options={{ title: '' }} />
+          <Stack.Screen name="challenge/[id]" options={{ title: '' }} />
           <Stack.Screen name="wrapped" options={{ title: 'Year in food' }} />
           <Stack.Protected guard={__DEV__}>
             <Stack.Screen name="(dev)/styleguide" options={{ title: 'Style guide' }} />

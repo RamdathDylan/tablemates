@@ -128,7 +128,10 @@ export type NotificationType =
   | 'checkin'
   | 'streak_nudge'
   | 'goal_reached'
-  | 'mayor_lost';
+  | 'mayor_lost'
+  | 'challenge_invite'
+  | 'challenge_complete'
+  | 'challenge_ended';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -171,6 +174,7 @@ export interface NotificationItem {
   excerpt: string | null;
   planId: string | null;
   tableId: string | null;
+  challengeId: string | null;
   /** For badge notifications. */
   badge: { key: string; title: string } | null;
   /** For story reactions. */
@@ -396,6 +400,37 @@ export interface PlanSummary {
 export interface Plan extends PlanSummary {
   options: PlanOption[];
   isCreator: boolean;
+}
+
+export type ChallengeMetric = 'new_places' | 'cuisines' | 'visits' | 'reviews';
+
+export interface ChallengeSummary {
+  id: string;
+  title: string;
+  metric: ChallengeMetric;
+  target: number;
+  startsOn: string;
+  endsOn: string;
+  ended: boolean;
+  /** The viewer's membership. */
+  status: 'invited' | 'joined';
+  /** The viewer's count so far (0 until they join). */
+  mine: number;
+  memberCount: number;
+}
+
+export interface ChallengeStanding {
+  user: PublicUser;
+  count: number;
+  completed: boolean;
+}
+
+export interface Challenge extends ChallengeSummary {
+  creator: PublicUser;
+  isCreator: boolean;
+  /** Joined members, highest count first. */
+  leaderboard: ChallengeStanding[];
+  invited: PublicUser[];
 }
 
 export interface TableSummary {

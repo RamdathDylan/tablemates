@@ -29,6 +29,8 @@ export const qk = {
   plates: ['plates'] as const,
   streak: ['streak'] as const,
   checkins: ['checkins'] as const,
+  challenges: ['challenges'] as const,
+  challenge: (id: string) => ['challenge', id] as const,
   tables: ['tables'] as const,
   table: (id: string) => ['tables', id] as const,
   tableFeed: (id: string) => ['tables', id, 'feed'] as const,

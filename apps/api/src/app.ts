@@ -7,6 +7,7 @@ import { ZodError } from 'zod';
 import type { Deps } from './deps';
 import { AppError, isUniqueViolation, unauthorized } from './lib/errors';
 import { askRoutes } from './routes/asks';
+import { challengeRoutes } from './routes/challenges';
 import { checkinRoutes } from './routes/checkins';
 import { authRoutes, verificationRoutes, type RateLimit } from './routes/auth';
 import { engagementRoutes } from './routes/engagement';
@@ -110,6 +111,7 @@ export async function buildApp({
     listRoutes(authed, deps);
     tableRoutes(authed, deps);
     checkinRoutes(authed, deps);
+    challengeRoutes(authed, deps);
     wrappedRoutes(authed, deps);
     photoRoutes(authed, deps);
     storyRoutes(authed, deps);

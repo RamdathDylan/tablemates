@@ -1,7 +1,7 @@
 import { and, eq, gt, inArray, isNull } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
-import { notifications, plans, pushTokens, restaurants, tables, users } from '../db/schema';
+import { challenges, notifications, plans, pushTokens, restaurants, tables, users } from '../db/schema';
 import { badgeTitle } from '../lib/badges';
 import type { PushMessage, PushProvider } from './types';
 
@@ -11,6 +11,7 @@ const MAX_AGE_MS = 60 * 60 * 1000;
 type Row = {
   id: string;
   userId: string;
+  actorId: string;
   type: (typeof notifications.$inferSelect)['type'];
   actorName: string;
   actorUsername: string;
@@ -20,6 +21,8 @@ type Row = {
   planTitle: string | null;
   tableId: string | null;
   tableName: string | null;
+  challengeId: string | null;
+  challengeTitle: string | null;
   badgeKey: string | null;
   emoji: string | null;
   count: number | null;
@@ -67,6 +70,24 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         title: n.planTitle ?? 'Dinner plans',
         body: `It's ${n.restaurantName ?? 'decided'}!`,
         data: { type: n.type, planId: n.planId ?? '' },
+      };
+    case 'challenge_invite':
+      return {
+        title: n.challengeTitle ?? 'New challenge',
+        body: `${n.actorName} challenged you. Join in?`,
+        data: { type: n.type, challengeId: n.challengeId ?? '' },
+      };
+    case 'challenge_complete':
+      return {
+        title: '🏁 Challenge complete!',
+        body: `You hit the target in ${n.challengeTitle ?? 'your challenge'}`,
+        data: { type: n.type, challengeId: n.challengeId ?? '' },
+      };
+    case 'challenge_ended':
+      return {
+        title: `${n.challengeTitle ?? 'Your challenge'} is over`,
+        body: n.count ? `${n.userId === n.actorId ? 'You' : n.actorName} won with ${n.count}` : 'Nobody scored this time',
+        data: { type: n.type, challengeId: n.challengeId ?? '' },
       };
     case 'mayor_lost':
       return {
@@ -130,6 +151,7 @@ export class PushWorker {
       .select({
         id: notifications.id,
         userId: notifications.userId,
+        actorId: notifications.actorId,
         type: notifications.type,
         actorName: users.displayName,
         actorUsername: users.username,
@@ -139,6 +161,8 @@ export class PushWorker {
         planTitle: plans.title,
         tableId: notifications.tableId,
         tableName: tables.name,
+        challengeId: notifications.challengeId,
+        challengeTitle: challenges.title,
         badgeKey: notifications.badgeKey,
         emoji: notifications.emoji,
         count: notifications.count,
@@ -148,6 +172,7 @@ export class PushWorker {
       .leftJoin(restaurants, eq(notifications.restaurantId, restaurants.id))
       .leftJoin(plans, eq(notifications.planId, plans.id))
       .leftJoin(tables, eq(notifications.tableId, tables.id))
+      .leftJoin(challenges, eq(notifications.challengeId, challenges.id))
       .where(and(isNull(notifications.pushedAt), gt(notifications.createdAt, new Date(Date.now() - MAX_AGE_MS))))
       .limit(500);
     if (!pending.length) return 0;

@@ -72,7 +72,29 @@ export const notificationTypes = [
   'streak_nudge',
   'goal_reached',
   'mayor_lost',
+  'challenge_invite',
+  'challenge_complete',
+  'challenge_ended',
 ] as const;
+
+export const challengeMetrics = ['new_places', 'cuisines', 'visits', 'reviews'] as const;
+
+export const challengeInput = z
+  .object({
+    title: z.string().trim().min(1, 'Name the challenge').max(60),
+    metric: z.enum(challengeMetrics),
+    target: z.number().int().min(1).max(100),
+    startsOn: z.iso.date(),
+    endsOn: z.iso.date(),
+    memberIds: z.array(z.uuid()).min(1, 'Invite at least one friend').max(30),
+  })
+  .refine((c) => c.endsOn >= c.startsOn, { message: 'The end date must be after the start', path: ['endsOn'] })
+  .refine((c) => Date.parse(c.endsOn) - Date.parse(c.startsOn) <= 92 * 86_400_000, {
+    message: 'Keep challenges to 3 months or less',
+    path: ['endsOn'],
+  });
+
+export const challengeMembersInput = z.object({ userIds: z.array(z.uuid()).min(1).max(30) });
 
 export const goalInput = z.object({ target: z.number().int().min(1, 'Aim for at least one new place').max(365) });
 

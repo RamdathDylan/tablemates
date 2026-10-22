@@ -111,6 +111,9 @@ export const notificationType = pgEnum('notification_type', [
   'streak_nudge',
   'goal_reached',
   'mayor_lost',
+  'challenge_invite',
+  'challenge_complete',
+  'challenge_ended',
 ]);
 
 /**
@@ -138,6 +141,7 @@ export const notifications = pgTable(
     askId: uuid('ask_id').references(() => asks.id, { onDelete: 'cascade' }),
     planId: uuid('plan_id').references(() => plans.id, { onDelete: 'cascade' }),
     tableId: uuid('table_id').references(() => tables.id, { onDelete: 'cascade' }),
+    challengeId: uuid('challenge_id').references(() => challenges.id, { onDelete: 'cascade' }),
     badgeKey: text('badge_key'),
     /** Emoji for story reactions. */
     emoji: text('emoji'),
@@ -294,6 +298,45 @@ export const goals = pgTable(
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.year] })],
+);
+
+export const challengeMetric = pgEnum('challenge_metric', ['new_places', 'cuisines', 'visits', 'reviews']);
+export const challengeMemberStatus = pgEnum('challenge_member_status', ['invited', 'joined']);
+
+/** Strava-style friend challenges: hit a target before the end date. */
+export const challenges = pgTable('challenges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  creatorId: uuid('creator_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  metric: challengeMetric('metric').notNull(),
+  target: integer('target').notNull(),
+  /** Inclusive local dates. */
+  startsOn: date('starts_on', { mode: 'string' }).notNull(),
+  endsOn: date('ends_on', { mode: 'string' }).notNull(),
+  /** Set once results have been announced. */
+  endedAt: timestamptz('ended_at'),
+  createdAt: timestamptz('created_at').notNull().defaultNow(),
+});
+
+export const challengeMembers = pgTable(
+  'challenge_members',
+  {
+    challengeId: uuid('challenge_id')
+      .notNull()
+      .references(() => challenges.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: challengeMemberStatus('status').notNull().default('invited'),
+    /** When they first hit the target. */
+    completedAt: timestamptz('completed_at'),
+    /** Top of the leaderboard when it ended. */
+    won: boolean('won').notNull().default(false),
+    joinedAt: timestamptz('joined_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.challengeId, t.userId] }), index('challenge_members_user_idx').on(t.userId)],
 );
 
 export const tableRole = pgEnum('table_role', ['owner', 'member']);

@@ -41,6 +41,9 @@ import type {
   Visit,
   VisitAudience,
   Wrapped,
+  Challenge,
+  ChallengeMetric,
+  ChallengeSummary,
   CheckinsResponse,
   Goal,
   Streak,
@@ -230,6 +233,12 @@ export const api = {
   streak: () => request<Streak>('GET', '/me/streak'),
   setGoal: (year: number, target: number) => request<Goal>('PUT', `/me/goals/${year}`, { target }),
   deleteGoal: (year: number) => request<void>('DELETE', `/me/goals/${year}`),
+  challenges: () => request<ChallengeSummary[]>('GET', '/challenges'),
+  challenge: (id: string) => request<Challenge>('GET', `/challenges/${id}`),
+  createChallenge: (input: { title: string; metric: ChallengeMetric; target: number; startsOn: string; endsOn: string; memberIds: string[] }) =>
+    request<{ id: string }>('POST', '/challenges', input),
+  joinChallenge: (id: string) => request<void>('POST', `/challenges/${id}/join`),
+  leaveChallenge: (id: string) => request<void>('POST', `/challenges/${id}/leave`),
   checkins: () => request<CheckinsResponse>('GET', '/checkins'),
   checkIn: (input: { restaurantId: string; audience: 'friends' | 'close_friends'; hours: number; notifyCloseFriends: boolean }) =>
     request<{ id: string }>('POST', '/checkins', input),

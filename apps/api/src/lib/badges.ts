@@ -7,11 +7,11 @@ import type { Badge } from '@tablemates/shared';
 import { and, count, countDistinct, eq, sql } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
-import { restaurants, reviews, savedPlaces, userBadges, visits } from '../db/schema';
+import { challengeMembers, restaurants, reviews, savedPlaces, userBadges, visits } from '../db/schema';
 import { notify } from './notify';
 import { friendIdsOf } from './visibility';
 
-type Metric = 'cuisines' | 'places' | 'regular' | 'neighborhoods' | 'trailblazer' | 'tastemaker';
+type Metric = 'cuisines' | 'places' | 'regular' | 'neighborhoods' | 'trailblazer' | 'tastemaker' | 'challenge_wins';
 
 interface Definition {
   key: string;
@@ -33,6 +33,7 @@ export const BADGES: Definition[] = [
   { key: 'neighborhoods_5', title: 'Neighborhood Passport', description: 'Eat in 5 neighborhoods', icon: 'map', metric: 'neighborhoods', target: 5 },
   { key: 'trailblazer', title: 'Trailblazer', description: 'Be the first of your friends to review a place', icon: 'flag', metric: 'trailblazer', target: 1 },
   { key: 'tastemaker', title: 'Tastemaker', description: 'Friends saved 10 places you recommended', icon: 'sparkles', metric: 'tastemaker', target: 10 },
+  { key: 'challenge_winner', title: 'Champion', description: 'Win a friend challenge', icon: 'medal', metric: 'challenge_wins', target: 1 },
 ];
 
 export const badgeTitle = (key: string) => BADGES.find((b) => b.key === key)?.title ?? 'a badge';
@@ -41,7 +42,7 @@ type Reader = Pick<Db, 'select' | 'selectDistinct' | 'execute'>;
 
 async function metrics(db: Reader, userId: string): Promise<Record<Metric, number>> {
   const mine = eq(visits.userId, userId);
-  const [[places], cuisines, [regular], [neighborhoods], [trailblazer], [tastemaker]] = await Promise.all([
+  const [[places], cuisines, [regular], [neighborhoods], [trailblazer], [tastemaker], [wins]] = await Promise.all([
     db.select({ n: countDistinct(visits.restaurantId) }).from(visits).where(mine),
     db.execute<{ n: number }>(sql`
       select count(distinct c)::int as n
@@ -82,6 +83,7 @@ async function metrics(db: Reader, userId: string): Promise<Record<Metric, numbe
             where v3.user_id = ${userId} and r3.recommends)`,
         ),
       ),
+    db.select({ n: count() }).from(challengeMembers).where(and(eq(challengeMembers.userId, userId), eq(challengeMembers.won, true))),
   ]);
   return {
     places: places?.n ?? 0,
@@ -90,6 +92,7 @@ async function metrics(db: Reader, userId: string): Promise<Record<Metric, numbe
     neighborhoods: neighborhoods?.n ?? 0,
     trailblazer: trailblazer?.n ?? 0,
     tastemaker: tastemaker?.n ?? 0,
+    challenge_wins: wins?.n ?? 0,
   };
 }
 
