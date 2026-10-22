@@ -1,5 +1,6 @@
 import {
   createVisitInput,
+  type PlaceResult,
   reviewInput,
   updateReviewInput,
   updateVisitInput,
@@ -23,6 +24,42 @@ import type { PlacesProvider } from '../places/types';
 /** Google's terms allow caching place details for up to 30 days. */
 const PLACE_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** Columns to store for a Places details result. */
+function placeValues(place: PlaceResult) {
+  return {
+    name: place.name,
+    address: place.address,
+    lat: place.lat,
+    lng: place.lng,
+    priceLevel: place.priceLevel,
+    cuisine: place.cuisine,
+    openingHours: place.hours ?? null,
+    utcOffsetMinutes: place.utcOffsetMinutes ?? null,
+    phone: place.phone ?? null,
+    website: place.website ?? null,
+    mapsUrl: place.mapsUrl ?? null,
+    neighborhood: place.neighborhood ?? null,
+    detailsFetchedAt: new Date(),
+    cachedAt: new Date(),
+  };
+}
+
+/**
+ * Restaurants saved before essentials (hours, phone, website) existed get them
+ * the first time their page loads. Failures just leave the old row.
+ */
+export async function withEssentials(db: Db, places: PlacesProvider, row: typeof restaurants.$inferSelect) {
+  if (row.detailsFetchedAt && Date.now() - row.detailsFetchedAt.getTime() < PLACE_CACHE_MS) return row;
+  try {
+    const place = await places.get(row.googlePlaceId);
+    if (!place) return row;
+    const [updated] = await db.update(restaurants).set(placeValues(place)).where(eq(restaurants.id, row.id)).returning();
+    return updated ?? row;
+  } catch {
+    return row;
+  }
+}
+
 /** Finds or creates the restaurant row for a Google place, refreshing stale details. */
 export async function ensureRestaurant(db: Db, places: PlacesProvider, googlePlaceId: string) {
   const [existing] = await db
@@ -44,15 +81,7 @@ export async function ensureRestaurant(db: Db, places: PlacesProvider, googlePla
     throw notFound('Restaurant not found');
   }
 
-  const values = {
-    name: place.name,
-    address: place.address,
-    lat: place.lat,
-    lng: place.lng,
-    priceLevel: place.priceLevel,
-    cuisine: place.cuisine,
-    cachedAt: new Date(),
-  };
+  const values = placeValues(place);
   const [row] = await db
     .insert(restaurants)
     .values({ googlePlaceId, ...values })

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { CommentsSheet } from '@/components/comments-sheet';
+import { EssentialActions, HoursList, OpenChip } from '@/components/essentials';
 import { AddToPlanSheet } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
@@ -50,13 +51,15 @@ export default function RestaurantScreen() {
             {price ? ` · ${price}` : ''}
           </Text>
         </View>
-        {r.cuisine.length > 0 && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[1] }}>
-            {r.cuisine.map((c) => (
-              <Chip key={c} label={c} />
-            ))}
-          </View>
-        )}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[1] }}>
+          <OpenChip restaurant={r} />
+          {r.neighborhood && <Chip label={r.neighborhood} icon="location" />}
+          {r.cuisine.map((c) => (
+            <Chip key={c} label={c} />
+          ))}
+        </View>
+        <EssentialActions restaurant={r} />
+        <HoursList restaurant={r} />
       </View>
 
       {friendStats.visits > 0 && (

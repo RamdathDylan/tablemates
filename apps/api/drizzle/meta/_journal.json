@@ -78,6 +78,13 @@
       "when": 1792639227086,
       "tag": "0010_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792639548256,
+      "tag": "0011_restaurant_essentials",
+      "breakpoints": true
     }
   ]
 }

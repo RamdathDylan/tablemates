@@ -35,6 +35,12 @@ export const toRestaurant = (r: RestaurantRow): T.Restaurant => ({
   lng: r.lng,
   priceLevel: r.priceLevel,
   cuisine: r.cuisine,
+  hours: r.openingHours ?? null,
+  utcOffsetMinutes: r.utcOffsetMinutes,
+  phone: r.phone,
+  website: r.website,
+  mapsUrl: r.mapsUrl,
+  neighborhood: r.neighborhood,
 });
 
 export const toReview = (r: ReviewRow): T.Review => ({
