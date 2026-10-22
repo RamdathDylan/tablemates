@@ -96,11 +96,22 @@ export const notificationSettingsInput = z.object({
 
 export const markNotificationsReadInput = z.object({ ids: z.array(z.uuid()).min(1).max(50) });
 
+/** A dish name, optionally with stars. Plain strings are accepted for older clients. */
+export const dishInput = z.union([
+  z.string().trim().min(1).max(60).transform((name) => ({ name, rating: null })),
+  z.object({
+    name: z.string().trim().min(1).max(60),
+    rating: z.number().int().min(1).max(5).nullable().default(null),
+  }),
+]);
+
+const dishesInput = z.array(dishInput).max(10);
+
 export const reviewInput = z.object({
   rating: z.number().int().min(1).max(5),
   body: z.string().trim().max(2000).default(''),
   recommends: z.boolean(),
-  dishes: z.array(z.string().trim().min(1).max(60)).max(10).default([]),
+  dishes: dishesInput.default([]),
 });
 export type ReviewInput = z.input<typeof reviewInput>;
 
@@ -122,7 +133,13 @@ export const createVisitInput = z.object({
 export const updateVisitInput = z.object({ audience: z.enum(visitAudiences) });
 export type CreateVisitInput = z.input<typeof createVisitInput>;
 
-export const updateReviewInput = reviewInput.partial();
+// Spelled out (no defaults) so a partial update never wipes fields it didn't mention.
+export const updateReviewInput = z.object({
+  rating: z.number().int().min(1).max(5).optional(),
+  body: z.string().trim().max(2000).optional(),
+  recommends: z.boolean().optional(),
+  dishes: dishesInput.optional(),
+});
 export type UpdateReviewInput = z.input<typeof updateReviewInput>;
 
 export const placesSearchQuery = z.object({

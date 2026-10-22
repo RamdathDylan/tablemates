@@ -17,6 +17,7 @@ import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
+import { dishesFor, setDishes } from '../lib/dishes';
 import { notify, notifySaversOfReview } from '../lib/notify';
 import { relationshipsWith, visitsOfFilter } from '../lib/visibility';
 import type { PlacesProvider } from '../places/types';
@@ -117,14 +118,17 @@ export async function listVisits(db: Db, userId: string, viewerId: string): Prom
     .where(visitsOfFilter(userId, viewerId))
     .orderBy(desc(visits.visitedAt), desc(visits.createdAt))
     .limit(200);
-  const companions = await companionsFor(db, rows.map((r) => r.visit.id));
+  const [companions, dishes] = await Promise.all([
+    companionsFor(db, rows.map((r) => r.visit.id)),
+    dishesFor(db, rows.flatMap((r) => (r.review ? [r.review.id] : []))),
+  ]);
   return rows.map(({ visit, restaurant, review }) => ({
     id: visit.id,
     visitedAt: visit.visitedAt,
     audience: visit.audience,
     companions: companions.get(visit.id)!,
     restaurant: toRestaurant(restaurant),
-    review: review ? toReview(review) : null,
+    review: review ? toReview(review, dishes.get(review.id)!) : null,
   }));
 }
 
@@ -211,9 +215,10 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
       const [review] = input.review
         ? await tx
             .insert(reviews)
-            .values({ visitId: visit!.id, ...input.review })
+            .values({ visitId: visit!.id, rating: input.review.rating, body: input.review.body, recommends: input.review.recommends })
             .returning()
         : [];
+      if (review && input.review) await setDishes(tx, review.id, input.review.dishes);
       if (review) await notifySaversOfReview(tx, visit!.id, review.id);
       if (companionIds.length) {
         await tx.insert(visitCompanions).values(companionIds.map((userId) => ({ visitId: visit!.id, userId })));
@@ -246,7 +251,7 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
       audience: result.visit.audience,
       companions: (await companionsFor(db, [result.visit.id])).get(result.visit.id)!,
       restaurant: toRestaurant(restaurant),
-      review: result.review ? toReview(result.review) : null,
+      review: result.review ? toReview(result.review, input.review?.dishes ?? []) : null,
     };
   });
 
@@ -282,12 +287,16 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
     if (!visit) throw notFound('Visit not found');
     try {
       const review = await db.transaction(async (tx) => {
-        const [created] = await tx.insert(reviews).values({ visitId, ...input }).returning();
+        const [created] = await tx
+          .insert(reviews)
+          .values({ visitId, rating: input.rating, body: input.body, recommends: input.recommends })
+          .returning();
+        await setDishes(tx, created!.id, input.dishes);
         await notifySaversOfReview(tx, visitId, created!.id);
         return created;
       });
       reply.status(201);
-      return toReview(review!);
+      return toReview(review!, input.dishes);
     } catch (err) {
       if (isUniqueViolation(err)) throw conflict('This visit already has a review');
       throw err;
@@ -297,12 +306,17 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
   app.patch('/reviews/:id', async (req) => {
     const review = await ownReview(idParam(req.params), req.userId);
     const input = parse(updateReviewInput, req.body);
-    const [updated] = await db
-      .update(reviews)
-      .set({ ...input, updatedAt: new Date() })
-      .where(eq(reviews.id, review.id))
-      .returning();
-    return toReview(updated!);
+    const { dishes, ...fields } = input;
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(reviews)
+        .set({ ...fields, updatedAt: new Date() })
+        .where(eq(reviews.id, review.id))
+        .returning();
+      if (dishes) await setDishes(tx, review.id, dishes);
+      return row!;
+    });
+    return toReview(updated, (await dishesFor(db, [review.id])).get(review.id)!);
   });
 
   app.delete('/reviews/:id', async (req, reply) => {
