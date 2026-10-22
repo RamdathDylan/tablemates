@@ -21,6 +21,7 @@ import { View } from 'react-native';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api, ApiError } from '@/lib/api';
+import { useLocation } from '@/lib/location';
 import { useMe } from '@/lib/auth';
 import { qk } from '@/lib/query-keys';
 import { useDebounced } from '@/lib/use-debounced';
@@ -64,9 +65,10 @@ export default function LogScreen() {
 function PlaceSearch({ onPick }: { onPick: (place: PlaceResult) => void }) {
   const [query, setQuery] = useState('');
   const q = useDebounced(query.trim(), 350);
+  const location = useLocation();
   const results = useQuery({
-    queryKey: qk.places(q),
-    queryFn: () => api.searchPlaces(q),
+    queryKey: [...qk.places(q), location.coords],
+    queryFn: () => api.searchPlaces(q, location.coords),
     enabled: q.length >= 2,
     staleTime: 5 * 60_000,
   });
@@ -83,6 +85,19 @@ function PlaceSearch({ onPick }: { onPick: (place: PlaceResult) => void }) {
         autoFocus
         returnKeyType="search"
       />
+      {location.coords ? (
+        <Text variant="caption" tone="muted">
+          Showing restaurants near you first.
+        </Text>
+      ) : location.permission === 'undetermined' ? (
+        <Button
+          title="Use my location for nearby results"
+          icon="navigate"
+          variant="ghost"
+          size="sm"
+          onPress={() => location.request()}
+        />
+      ) : null}
       {q.length < 2 ? (
         <EmptyState
           icon="restaurant-outline"

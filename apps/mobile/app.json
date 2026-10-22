@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "TableMates uses your location to center the map and find restaurants near you."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -5,6 +5,10 @@ export interface TableMapProps {
   places: MapPlace[];
   selectedId: string | null;
   onSelect: (restaurantId: string | null) => void;
+  /** Shown as a dot when the user has shared their location. */
+  userLocation?: { lat: number; lng: number } | null;
+  /** Bump `key` to pan the map to the user (the "Center on me" button). */
+  centerOnUser?: number;
 }
 
 /** Places that can be drawn (Google gave us coordinates). */

@@ -164,7 +164,8 @@ export const api = {
   notificationSummary: () => request<NotificationSummary>('GET', '/notifications/summary'),
   markNotificationsRead: (ids: string[]) => request<void>('POST', '/notifications/read', { ids }),
 
-  searchPlaces: (q: string) => request<PlaceResult[]>('GET', `/places/search${qs({ q })}`),
+  searchPlaces: (q: string, near?: { lat: number; lng: number } | null) =>
+    request<PlaceResult[]>('GET', `/places/search${qs({ q, lat: near?.lat, lng: near?.lng })}`),
   restaurant: (id: string) => request<RestaurantDetail>('GET', `/restaurants/${id}`),
   mapPlaces: (query: MapPlacesQuery) => request<MapPlace[]>('GET', `/map/places${qs({ ...query })}`),
 

@@ -1,4 +1,4 @@
-import { MapPin } from '@tablemates/ui';
+import { MapPin, palette } from '@tablemates/ui';
 import { AdvancedMarker, APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { useEffect } from 'react';
 
@@ -11,7 +11,7 @@ const MAP_ID = process.env.EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 /** Web map, via the Google Maps JavaScript API. */
 export const mapsAvailable = API_KEY.length > 0;
 
-export function TableMap({ places, selectedId, onSelect }: TableMapProps) {
+export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser }: TableMapProps) {
   const pins = mappable(places);
   return (
     <APIProvider apiKey={API_KEY}>
@@ -27,6 +27,21 @@ export function TableMap({ places, selectedId, onSelect }: TableMapProps) {
         onClick={() => onSelect(null)}>
         <FitToPins places={places} />
         <PanToSelected places={places} selectedId={selectedId} />
+        <CenterOnUser location={userLocation} trigger={centerOnUser} />
+        {userLocation && (
+          <AdvancedMarker position={userLocation} title="You are here" zIndex={0}>
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 8,
+                background: palette.sky[600],
+                border: '3px solid white',
+                boxShadow: '0 0 0 6px rgba(47, 98, 208, 0.2)',
+              }}
+            />
+          </AdvancedMarker>
+        )}
         {pins.map((p) => {
           const selected = p.restaurant.id === selectedId;
           return (
@@ -75,5 +90,16 @@ function PanToSelected({ places, selectedId }: { places: TableMapProps['places']
     if (map && p) map.panTo({ lat: p.restaurant.lat, lng: p.restaurant.lng });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedId]);
+  return null;
+}
+
+function CenterOnUser({ location, trigger }: { location?: { lat: number; lng: number } | null; trigger?: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !trigger || !location) return;
+    map.panTo(location);
+    map.setZoom(14);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, trigger]);
   return null;
 }

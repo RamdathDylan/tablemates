@@ -5,7 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { mappable, pinKind, pinLabel, type TableMapProps } from './shared';
 
 /** Native map: Apple Maps on iOS, Google Maps on Android. */
-export function TableMap({ places, selectedId, onSelect }: TableMapProps) {
+export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser }: TableMapProps) {
   const ref = useRef<MapView>(null);
   const pins = mappable(places);
   const fitKey = pins.map((p) => p.restaurant.id).join(',');
@@ -28,8 +28,29 @@ export function TableMap({ places, selectedId, onSelect }: TableMapProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
+  useEffect(() => {
+    if (!centerOnUser || !userLocation) return;
+    ref.current?.animateCamera(
+      { center: { latitude: userLocation.lat, longitude: userLocation.lng }, zoom: 14 },
+      { duration: 400 },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerOnUser]);
+
   return (
-    <MapView ref={ref} style={{ flex: 1 }} onPress={() => onSelect(null)} showsPointsOfInterests={false} toolbarEnabled={false}>
+    <MapView
+      ref={ref}
+      style={{ flex: 1 }}
+      onPress={() => onSelect(null)}
+      showsPointsOfInterests={false}
+      toolbarEnabled={false}
+      showsUserLocation={!!userLocation}
+      // With no pins yet, start where the user is.
+      initialRegion={
+        !pins.length && userLocation
+          ? { latitude: userLocation.lat, longitude: userLocation.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }
+          : undefined
+      }>
       {pins.map((p) => {
         const selected = p.restaurant.id === selectedId;
         return (
