@@ -1,4 +1,4 @@
-import { Button, EmptyState, ReviewCard, space, Text, useBreakpoint, useTheme } from '@tablemates/ui';
+import { Button, EmptyState, PhotoViewer, ReviewCard, space, Text, useBreakpoint, useTheme } from '@tablemates/ui';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -24,6 +24,7 @@ export default function FeedScreen() {
   const save = useSaveToggle();
   const react = useReaction();
   const [thread, setThread] = useState<{ reviewId: string; title: string } | null>(null);
+  const [viewer, setViewer] = useState<{ photos: { url: string }[]; index: number } | null>(null);
   const feed = useInfiniteQuery({
     queryKey: qk.feed,
     queryFn: ({ pageParam }) => api.feed(pageParam),
@@ -94,6 +95,8 @@ export default function FeedScreen() {
           saved={item.saved}
           onToggleSave={() => save.mutate({ restaurantId: item.restaurant.id, saved: item.saved, name: item.restaurant.name })}
           companions={item.companions.map((c) => c.displayName)}
+          photos={item.review.photos}
+          onOpenPhoto={(index) => setViewer({ photos: item.review.photos, index })}
           engagement={item.engagement}
           onReact={(kind) => react.mutate({ reviewId: item.review.id, kind, on: item.engagement.mine.includes(kind) })}
           onOpenComments={() => setThread({ reviewId: item.review.id, title: `${item.author.displayName} at ${item.restaurant.name}` })}
@@ -112,6 +115,11 @@ export default function FeedScreen() {
           />
         ) : undefined
       }
+    />
+    <PhotoViewer
+      photos={viewer?.photos ?? []}
+      index={viewer?.index ?? null}
+      onChange={(index) => setViewer(index === null || !viewer ? null : { ...viewer, index })}
     />
     {thread && <CommentsSheet reviewId={thread.reviewId} title={thread.title} onClose={() => setThread(null)} />}
     </>

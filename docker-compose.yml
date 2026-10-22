@@ -23,5 +23,20 @@ services:
     ports:
       - '8025:8025'
 
+  # Local S3-compatible photo storage (production uses Cloudflare R2 through the same API).
+  # The API creates the bucket and its CORS rule on startup. Console: http://localhost:9001
+  storage:
+    image: rustfs/rustfs:latest
+    command: /data
+    environment:
+      RUSTFS_ACCESS_KEY: tablemates
+      RUSTFS_SECRET_KEY: tablemates-dev
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - storage-data:/data
+
 volumes:
   db-data:
+  storage-data:

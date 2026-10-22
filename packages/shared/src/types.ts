@@ -181,8 +181,17 @@ export interface Review {
   body: string;
   recommends: boolean;
   dishes: Dish[];
+  photos: Photo[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Photo {
+  id: string;
+  /** Short-lived signed URL. Refetch rather than storing it. */
+  url: string;
+  width: number | null;
+  height: number | null;
 }
 
 export interface Dish {
@@ -234,6 +243,8 @@ export interface RestaurantDetail {
   saved: boolean;
   /** What the viewer and their friends order here, most-ordered first. */
   topDishes: TopDish[];
+  /** Photos from reviews the viewer can see, newest first. */
+  photos: (Photo & { author: PublicUser })[];
 }
 
 export interface AskReply {

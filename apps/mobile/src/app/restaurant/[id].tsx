@@ -1,8 +1,8 @@
-import { Button, Card, Chip, EmptyState, Icon, priceLabel, Rating, ReviewCard, space, Text } from '@tablemates/ui';
+import { Button, Card, Chip, EmptyState, PhotoViewer, Icon, priceLabel, Rating, ReviewCard, space, Text } from '@tablemates/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 
 import { CommentsSheet } from '@/components/comments-sheet';
 import { EssentialActions, HoursList, OpenChip } from '@/components/essentials';
@@ -24,6 +24,7 @@ export default function RestaurantScreen() {
   const [thread, setThread] = useState<{ reviewId: string; title: string } | null>(null);
   const [planning, setPlanning] = useState(false);
   const [listing, setListing] = useState(false);
+  const [viewer, setViewer] = useState<{ photos: { url: string; caption?: string }[]; index: number } | null>(null);
 
   if (detail.isPending) {
     return (
@@ -40,7 +41,8 @@ export default function RestaurantScreen() {
     );
   }
 
-  const { restaurant: r, reviews, friendStats, saved, topDishes } = detail.data;
+  const { restaurant: r, reviews, friendStats, saved, topDishes, photos } = detail.data;
+  const gallery = photos.map((p) => ({ url: p.url, caption: `${p.author.displayName}` }));
   const price = priceLabel(r.priceLevel);
 
   return (
@@ -102,6 +104,22 @@ export default function RestaurantScreen() {
       {listing && <AddToListSheet restaurant={r} onClose={() => setListing(false)} />}
       {planning && <AddToPlanSheet restaurant={r} onClose={() => setPlanning(false)} />}
 
+      {photos.length > 0 && (
+        <Section title="Friends' photos">
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[1] }}>
+            {photos.slice(0, 9).map((p, i) => (
+              <Pressable
+                key={p.id}
+                role="button"
+                accessibilityLabel={`Photo by ${p.author.displayName}, ${i + 1} of ${photos.length}`}
+                onPress={() => setViewer({ photos: gallery, index: i })}>
+                <Image source={{ uri: p.url }} style={{ width: 104, height: 104, borderRadius: 8 }} />
+              </Pressable>
+            ))}
+          </View>
+        </Section>
+      )}
+
       <YourVisits restaurantId={r.id} />
 
       {topDishes.length > 0 && (
@@ -142,6 +160,8 @@ export default function RestaurantScreen() {
               visitedAt={item.visitedAt}
               onPressAuthor={() => router.push({ pathname: '/user/[username]', params: { username: item.author.username } })}
               companions={item.companions.map((c) => c.displayName)}
+              photos={item.review.photos}
+              onOpenPhoto={(index) => setViewer({ photos: item.review.photos, index })}
               engagement={item.engagement}
               onReact={(kind) => react.mutate({ reviewId: item.review.id, kind, on: item.engagement.mine.includes(kind) })}
               onOpenComments={() => setThread({ reviewId: item.review.id, title: `${item.author.displayName} at ${r.name}` })}
@@ -149,6 +169,11 @@ export default function RestaurantScreen() {
           ))
         )}
       </Section>
+      <PhotoViewer
+        photos={viewer?.photos ?? []}
+        index={viewer?.index ?? null}
+        onChange={(index) => setViewer(index === null || !viewer ? null : { ...viewer, index })}
+      />
       {thread && <CommentsSheet reviewId={thread.reviewId} title={thread.title} onClose={() => setThread(null)} />}
     </Screen>
   );

@@ -43,14 +43,15 @@ export const toRestaurant = (r: RestaurantRow): T.Restaurant => ({
   neighborhood: r.neighborhood,
 });
 
-/** Dishes live in their own table; load them with dishesFor() and pass them in. */
-export const toReview = (r: ReviewRow, dishes: T.Dish[]): T.Review => ({
+/** Dishes and photos live in their own tables; load them (dishesFor, photosFor) and pass them in. */
+export const toReview = (r: ReviewRow, dishes: T.Dish[], photos: T.Photo[] = []): T.Review => ({
   id: r.id,
   visitId: r.visitId,
   rating: r.rating,
   body: r.body,
   recommends: r.recommends,
   dishes,
+  photos,
   createdAt: r.createdAt.toISOString(),
   updatedAt: r.updatedAt.toISOString(),
 });

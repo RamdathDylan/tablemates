@@ -20,6 +20,7 @@ import { View } from 'react-native';
 import { MyListsSection } from '@/components/lists';
 import { NotificationSettings } from '@/components/notification-settings';
 import { Passport } from '@/components/passport';
+import { AvatarPicker } from '@/components/avatar-picker';
 import { ProfileHeader } from '@/components/profile-header';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
@@ -106,7 +107,6 @@ function EditProfileSheet({ visible, onClose }: { visible: boolean; onClose: () 
   const [displayName, setDisplayName] = useState(me.displayName);
   const [homeCity, setHomeCity] = useState(me.homeCity ?? '');
   const [bio, setBio] = useState(me.bio);
-  const [avatarUrl, setAvatarUrl] = useState(me.avatarUrl ?? '');
 
   const save = useMutation({
     mutationFn: () =>
@@ -114,7 +114,6 @@ function EditProfileSheet({ visible, onClose }: { visible: boolean; onClose: () 
         displayName: displayName.trim(),
         homeCity: homeCity.trim() || null,
         bio: bio.trim(),
-        avatarUrl: avatarUrl.trim() || null,
       }),
     onSuccess: (user) => {
       setUser(user);
@@ -132,17 +131,15 @@ function EditProfileSheet({ visible, onClose }: { visible: boolean; onClose: () 
       title="Edit profile"
       footer={<Button title="Save" onPress={() => save.mutate()} loading={save.isPending} fullWidth size="lg" />}>
       <View style={{ gap: space[4] }}>
+        <AvatarPicker me={me} />
         <Input label="Name" value={displayName} onChangeText={setDisplayName} error={fieldErrors.displayName} />
         <Input label="Home city" value={homeCity} onChangeText={setHomeCity} icon="location-outline" />
         <TextArea label="Bio" value={bio} onChangeText={setBio} maxLength={280} helperText={`${bio.length}/280`} />
-        <Input
-          label="Photo URL"
-          value={avatarUrl}
-          onChangeText={setAvatarUrl}
-          autoCapitalize="none"
-          keyboardType="url"
-          error={fieldErrors.avatarUrl ?? (save.isError && !Object.keys(fieldErrors).length ? save.error.message : undefined)}
-        />
+        {save.isError && !Object.keys(fieldErrors).length && (
+          <Text tone="danger" role="alert">
+            {save.error.message}
+          </Text>
+        )}
       </View>
     </Sheet>
   );

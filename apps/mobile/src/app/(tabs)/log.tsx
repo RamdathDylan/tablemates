@@ -21,6 +21,7 @@ import { View } from 'react-native';
 
 import { AudiencePicker } from '@/components/audience-picker';
 import { FriendPicker } from '@/components/friend-picker';
+import { PhotoStrip, type StripPhoto } from '@/components/photo-strip';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api, ApiError } from '@/lib/api';
@@ -172,6 +173,8 @@ function VisitForm({
   const [recommends, setRecommends] = useState<boolean | null>(null);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [dishDraft, setDishDraft] = useState('');
+  const [photos, setPhotos] = useState<StripPhoto[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [body, setBody] = useState('');
   const [error, setError] = useState<string>();
 
@@ -183,7 +186,9 @@ function VisitForm({
         audience,
         companionIds: companions.map((c) => c.id),
         fromVisitId: tag?.visitId,
-        review: rating ? { rating, recommends: !!recommends, dishes, body } : undefined,
+        review: rating
+          ? { rating, recommends: !!recommends, dishes, body, photoIds: photos.flatMap((p) => (p.id ? [p.id] : [])) }
+          : undefined,
       }),
     onSuccess: (visit) => {
       // The server remembers this choice for next time; mirror it locally.
@@ -313,6 +318,10 @@ function VisitForm({
             )}
           </Section>
 
+          <Section title="Photos">
+            <PhotoStrip photos={photos} onChange={setPhotos} max={6} onUploadingChange={setUploading} />
+          </Section>
+
           <TextArea label="Notes for your friends" value={body} onChangeText={setBody} maxLength={2000} placeholder="Go on a weeknight, sit at the bar…" />
         </>
       )}
@@ -357,6 +366,7 @@ function VisitForm({
         title={audience === 'private' ? 'Save privately' : rating ? 'Share with friends' : 'Save visit without a review'}
         onPress={submit}
         loading={save.isPending}
+        disabled={uploading}
         fullWidth
         size="lg"
       />

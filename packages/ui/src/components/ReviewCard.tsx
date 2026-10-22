@@ -1,8 +1,8 @@
-import { Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 
 import { formatDate, joinNames } from '../format';
 import { useTheme } from '../theme';
-import { space } from '../tokens';
+import { radius, space } from '../tokens';
 import { Avatar } from './Avatar';
 import { Card } from './Card';
 import { Chip } from './Chip';
@@ -26,6 +26,9 @@ export interface ReviewCardProps {
   /** Shows a bookmark button for the want-to-try list. */
   saved?: boolean;
   onToggleSave?: () => void;
+  /** Photo thumbnails; tapping one calls onOpenPhoto with its index. */
+  photos?: { url: string }[];
+  onOpenPhoto?: (index: number) => void;
   /** Names of friends tagged on the visit. */
   companions?: string[];
   /** Reaction and comment counts; shows the response bar when set. */
@@ -50,6 +53,8 @@ export function ReviewCard({
   onReact,
   onOpenComments,
   companions = [],
+  photos = [],
+  onOpenPhoto,
 }: ReviewCardProps) {
   const { colors } = useTheme();
 
@@ -101,6 +106,24 @@ export function ReviewCard({
         <Rating value={rating} size="sm" />
         {recommends && <Chip label="Recommends" tone="primary" icon="thumbs-up" />}
       </View>
+
+      {photos.length > 0 && (
+        <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap' }}>
+          {photos.map((p, i) => (
+            <Pressable
+              key={p.url}
+              role="button"
+              accessibilityLabel={`Open photo ${i + 1} of ${photos.length}`}
+              onPress={() => onOpenPhoto?.(i)}
+              style={(state: PressState) => [{ borderRadius: radius.md }, focusRing(state, colors)]}>
+              <Image
+                source={{ uri: p.url }}
+                style={{ width: photos.length === 1 ? 240 : 96, height: photos.length === 1 ? 180 : 96, borderRadius: radius.md, backgroundColor: colors.surfaceSunken }}
+              />
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {!!body && <Text>{body}</Text>}
 

@@ -19,9 +19,11 @@ import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant, toReview } from '../lib/serialize';
 import { evaluateBadges } from '../lib/badges';
 import { dishesFor, setDishes } from '../lib/dishes';
+import { photosFor, setReviewPhotos } from '../lib/photos';
 import { notify, notifySaversOfReview } from '../lib/notify';
 import { relationshipsWith, visitsOfFilter } from '../lib/visibility';
 import type { PlacesProvider } from '../places/types';
+import type { Storage } from '../storage/types';
 
 /** Google's terms allow caching place details for up to 30 days. */
 const PLACE_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -110,7 +112,13 @@ export async function companionsFor(db: Db, visitIds: string[]): Promise<Map<str
 }
 
 /** A user's visits as the viewer may see them. Callers must check friendship first. */
-export async function listVisits(db: Db, userId: string, viewerId: string, restaurantId?: string): Promise<Visit[]> {
+export async function listVisits(
+  db: Db,
+  storage: Storage,
+  userId: string,
+  viewerId: string,
+  restaurantId?: string,
+): Promise<Visit[]> {
   const rows = await db
     .select({ visit: visits, restaurant: restaurants, review: reviews })
     .from(visits)
@@ -119,9 +127,11 @@ export async function listVisits(db: Db, userId: string, viewerId: string, resta
     .where(and(visitsOfFilter(userId, viewerId), restaurantId ? eq(visits.restaurantId, restaurantId) : undefined))
     .orderBy(desc(visits.visitedAt), desc(visits.createdAt))
     .limit(200);
-  const [companions, dishes] = await Promise.all([
+  const reviewIds = rows.flatMap((r) => (r.review ? [r.review.id] : []));
+  const [companions, dishes, photos] = await Promise.all([
     companionsFor(db, rows.map((r) => r.visit.id)),
-    dishesFor(db, rows.flatMap((r) => (r.review ? [r.review.id] : []))),
+    dishesFor(db, reviewIds),
+    photosFor(db, storage, reviewIds),
   ]);
   return rows.map(({ visit, restaurant, review }) => ({
     id: visit.id,
@@ -129,11 +139,11 @@ export async function listVisits(db: Db, userId: string, viewerId: string, resta
     audience: visit.audience,
     companions: companions.get(visit.id)!,
     restaurant: toRestaurant(restaurant),
-    review: review ? toReview(review, dishes.get(review.id)!) : null,
+    review: review ? toReview(review, dishes.get(review.id)!, photos.get(review.id)!) : null,
   }));
 }
 
-export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
+export function visitRoutes(app: FastifyInstance, { db, places, storage }: Deps) {
   /** A review the viewer owns, or 404 (so other people's review ids aren't confirmed). */
   async function ownReview(reviewId: string, userId: string) {
     const [row] = await db
@@ -145,10 +155,10 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
     return row.review;
   }
 
-  app.get('/me/visits', async (req) => listVisits(db, req.userId, req.userId));
+  app.get('/me/visits', async (req) => listVisits(db, storage, req.userId, req.userId));
 
   /** Your visit history at one restaurant, newest first. */
-  app.get('/restaurants/:id/my-visits', async (req) => listVisits(db, req.userId, req.userId, idParam(req.params)));
+  app.get('/restaurants/:id/my-visits', async (req) => listVisits(db, storage, req.userId, req.userId, idParam(req.params)));
 
   /** Visits friends tagged you on that you haven't logged yourself. */
   app.get('/me/tagged', async (req): Promise<TaggedVisit[]> => {
@@ -222,7 +232,10 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
             .values({ visitId: visit!.id, rating: input.review.rating, body: input.review.body, recommends: input.review.recommends })
             .returning()
         : [];
-      if (review && input.review) await setDishes(tx, review.id, input.review.dishes);
+      if (review && input.review) {
+        await setDishes(tx, review.id, input.review.dishes);
+        await setReviewPhotos(tx, req.userId, review.id, input.review.photoIds);
+      }
       if (review) await notifySaversOfReview(tx, visit!.id, review.id);
       if (companionIds.length) {
         await tx.insert(visitCompanions).values(companionIds.map((userId) => ({ visitId: visit!.id, userId })));
@@ -256,7 +269,9 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
       audience: result.visit.audience,
       companions: (await companionsFor(db, [result.visit.id])).get(result.visit.id)!,
       restaurant: toRestaurant(restaurant),
-      review: result.review ? toReview(result.review, input.review?.dishes ?? []) : null,
+      review: result.review
+        ? toReview(result.review, input.review?.dishes ?? [], (await photosFor(db, storage, [result.review.id])).get(result.review.id)!)
+        : null,
     };
   });
 
@@ -297,12 +312,13 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
           .values({ visitId, rating: input.rating, body: input.body, recommends: input.recommends })
           .returning();
         await setDishes(tx, created!.id, input.dishes);
+        await setReviewPhotos(tx, req.userId, created!.id, input.photoIds);
         await notifySaversOfReview(tx, visitId, created!.id);
         return created;
       });
       await evaluateBadges(db, [req.userId]);
       reply.status(201);
-      return toReview(review!, input.dishes);
+      return toReview(review!, input.dishes, (await photosFor(db, storage, [review!.id])).get(review!.id)!);
     } catch (err) {
       if (isUniqueViolation(err)) throw conflict('This visit already has a review');
       throw err;
@@ -312,7 +328,7 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
   app.patch('/reviews/:id', async (req) => {
     const review = await ownReview(idParam(req.params), req.userId);
     const input = parse(updateReviewInput, req.body);
-    const { dishes, ...fields } = input;
+    const { dishes, photoIds, ...fields } = input;
     const updated = await db.transaction(async (tx) => {
       const [row] = await tx
         .update(reviews)
@@ -320,9 +336,11 @@ export function visitRoutes(app: FastifyInstance, { db, places }: Deps) {
         .where(eq(reviews.id, review.id))
         .returning();
       if (dishes) await setDishes(tx, review.id, dishes);
+      if (photoIds) await setReviewPhotos(tx, req.userId, review.id, photoIds);
       return row!;
     });
-    return toReview(updated, (await dishesFor(db, [review.id])).get(review.id)!);
+    const [d, ph] = await Promise.all([dishesFor(db, [review.id]), photosFor(db, storage, [review.id])]);
+    return toReview(updated, d.get(review.id)!, ph.get(review.id)!);
   });
 
   app.delete('/reviews/:id', async (req, reply) => {

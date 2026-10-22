@@ -53,6 +53,7 @@ Every component reads its colors from the theme, works on web, and shows a visib
 | Component | Use for |
 |---|---|
 | `ReviewCard` | A friend's review in the feed or on a restaurant page. Omit `restaurantName` on the restaurant's own page. Pass `saved` and `onToggleSave` to show a want-to-try bookmark. |
+| `PhotoViewer` | A full-screen photo lightbox with previous and next buttons, a counter, an optional caption, and a close button. Escape or tapping the backdrop closes it. |
 | `RestaurantCard` | Search results, and restaurants with a friends summary (`friendStats`). Optional `you` (your rating) and `distanceKm`. |
 | `ColumnChart` | Vertical bars for one series over categories (e.g. visits by month): 4px rounded tops, 2px gaps, a direct label on the peak only, and an accessible label listing every value. |
 | `RankedBars` | Horizontal bars, longest first, each with its label and value (e.g. top cuisines). Each row is a list item with a spoken summary. |

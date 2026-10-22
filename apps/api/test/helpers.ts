@@ -11,6 +11,7 @@ import { TokenService } from '../src/lib/tokens';
 import { VerificationService } from '../src/lib/verification';
 import type { Email, Mailer } from '../src/mail/types';
 import type { PlacesProvider } from '../src/places/types';
+import type { Storage } from '../src/storage/types';
 
 export function testDatabaseUrl() {
   const url = process.env.TEST_DATABASE_URL;
@@ -61,6 +62,28 @@ export class FakeMailer implements Mailer {
   }
 }
 
+/** In-memory object store. "Uploading" is simulated with put(). */
+export class FakeStorage implements Storage {
+  objects = new Map<string, number>();
+  put(key: string, bytes: number) {
+    this.objects.set(key, bytes);
+  }
+  async presignPut(key: string) {
+    return `https://storage.test/put/${key}`;
+  }
+  async presignGet(key: string) {
+    return `https://storage.test/get/${key}?sig=1`;
+  }
+  async head(key: string) {
+    const bytes = this.objects.get(key);
+    return bytes === undefined ? null : { bytes };
+  }
+  async delete(keys: string[]) {
+    for (const k of keys) this.objects.delete(k);
+  }
+  async ensureReady() {}
+}
+
 export interface TestUser {
   id: string;
   username: string;
@@ -72,7 +95,7 @@ export interface TestUser {
 const mailers = new WeakMap<FastifyInstance, FakeMailer>();
 
 export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
-  const ctx = {} as { app: FastifyInstance; db: Db; places: FakePlaces; mailer: FakeMailer };
+  const ctx = {} as { app: FastifyInstance; db: Db; places: FakePlaces; mailer: FakeMailer; storage: FakeStorage };
   let close: () => Promise<void>;
 
   beforeAll(async () => {
@@ -81,11 +104,14 @@ export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
     ctx.db = created.db;
     ctx.places = new FakePlaces();
     ctx.mailer = new FakeMailer();
+    ctx.storage = new FakeStorage();
     ctx.app = await buildApp({
       db: ctx.db,
       tokens: new TokenService(ctx.db, 'test-secret'),
       places: ctx.places,
       verification: new VerificationService(ctx.db, ctx.mailer, 'test-secret'),
+      storage: ctx.storage,
+      publicApiUrl: 'http://api.test',
       cookieSecure: false,
       corsOrigins: ['http://localhost:8081'],
       // Tests sign up many users from one IP; rate-limit tests pass their own limit.
@@ -97,7 +123,7 @@ export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
 
   beforeEach(async () => {
     await ctx.db.execute(
-      sql`truncate users, user_badges, lists, list_items, list_follows, review_dishes, plans, plan_members, plan_options, plan_votes, asks, ask_replies, push_tokens, reactions, comments, visit_companions, friendships, notifications, email_verification_codes, saved_places, close_friends, restaurants, visits, reviews, refresh_tokens cascade`,
+      sql`truncate users, photos, review_photos, user_badges, lists, list_items, list_follows, review_dishes, plans, plan_members, plan_options, plan_votes, asks, ask_replies, push_tokens, reactions, comments, visit_companions, friendships, notifications, email_verification_codes, saved_places, close_friends, restaurants, visits, reviews, refresh_tokens cascade`,
     );
     ctx.places.places.clear();
     ctx.places.getCalls = 0;

@@ -23,7 +23,7 @@ describe('push notifications', () => {
 
   function worker() {
     const push = new FakePush();
-    return { push, worker: new PushWorker(ctx.db, push, { error: () => {} }) };
+    return { push, worker: new PushWorker(ctx.db, push) };
   }
 
   it('pushes a friend request to every device of the recipient, once', async () => {

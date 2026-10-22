@@ -15,6 +15,7 @@ import { listRoutes } from './routes/lists';
 import { mapRoutes } from './routes/map';
 import { notificationRoutes } from './routes/notifications';
 import { savedRoutes } from './routes/saved';
+import { avatarRoute, photoRoutes } from './routes/photos';
 import { placeRoutes } from './routes/places';
 import { planRoutes } from './routes/plans';
 import { pushRoutes } from './routes/push';
@@ -77,6 +78,7 @@ export async function buildApp({
   app.get('/health', async () => ({ ok: true }));
 
   authRoutes(app, deps, authRateLimit);
+  avatarRoute(app, deps);
 
   await app.register(async (authed) => {
     authed.decorateRequest('userId', '');
@@ -103,6 +105,7 @@ export async function buildApp({
     planRoutes(authed, deps);
     listRoutes(authed, deps);
     wrappedRoutes(authed, deps);
+    photoRoutes(authed, deps);
     mapRoutes(authed, deps);
     savedRoutes(authed, deps);
     pushRoutes(authed, deps);

@@ -34,6 +34,8 @@ export const updateProfileInput = z
     displayName: z.string().trim().min(1).max(50),
     bio: z.string().trim().max(280),
     avatarUrl: z.url().nullable(),
+    /** An uploaded avatar photo; replaces avatarUrl. */
+    avatarPhotoId: z.uuid().nullable(),
     homeCity: z.string().trim().max(80).nullable(),
   })
   .partial();
@@ -108,11 +110,29 @@ export const dishInput = z.union([
 
 const dishesInput = z.array(dishInput).max(10);
 
+export const MAX_REVIEW_PHOTOS = 6;
+export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+export const photoContentTypes = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+export const uploadInput = z.object({
+  kind: z.enum(['review', 'avatar', 'story', 'plate']),
+  contentType: z.enum(photoContentTypes),
+  bytes: z.number().int().min(1).max(MAX_PHOTO_BYTES, 'Photos must be 8 MB or smaller'),
+});
+
+export const confirmPhotoInput = z.object({
+  width: z.number().int().min(1).max(20000).optional(),
+  height: z.number().int().min(1).max(20000).optional(),
+});
+
+const photoIdsInput = z.array(z.uuid()).max(MAX_REVIEW_PHOTOS);
+
 export const reviewInput = z.object({
   rating: z.number().int().min(1).max(5),
   body: z.string().trim().max(2000).default(''),
   recommends: z.boolean(),
   dishes: dishesInput.default([]),
+  photoIds: photoIdsInput.default([]),
 });
 export type ReviewInput = z.input<typeof reviewInput>;
 
@@ -140,6 +160,7 @@ export const updateReviewInput = z.object({
   body: z.string().trim().max(2000).optional(),
   recommends: z.boolean().optional(),
   dishes: dishesInput.optional(),
+  photoIds: photoIdsInput.optional(),
 });
 export type UpdateReviewInput = z.input<typeof updateReviewInput>;
 

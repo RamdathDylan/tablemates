@@ -13,6 +13,7 @@ import type { Deps } from '../deps';
 import { forbidden, notFound, parse } from '../lib/errors';
 import { toMe, toPublicUser } from '../lib/serialize';
 import { passport } from '../lib/badges';
+import { ownReadyPhotos } from '../lib/photos';
 import { tasteWith } from '../lib/taste';
 import { relationshipsWith, relationshipWith, visitsOfFilter } from '../lib/visibility';
 import { listVisits } from './visits';
@@ -24,7 +25,7 @@ const publicColumns = {
   avatarUrl: users.avatarUrl,
 };
 
-export function userRoutes(app: FastifyInstance, { db }: Deps) {
+export function userRoutes(app: FastifyInstance, { db, storage, publicApiUrl }: Deps) {
   async function findByUsername(raw: unknown) {
     const parsed = usernameSchema.safeParse(raw);
     if (!parsed.success) throw notFound('User not found');
@@ -40,7 +41,14 @@ export function userRoutes(app: FastifyInstance, { db }: Deps) {
   });
 
   app.patch('/me', async (req) => {
-    const input = parse(updateProfileInput, req.body);
+    const { avatarPhotoId, ...input } = parse(updateProfileInput, req.body);
+    if (avatarPhotoId) {
+      // Avatars are public profile pictures, served through a stable redirect URL.
+      await ownReadyPhotos(db, req.userId, [avatarPhotoId], 'avatar');
+      input.avatarUrl = `${publicApiUrl}/avatars/${avatarPhotoId}`;
+    } else if (avatarPhotoId === null) {
+      input.avatarUrl = null;
+    }
     const [user] = await db.update(users).set(input).where(eq(users.id, req.userId)).returning();
     if (!user) throw notFound('User not found');
     return toMe(user);
@@ -120,6 +128,6 @@ export function userRoutes(app: FastifyInstance, { db }: Deps) {
     if (rel.status !== 'self' && rel.status !== 'friends') {
       throw forbidden('Add this person as a friend to see their visits');
     }
-    return listVisits(db, user.id, req.userId);
+    return listVisits(db, storage, user.id, req.userId);
   });
 }
