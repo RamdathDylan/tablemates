@@ -31,8 +31,10 @@ export interface NotifyInput {
  * Push delivery will hook in here.
  */
 export async function notify(tx: Tx, input: NotifyInput | NotifyInput[]) {
-  // You don't notify yourself, except about your own achievements.
-  const rows = (Array.isArray(input) ? input : [input]).filter((n) => n.userId !== n.actorId || n.type === 'badge');
+  // You don't notify yourself, except for system alerts about your own account.
+  const rows = (Array.isArray(input) ? input : [input]).filter(
+    (n) => n.userId !== n.actorId || n.type === 'badge' || n.type === 'plate_prompt',
+  );
   if (rows.length) await tx.insert(notifications).values(rows);
 }
 

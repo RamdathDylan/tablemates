@@ -26,4 +26,5 @@ export const qk = {
   wrapped: (year: number) => ['wrapped', year] as const,
   badges: (username: string) => ['badges', username] as const,
   stories: ['stories'] as const,
+  plates: ['plates'] as const,
 };

@@ -5,6 +5,7 @@ import type { ColorValue } from 'react-native';
 import { AppTabBar } from '@/components/app-tab-bar';
 import { useAcceptedAlerts, useAppFocusRefetch, useNotificationSummary } from '@/lib/notifications';
 import { usePush } from '@/lib/push';
+import { useTimezoneSync } from '@/lib/use-timezone-sync';
 
 const tab = (title: string, label: string, icon: IconName, focusedIcon: IconName) => ({
   title,
@@ -18,6 +19,7 @@ export default function TabLayout() {
   const bp = useBreakpoint();
   useAppFocusRefetch();
   usePush();
+  useTimezoneSync();
   useAcceptedAlerts();
   const pending = useNotificationSummary().data?.pendingFriendRequests ?? 0;
   const friends = tab('Friends', 'Friends', 'people-outline', 'people');

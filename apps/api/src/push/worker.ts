@@ -69,6 +69,8 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
       return { title: 'New badge!', body: `You earned ${badgeTitle(n.badgeKey ?? '')}`, data: { type: n.type, screen: 'passport' } };
     case 'story_reaction':
       return { title: 'Story reaction', body: `${n.actorName} reacted ${n.emoji ?? ''} to your story`, data: { type: n.type, screen: 'feed' } };
+    case 'plate_prompt':
+      return { title: '📸 Plate check!', body: "Show friends what you're eating. 5 minutes to be on time.", data: { type: n.type, screen: 'feed' } };
     case 'saved_place_reviewed':
       return {
         title: n.restaurantName ?? 'A place you saved',

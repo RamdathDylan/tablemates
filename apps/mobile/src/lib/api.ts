@@ -21,6 +21,7 @@ import type {
   NotificationSummary,
   Page,
   PlaceResult,
+  PlateToday,
   Plan,
   PlanSummary,
   ReactionKind,
@@ -242,6 +243,8 @@ export const api = {
   storyViewers: (id: string) => request<{ user: PublicUser; viewedAt: string }[]>('GET', `/stories/${id}/viewers`),
   reactToStory: (id: string, emoji: string) => request<void>('POST', `/stories/${id}/react`, { emoji }),
   deleteStory: (id: string) => request<void>('DELETE', `/stories/${id}`),
+  platesToday: () => request<PlateToday>('GET', '/plates/today'),
+  postPlate: (photoId: string) => request<{ ok: true }>('POST', '/plates', { photoId }),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   requestUpload: (input: { kind: 'review' | 'avatar' | 'story' | 'plate'; contentType: string; bytes: number }) =>
     request<{ photoId: string; uploadUrl: string; headers: Record<string, string> }>('POST', '/uploads', input),

@@ -9,6 +9,7 @@ import { JobRunner } from './jobs/runner';
 import { cleanUpPendingPhotos } from './lib/photos';
 import { ExpoPushProvider } from './push/expo';
 import { PushWorker } from './push/worker';
+import { runPlatePrompts } from './routes/plates';
 import { expireStories } from './routes/stories';
 import { S3Storage } from './storage/s3';
 
@@ -53,6 +54,7 @@ new JobRunner(
     // Delivers pushes for committed notifications (see push/worker.ts).
     { name: 'push', intervalMs: 2000, run: () => push.runOnce() },
     { name: 'photo-cleanup', intervalMs: 60 * 60 * 1000, run: () => cleanUpPendingPhotos(db, storage) },
+    { name: 'plate-prompts', intervalMs: 30 * 1000, run: () => runPlatePrompts(db) },
     { name: 'story-expiry', intervalMs: 5 * 60 * 1000, run: () => expireStories(db, storage) },
   ],
   app.log,

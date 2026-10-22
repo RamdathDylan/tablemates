@@ -9,6 +9,8 @@ export interface PublicUser {
 
 export interface Me extends PublicUser {
   email: string;
+  /** IANA time zone from the user's device. */
+  timezone: string;
   /** Preselected audience for the next visit (the last one used). */
   defaultAudience: 'friends' | 'close_friends' | 'private';
   bio: string;
@@ -99,7 +101,8 @@ export type NotificationType =
   | 'plan_invite'
   | 'plan_decided'
   | 'badge'
-  | 'story_reaction';
+  | 'story_reaction'
+  | 'plate_prompt';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -217,6 +220,24 @@ export interface StoryGroup {
   stories: Story[];
   allSeen: boolean;
   isMine: boolean;
+}
+
+export interface PlatePost {
+  user: PublicUser;
+  photo: Photo;
+  restaurant: { id: string; name: string } | null;
+  postedAt: string;
+  late: boolean;
+}
+
+export interface PlateToday {
+  /** Today's prompt once it has gone off (null before then). */
+  prompt: { id: string; promptAt: string; onTimeUntil: string } | null;
+  mine: PlatePost | null;
+  /** Friends who've posted in the last day (shown even before you post). */
+  friendsPosted: number;
+  /** Friends' plates from the last day, only after you've posted yours. */
+  posts: PlatePost[];
 }
 
 export interface Favorite {

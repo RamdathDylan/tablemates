@@ -40,6 +40,8 @@ export const users = pgTable('users', {
   emailVerifiedAt: timestamptz('email_verified_at'),
   /** Notification types the user turned off for push (they still appear in the inbox). */
   mutedPushTypes: text('muted_push_types').array().notNull().default(sql`'{}'::text[]`),
+  /** IANA time zone reported by the user's device, for local timing (plate check, streaks). */
+  timezone: text('timezone').notNull().default('UTC'),
   /** The audience picked on the user's last logged visit, preselected next time. */
   defaultAudience: visitAudience('default_audience').notNull().default('friends'),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
@@ -101,6 +103,7 @@ export const notificationType = pgEnum('notification_type', [
   'plan_decided',
   'badge',
   'story_reaction',
+  'plate_prompt',
 ]);
 
 /**
@@ -497,6 +500,39 @@ export const storyViews = pgTable(
     viewedAt: timestamptz('viewed_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.storyId, t.viewerId] })],
+);
+
+/** One random daily "plate check" moment per time zone (BeReal-style). */
+export const platePrompts = pgTable(
+  'plate_prompts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    timezone: text('timezone').notNull(),
+    localDate: date('local_date', { mode: 'string' }).notNull(),
+    promptAt: timestamptz('prompt_at').notNull(),
+    notifiedAt: timestamptz('notified_at'),
+  },
+  (t) => [uniqueIndex('plate_prompts_day_idx').on(t.timezone, t.localDate)],
+);
+
+export const platePosts = pgTable(
+  'plate_posts',
+  {
+    promptId: uuid('prompt_id')
+      .notNull()
+      .references(() => platePrompts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    photoId: uuid('photo_id')
+      .notNull()
+      .references(() => photos.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'set null' }),
+    postedAt: timestamptz('posted_at').notNull().defaultNow(),
+    /** Posted more than 5 minutes after the prompt. */
+    late: boolean('late').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.promptId, t.userId] })],
 );
 
 /** Up to four pinned all-time favorites shown atop a profile (Letterboxd-style). */
