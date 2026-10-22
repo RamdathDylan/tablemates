@@ -2,12 +2,16 @@ import type { Db } from './db/client';
 import type { TokenService } from './lib/tokens';
 import type { VerificationService } from './lib/verification';
 import type { PlacesProvider } from './places/types';
+import type { Storage } from './storage/types';
 
 export interface Deps {
   db: Db;
   tokens: TokenService;
   places: PlacesProvider;
   verification: VerificationService;
+  storage: Storage;
+  /** Base URL clients use to reach this API (for public links like avatars). */
+  publicApiUrl: string;
   cookieSecure: boolean;
 }
 

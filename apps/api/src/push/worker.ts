@@ -78,23 +78,13 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
 /**
  * Outbox worker: sends pushes for notifications that committed, then marks
  * them pushed. Running after commit means a rolled-back change never pushes.
+ * The job runner (jobs/runner.ts) calls runOnce on an interval.
  */
 export class PushWorker {
-  private timer?: ReturnType<typeof setInterval>;
-
   constructor(
     private db: Db,
     private provider: PushProvider,
-    private log: { error: (obj: unknown, msg?: string) => void } = console,
   ) {}
-
-  start(intervalMs = 2000) {
-    this.timer = setInterval(() => void this.runOnce().catch((e) => this.log.error(e, 'push worker')), intervalMs);
-  }
-
-  stop() {
-    clearInterval(this.timer);
-  }
 
   /** Processes one batch. Returns how many messages were sent. */
   async runOnce(): Promise<number> {

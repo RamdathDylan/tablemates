@@ -24,6 +24,9 @@ const timestamptz = (name: string) => timestamp(name, { withTimezone: true, prec
 /** Who can see a visit (and its review) besides its author. */
 export const visitAudience = pgEnum('visit_audience', ['friends', 'close_friends', 'private']);
 
+export const photoKind = pgEnum('photo_kind', ['review', 'avatar', 'story', 'plate']);
+export const photoStatus = pgEnum('photo_status', ['pending', 'ready']);
+
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
@@ -468,6 +471,40 @@ export const userBadges = pgTable(
     earnedAt: timestamptz('earned_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.badgeKey] })],
+);
+
+/** Uploaded images. Objects live in a private bucket; access is via short-lived signed URLs. */
+export const photos = pgTable(
+  'photos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: photoKind('kind').notNull(),
+    storageKey: text('storage_key').notNull().unique(),
+    contentType: text('content_type').notNull(),
+    bytes: integer('bytes').notNull(),
+    width: integer('width'),
+    height: integer('height'),
+    status: photoStatus('status').notNull().default('pending'),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('photos_pending_idx').on(t.createdAt).where(sql`${t.status} = 'pending'`)],
+);
+
+export const reviewPhotos = pgTable(
+  'review_photos',
+  {
+    reviewId: uuid('review_id')
+      .notNull()
+      .references(() => reviews.id, { onDelete: 'cascade' }),
+    photoId: uuid('photo_id')
+      .notNull()
+      .references(() => photos.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.reviewId, t.photoId] }), index('review_photos_review_idx').on(t.reviewId)],
 );
 
 export const refreshTokens = pgTable(

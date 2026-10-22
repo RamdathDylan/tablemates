@@ -45,6 +45,14 @@
         {
           "color": "#C23A22"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TableMates lets you add food photos to your reviews.",
+          "cameraPermission": "TableMates lets you take photos of your food for reviews and plate checks.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

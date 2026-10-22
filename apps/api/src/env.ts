@@ -24,6 +24,16 @@ export const env = {
     .map((o) => o.trim())
     .filter(Boolean),
   isProduction: process.env.NODE_ENV === 'production',
+  /** How clients reach this API; used for public links such as avatar images. */
+  publicApiUrl: process.env.PUBLIC_API_URL ?? `http://localhost:${process.env.PORT ?? 4000}`,
+  s3: {
+    endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+    publicEndpoint: process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT || 'http://localhost:9000',
+    bucket: process.env.S3_BUCKET ?? 'tablemates-photos',
+    region: process.env.S3_REGION ?? 'auto',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+  },
   /** Optional: required only if "enhanced push security" is turned on for the Expo project. */
   expoAccessToken: process.env.EXPO_ACCESS_TOKEN || undefined,
   mail: {

@@ -16,6 +16,7 @@ export { Icon, type IconName, type IconProps } from './components/Icon';
 export { IconButton, type IconButtonProps } from './components/IconButton';
 export { MapPin, type MapPinKind, type MapPinProps } from './components/MapPin';
 export { Input, TextArea, type InputProps } from './components/Input';
+export { PhotoViewer, type PhotoViewerProps } from './components/PhotoViewer';
 export { Rating, type RatingProps } from './components/Rating';
 export { RatingTrend, type RatingTrendProps } from './components/RatingTrend';
 export { Sheet, type SheetProps } from './components/Sheet';

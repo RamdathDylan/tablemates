@@ -232,6 +232,9 @@ export const api = {
   wrapped: (year: number) => request<Wrapped>('GET', `/me/wrapped${qs({ year })}`),
   badges: (username: string) => request<Badge[]>('GET', `/users/${encodeURIComponent(username)}/badges`),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
+  requestUpload: (input: { kind: 'review' | 'avatar' | 'story' | 'plate'; contentType: string; bytes: number }) =>
+    request<{ photoId: string; uploadUrl: string; headers: Record<string, string> }>('POST', '/uploads', input),
+  confirmPhoto: (id: string, size: { width?: number; height?: number }) => request<{ id: string }>('POST', `/photos/${id}/confirm`, size),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),
   myVisitsAt: (restaurantId: string) => request<Visit[]>('GET', `/restaurants/${restaurantId}/my-visits`),

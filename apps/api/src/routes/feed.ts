@@ -1,11 +1,12 @@
 /** Feed and restaurant detail: the friends-only reads of reviews. */
-import { feedQuery, forYouQuery, type Dish, type ForYouItem, type FeedItem, type Page, type RestaurantDetail, type TopDish } from '@tablemates/shared';
+import { feedQuery, forYouQuery, type Dish, type ForYouItem, type Photo, type FeedItem, type Page, type RestaurantDetail, type TopDish } from '@tablemates/shared';
 import { and, avg, count, desc, eq, sql, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
 import { restaurants, reviewDishes, reviews, savedPlaces, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
+import type { Storage } from '../storage/types';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
 import { notFound, parse } from '../lib/errors';
 import { idParam } from '../lib/params';
@@ -14,6 +15,7 @@ import { friendVisitFilter, visibleVisitFilter } from '../lib/visibility';
 import { engagementFor } from './engagement';
 import { companionsFor, withEssentials } from './visits';
 import { dishesFor } from '../lib/dishes';
+import { photosFor } from '../lib/photos';
 import { forYou } from '../lib/taste';
 
 async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
@@ -44,21 +46,23 @@ async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined,
 type FeedRow = Awaited<ReturnType<typeof selectFeedItems>>[number];
 
 /** Serializes rows and attaches reaction/comment counts. */
-async function toFeedItems(db: Db, viewerId: string, rows: FeedRow[]): Promise<FeedItem[]> {
-  const [engagement, companions, dishes] = await Promise.all([
-    engagementFor(db, viewerId, rows.map((r) => r.review.id)),
+async function toFeedItems(db: Db, storage: Storage, viewerId: string, rows: FeedRow[]): Promise<FeedItem[]> {
+  const reviewIds = rows.map((r) => r.review.id);
+  const [engagement, companions, dishes, photos] = await Promise.all([
+    engagementFor(db, viewerId, reviewIds),
     companionsFor(db, rows.map((r) => r.review.visitId)),
-    dishesFor(db, rows.map((r) => r.review.id)),
+    dishesFor(db, reviewIds),
+    photosFor(db, storage, reviewIds),
   ]);
   return rows.map((row) => ({
-    ...toFeedItem(row, dishes.get(row.review.id)!),
+    ...toFeedItem(row, dishes.get(row.review.id)!, photos.get(row.review.id)!),
     engagement: engagement.get(row.review.id)!,
     companions: companions.get(row.review.visitId)!,
   }));
 }
 
-const toFeedItem = (row: FeedRow, dishes: Dish[]): Omit<FeedItem, 'engagement' | 'companions'> => ({
-  review: toReview(row.review, dishes),
+const toFeedItem = (row: FeedRow, dishes: Dish[], photos: Photo[]): Omit<FeedItem, 'engagement' | 'companions'> => ({
+  review: toReview(row.review, dishes, photos),
   visitedAt: row.visitedAt,
   author: toPublicUser(row.author),
   restaurant: toRestaurant(row.restaurant),
@@ -101,7 +105,7 @@ async function topDishes(db: Db, viewerId: string, restaurantId: string): Promis
     .slice(0, 8);
 }
 
-export function feedRoutes(app: FastifyInstance, { db, places }: Deps) {
+export function feedRoutes(app: FastifyInstance, { db, places, storage }: Deps) {
   /** Friends' reviews, newest first. Your own reviews live on your profile. */
   app.get('/feed', async (req): Promise<Page<FeedItem>> => {
     const { cursor, limit } = parse(feedQuery, req.query);
@@ -116,7 +120,7 @@ export function feedRoutes(app: FastifyInstance, { db, places }: Deps) {
     const page = rows.slice(0, limit);
     const last = page.at(-1);
     return {
-      items: await toFeedItems(db, req.userId, page),
+      items: await toFeedItems(db, storage, req.userId, page),
       nextCursor:
         rows.length > limit && last ? encodeCursor(last.review.createdAt, last.review.id) : null,
     };
@@ -149,9 +153,12 @@ export function feedRoutes(app: FastifyInstance, { db, places }: Deps) {
         .where(and(eq(savedPlaces.userId, req.userId), eq(savedPlaces.restaurantId, id))),
       topDishes(db, req.userId, id),
     ]);
+    const items = await toFeedItems(db, storage, req.userId, rows);
     return {
+      // Every photo from the reviews shown, newest review first.
+      photos: items.flatMap((i) => i.review.photos.map((p) => ({ ...p, author: i.author }))).slice(0, 24),
       restaurant: toRestaurant(restaurant),
-      reviews: await toFeedItems(db, req.userId, rows),
+      reviews: items,
       friendStats: {
         visits: stats?.visits ?? 0,
         recommends: stats?.recommends ?? 0,

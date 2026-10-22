@@ -28,6 +28,14 @@ pnpm dev:mobile                      # press w for web, i for the iOS simulator
 
 **Email:** sign-up sends a 6-digit verification code. In development it goes to Mailpit, a local inbox at http://localhost:8025, so no real mail is sent. For real delivery, set `MAIL_PROVIDER=resend`, `RESEND_API_KEY`, and `MAIL_FROM`. Until you verify a domain in Resend, it only delivers to your own address.
 
+**Photos:** `pnpm db:up` also starts RustFS, an S3-compatible store, at http://localhost:9000 (console on :9001). The API creates the bucket and its browser-upload CORS rule on startup.
+- For **Cloudflare R2** in production:
+  - Create a bucket and an R2 API token with read and write access.
+  - Set `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY`.
+  - Set `PUBLIC_API_URL` to the API's public address (it's used for avatar links).
+  - If the token can't edit bucket settings, add a CORS rule in the R2 dashboard allowing `PUT` and `GET` from your app's origin.
+- The bucket stays private. Review photos are served through short-lived signed URLs only to people allowed to see the review.
+
 **Push notifications:** run `npx eas-cli@latest init` in `apps/mobile` to create an EAS project, which adds `extra.eas.projectId` to the app config. Then make a development build (`npx expo run:ios` or `eas build --profile development`). Expo Go on Android can't receive push. The API's worker sends through Expo's push service, and the inbox works without any of this.
 
 **Phones:** on a real device the app talks to the API at your machine's LAN address (taken from the Expo dev server). To point it somewhere else, set `EXPO_PUBLIC_API_URL`.
