@@ -8,6 +8,7 @@ export { Avatar, type AvatarProps, type AvatarSize } from './components/Avatar';
 export { Badge, type BadgeProps } from './components/Badge';
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './components/Button';
 export { Card, type CardProps } from './components/Card';
+export { ColumnChart, RankedBars, type ColumnChartProps, type RankedBarsProps } from './components/Charts';
 export { Chip, type ChipProps, type ChipTone } from './components/Chip';
 export { Divider } from './components/Divider';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';

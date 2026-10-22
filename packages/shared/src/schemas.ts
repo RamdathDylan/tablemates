@@ -210,6 +210,8 @@ export const forYouQuery = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
+export const wrappedQuery = z.object({ year: z.coerce.number().int().min(2000).max(2100).optional() });
+
 export const feedQuery = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),

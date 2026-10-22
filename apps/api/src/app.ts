@@ -20,6 +20,7 @@ import { planRoutes } from './routes/plans';
 import { pushRoutes } from './routes/push';
 import { userRoutes } from './routes/users';
 import { visitRoutes } from './routes/visits';
+import { wrappedRoutes } from './routes/wrapped';
 
 export interface AppOptions extends Deps {
   corsOrigins: string[];
@@ -101,6 +102,7 @@ export async function buildApp({
     askRoutes(authed, deps);
     planRoutes(authed, deps);
     listRoutes(authed, deps);
+    wrappedRoutes(authed, deps);
     mapRoutes(authed, deps);
     savedRoutes(authed, deps);
     pushRoutes(authed, deps);

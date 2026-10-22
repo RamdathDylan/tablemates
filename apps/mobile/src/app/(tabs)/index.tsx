@@ -49,6 +49,19 @@ export default function FeedScreen() {
           </View>
           {bp === 'phone' && <ActivityBell />}
         </View>
+        {/* The year-in-review lands on the Feed in December and January. */}
+        {[11, 0].includes(new Date().getMonth()) && (
+          <Button
+            title={`See your ${new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear()} in food`}
+            icon="sparkles"
+            onPress={() =>
+              router.push({
+                pathname: '/wrapped',
+                params: { year: String(new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear()) },
+              })
+            }
+          />
+        )}
         <ForYouCarousel />
         <AsksSection />
         </View>

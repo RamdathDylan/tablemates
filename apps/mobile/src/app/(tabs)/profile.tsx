@@ -52,6 +52,14 @@ export default function ProfileScreen() {
         />
       )}
 
+      <Button
+        title={`Your ${new Date().getFullYear()} in food`}
+        icon="sparkles"
+        variant="secondary"
+        onPress={() => router.push('/wrapped')}
+        style={{ alignSelf: 'center' }}
+      />
+
       {/* Pending tags are a to-do, so they come before history. */}
       <TaggedIn />
 
