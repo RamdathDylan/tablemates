@@ -27,7 +27,20 @@ export const users = pgTable('users', {
   bio: text('bio').notNull().default(''),
   avatarUrl: text('avatar_url'),
   homeCity: text('home_city'),
+  /** Null until the user enters the code emailed at sign-up. */
+  emailVerifiedAt: timestamptz('email_verified_at'),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
+});
+
+/** The current sign-up code for a user. Only an HMAC of the code is stored. */
+export const emailVerificationCodes = pgTable('email_verification_codes', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  codeHash: text('code_hash').notNull(),
+  expiresAt: timestamptz('expires_at').notNull(),
+  attempts: integer('attempts').notNull().default(0),
+  lastSentAt: timestamptz('last_sent_at').notNull().defaultNow(),
 });
 
 export const friendshipStatus = pgEnum('friendship_status', ['pending', 'accepted']);

@@ -3,10 +3,12 @@ import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach } from 'vitest';
 
-import { buildApp } from '../src/app';
+import { buildApp, type AppOptions } from '../src/app';
 import { createDb, type Db } from '../src/db/client';
 import '../src/env';
 import { TokenService } from '../src/lib/tokens';
+import { VerificationService } from '../src/lib/verification';
+import type { Email, Mailer } from '../src/mail/types';
 import type { PlacesProvider } from '../src/places/types';
 
 export function testDatabaseUrl() {
@@ -41,6 +43,22 @@ export class FakePlaces implements PlacesProvider {
   }
 }
 
+export class FakeMailer implements Mailer {
+  sent: Email[] = [];
+
+  async send(email: Email) {
+    this.sent.push(email);
+  }
+
+  /** The most recent verification code sent to an address. */
+  codeFor(to: string): string {
+    const email = [...this.sent].reverse().find((e) => e.to === to);
+    const code = email?.subject.match(/^(\d{6}) /)?.[1];
+    if (!code) throw new Error(`no code sent to ${to}`);
+    return code;
+  }
+}
+
 export interface TestUser {
   id: string;
   username: string;
@@ -49,8 +67,10 @@ export interface TestUser {
 }
 
 /** Builds an app against the test database and wipes data before each test. */
-export function setupTestApp() {
-  const ctx = {} as { app: FastifyInstance; db: Db; places: FakePlaces };
+const mailers = new WeakMap<FastifyInstance, FakeMailer>();
+
+export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
+  const ctx = {} as { app: FastifyInstance; db: Db; places: FakePlaces; mailer: FakeMailer };
   let close: () => Promise<void>;
 
   beforeAll(async () => {
@@ -58,21 +78,28 @@ export function setupTestApp() {
     close = created.close;
     ctx.db = created.db;
     ctx.places = new FakePlaces();
+    ctx.mailer = new FakeMailer();
     ctx.app = await buildApp({
       db: ctx.db,
       tokens: new TokenService(ctx.db, 'test-secret'),
       places: ctx.places,
+      verification: new VerificationService(ctx.db, ctx.mailer, 'test-secret'),
       cookieSecure: false,
       corsOrigins: ['http://localhost:8081'],
+      // Tests sign up many users from one IP; rate-limit tests pass their own limit.
+      authRateLimit: { max: 1000, timeWindow: '1 minute' },
+      ...options,
     });
+    mailers.set(ctx.app, ctx.mailer);
   });
 
   beforeEach(async () => {
     await ctx.db.execute(
-      sql`truncate users, friendships, notifications, restaurants, visits, reviews, refresh_tokens cascade`,
+      sql`truncate users, friendships, notifications, email_verification_codes, restaurants, visits, reviews, refresh_tokens cascade`,
     );
     ctx.places.places.clear();
     ctx.places.getCalls = 0;
+    ctx.mailer.sent = [];
   });
 
   afterAll(async () => {
@@ -83,7 +110,8 @@ export function setupTestApp() {
   return ctx;
 }
 
-export async function signup(app: FastifyInstance, username: string): Promise<TestUser> {
+/** Signs up without entering the emailed code. */
+export async function signupUnverified(app: FastifyInstance, username: string): Promise<TestUser> {
   const res = await app.inject({
     method: 'POST',
     url: '/auth/signup',
@@ -97,6 +125,25 @@ export async function signup(app: FastifyInstance, username: string): Promise<Te
   if (res.statusCode !== 201) throw new Error(`signup failed: ${res.body}`);
   const body = res.json();
   return { id: body.user.id, username, token: body.accessToken, refreshToken: body.refreshToken };
+}
+
+/** Signs up and verifies the email, like a user who finished onboarding. */
+export async function signup(
+  app: FastifyInstance,
+  username: string,
+  mailer?: FakeMailer,
+): Promise<TestUser> {
+  const user = await signupUnverified(app, username);
+  const fake = mailer ?? mailers.get(app);
+  if (!fake) throw new Error('signup() needs the app built by setupTestApp');
+  const res = await app.inject({
+    method: 'POST',
+    url: '/auth/verify-email',
+    headers: { authorization: `Bearer ${user.token}` },
+    payload: { code: fake.codeFor(`${username}@example.com`) },
+  });
+  if (res.statusCode !== 200) throw new Error(`verify failed: ${res.body}`);
+  return { ...user, token: res.json().accessToken };
 }
 
 export function as(app: FastifyInstance, user: TestUser) {

@@ -134,6 +134,14 @@ export const api = {
     await refreshTokenStore.clear();
   },
 
+  /** Verifying returns a new access token whose claim unlocks the rest of the API. */
+  async verifyEmail(code: string) {
+    const res = await request<{ user: Me; accessToken: string }>('POST', '/auth/verify-email', { code });
+    accessToken = res.accessToken;
+    return res.user;
+  },
+  resendVerification: () => request<void>('POST', '/auth/resend-verification'),
+
   me: () => request<Me>('GET', '/me'),
   updateMe: (input: UpdateProfileInput) => request<Me>('PATCH', '/me', input),
   profile: (username: string) => request<Profile>('GET', `/users/${encodeURIComponent(username)}`),

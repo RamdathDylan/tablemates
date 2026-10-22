@@ -11,6 +11,7 @@ export interface Me extends PublicUser {
   email: string;
   bio: string;
   homeCity: string | null;
+  emailVerified: boolean;
   createdAt: string;
 }
 
