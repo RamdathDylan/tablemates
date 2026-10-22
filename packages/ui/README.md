@@ -54,6 +54,7 @@ Every component reads its colors from the theme, works on web, and shows a visib
 |---|---|
 | `ReviewCard` | A friend's review in the feed or on a restaurant page. Omit `restaurantName` on the restaurant's own page. Pass `saved` and `onToggleSave` to show a want-to-try bookmark. |
 | `RestaurantCard` | Search results, and restaurants with a friends summary (`friendStats`). Optional `you` (your rating) and `distanceKm`. |
+| `RatingTrend` | One place's ratings over time (2+ rated visits): a 2px line with 10px dots, 1★/5★ guides, and first and last dates. It's a single series, so there's no legend. Its accessible label lists every point, and it should sit beside a visit list as the table view. |
 | `MapPin` | A marker on the friends map: a pill with the average stars. `kind` is `mine` (tomato), `friends` (saffron), `both` (tomato with a saffron ring), or `saved` (dark, with a bookmark: on your list, not visited yet). `saved` on a visited place adds a bookmark icon. Shows a thumbs-up when `recommended`, and enlarges when `selected`. The map supplies its accessible label. |
 | `FriendRow` | A person, with the action that matches their `status`: `none` → Add, `incoming` → Accept/Decline, `outgoing` → Requested (tap to cancel), `friends` → badge. |
 | `VisitListItem` | A compact row in a profile's visit history. `subtitle` replaces the date line (e.g. "Saved Oct 21"). |
