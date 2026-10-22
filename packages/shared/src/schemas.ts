@@ -1,0 +1,69 @@
+import { z } from 'zod';
+
+export const username = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9_]{3,20}$/, 'Use 3–20 letters, numbers, or underscores');
+
+export const signupInput = z.object({
+  email: z.email().trim().toLowerCase(),
+  password: z.string().min(8, 'Use at least 8 characters').max(200),
+  username,
+  displayName: z.string().trim().min(1).max(50),
+});
+export type SignupInput = z.infer<typeof signupInput>;
+
+export const loginInput = z.object({
+  email: z.email().trim().toLowerCase(),
+  password: z.string().min(1).max(200),
+});
+export type LoginInput = z.infer<typeof loginInput>;
+
+export const refreshInput = z.object({
+  // Native clients send the token in the body; web sends it as an httpOnly cookie.
+  refreshToken: z.string().optional(),
+});
+
+export const updateProfileInput = z
+  .object({
+    displayName: z.string().trim().min(1).max(50),
+    bio: z.string().trim().max(280),
+    avatarUrl: z.url().nullable(),
+    homeCity: z.string().trim().max(80).nullable(),
+  })
+  .partial();
+export type UpdateProfileInput = z.infer<typeof updateProfileInput>;
+
+export const friendRequestInput = z.object({ username });
+
+export const reviewInput = z.object({
+  rating: z.number().int().min(1).max(5),
+  body: z.string().trim().max(2000).default(''),
+  recommends: z.boolean(),
+  dishes: z.array(z.string().trim().min(1).max(60)).max(10).default([]),
+});
+export type ReviewInput = z.input<typeof reviewInput>;
+
+export const createVisitInput = z.object({
+  googlePlaceId: z.string().min(1).max(300),
+  visitedAt: z.iso.date(),
+  review: reviewInput.optional(),
+});
+export type CreateVisitInput = z.input<typeof createVisitInput>;
+
+export const updateReviewInput = reviewInput.partial();
+export type UpdateReviewInput = z.input<typeof updateReviewInput>;
+
+export const placesSearchQuery = z.object({
+  q: z.string().trim().min(1).max(100),
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+});
+
+export const userSearchQuery = z.object({ q: z.string().trim().min(1).max(50) });
+
+export const feedQuery = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});

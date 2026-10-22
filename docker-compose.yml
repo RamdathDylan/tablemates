@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tablemates
+      POSTGRES_PASSWORD: tablemates
+      POSTGRES_DB: tablemates
+    ports:
+      - '5433:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./apps/api/scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tablemates']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:
