@@ -1,12 +1,17 @@
+# Local development services only. Credentials here are public development
+# defaults; production uses managed services and its own secrets.
+# Ports are published on 127.0.0.1 so nothing is reachable from other machines
+# on your network. To test photo uploads from a phone, see docs/development.md.
+# Images are pinned by digest so every machine runs exactly the same version.
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine@sha256:f4610795587492cd4fb887c2dc3de301b813278bb6f616992061141b5f15ac36
     environment:
       POSTGRES_USER: tablemates
       POSTGRES_PASSWORD: tablemates
       POSTGRES_DB: tablemates
     ports:
-      - '5433:5432'
+      - '127.0.0.1:5433:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
       - ./apps/api/scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
@@ -19,21 +24,21 @@ services:
   # Local email inbox: the API sends verification codes here in development.
   # Web UI and HTTP API at http://localhost:8025.
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
     ports:
-      - '8025:8025'
+      - '127.0.0.1:8025:8025'
 
   # Local S3-compatible photo storage (production uses Cloudflare R2 through the same API).
   # The API creates the bucket and its CORS rule on startup. Console: http://localhost:9001
   storage:
-    image: rustfs/rustfs:latest
+    image: rustfs/rustfs:1.0.3@sha256:9ca9559533b537d10482fe923288b676ad08f92a7069d9a17327fbae3cab688b
     command: /data
     environment:
       RUSTFS_ACCESS_KEY: tablemates
       RUSTFS_SECRET_KEY: tablemates-dev
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     volumes:
       - storage-data:/data
 

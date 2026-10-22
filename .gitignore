@@ -18,6 +18,9 @@ coverage/
 *.keystore
 *.mobileprovision
 
+# Local Docker Compose overrides (for example, exposing storage to a phone)
+docker-compose.override.yml
+
 # Logs and local tooling
 *.log
 .DS_Store
