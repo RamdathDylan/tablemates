@@ -27,11 +27,35 @@ export interface Profile extends PublicUser {
   requestId: string | null;
   /** Only present when the viewer is the user or a friend. */
   stats?: { visits: number; reviews: number; friends: number };
+  /** How your ratings compare. Only for friends. */
+  taste?: TasteMatch;
 }
 
 export interface Friend extends PublicUser {
   /** On the viewer's close-friends list. */
   closeFriend: boolean;
+  /** 0–100 once you've both rated at least 3 of the same places; otherwise null. */
+  tasteMatch: number | null;
+}
+
+export interface TasteMatch {
+  /** 0–100, or null with fewer than 3 shared ratings. */
+  match: number | null;
+  /** Places you've both rated. */
+  overlap: number;
+  /** Shared places where your stars were closest, best first. */
+  agree: { restaurant: { id: string; name: string }; you: number; them: number }[];
+}
+
+/** A place friends you agree with loved and you haven't been to. */
+export interface ForYouItem {
+  restaurant: Restaurant;
+  score: number;
+  /** Why it's here: the friends whose ratings counted most. */
+  reasons: { user: PublicUser; rating: number; match: number | null }[];
+  recommends: number;
+  distanceKm: number | null;
+  saved: boolean;
 }
 
 export interface UserSearchResult extends PublicUser {

@@ -20,6 +20,8 @@ export interface FriendRowProps {
   onDecline?: () => void;
   /** Disables actions while a request is in flight. */
   busy?: boolean;
+  /** Extra line under the username, e.g. "92% taste match". */
+  meta?: string;
   /** For friends: shows a star that adds or removes them from close friends. */
   closeFriend?: boolean;
   onToggleClose?: () => void;
@@ -35,6 +37,7 @@ export function FriendRow({
   busy,
   closeFriend,
   onToggleClose,
+  meta,
 }: FriendRowProps) {
   const { colors } = useTheme();
 
@@ -44,7 +47,7 @@ export function FriendRow({
         onPress={onPress}
         disabled={!onPress}
         role={onPress ? 'link' : undefined}
-        accessibilityLabel={`${user.displayName}, @${user.username}`}
+        accessibilityLabel={`${user.displayName}, @${user.username}${meta ? `, ${meta}` : ''}`}
         style={(state: PressState) => [
           { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space[3], borderRadius: 8 },
           focusRing(state, colors),
@@ -56,6 +59,7 @@ export function FriendRow({
           </Text>
           <Text variant="caption" tone="muted" numberOfLines={1}>
             @{user.username}
+            {meta ? ` · ${meta}` : ''}
           </Text>
         </View>
       </Pressable>

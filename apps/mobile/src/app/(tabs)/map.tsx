@@ -25,6 +25,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useForYou } from '@/components/for-you';
 import { FriendPicker } from '@/components/friend-picker';
 import { PlacePreview } from '@/components/map/place-preview';
 import { mapsAvailable, TableMap } from '@/components/map/table-map';
@@ -47,7 +48,7 @@ interface Params {
   open?: string;
   list?: string;
   cuisine?: string;
-  sort?: Sort;
+  sort?: Sort | 'for_you';
   view?: 'map' | 'list';
   [key: string]: string | undefined;
 }
@@ -91,7 +92,10 @@ export default function MapScreen() {
     saved: params.saved === '1' ? true : undefined,
     listId: params.list,
     // "Nearest" only applies once we know where the user is.
-    sort: params.sort === 'distance' && !location.coords ? 'recommended' : (params.sort ?? 'recommended'),
+    sort:
+      params.sort === 'for_you' || (params.sort === 'distance' && !location.coords)
+        ? 'recommended'
+        : (params.sort ?? 'recommended'),
     lat: location.coords?.lat,
     lng: location.coords?.lng,
   };
@@ -111,12 +115,20 @@ export default function MapScreen() {
   // Cuisine is filtered here so the chip list can come from the unfiltered results.
   const all = places.data ?? [];
   const cuisines = [...new Set(all.flatMap((p) => p.restaurant.cuisine))].sort().slice(0, 12);
+  // "For you" reorders by personal scores; places without one (e.g. ones you've been) follow.
+  const forYou = useForYou();
+  const forYouScore = new Map((forYou.data ?? []).map((f) => [f.restaurant.id, f.score]));
+
   // Cuisine and "open now" are filtered here (open-now depends on the current time).
-  const shown = all.filter(
+  const filteredPlaces = all.filter(
     (p) =>
       (!params.cuisine || p.restaurant.cuisine.includes(params.cuisine)) &&
       (params.open !== '1' || openStatus(p.restaurant.hours, p.restaurant.utcOffsetMinutes)?.open),
   );
+  const shown =
+    params.sort === 'for_you'
+      ? [...filteredPlaces].sort((a, b) => (forYouScore.get(b.restaurant.id) ?? -1) - (forYouScore.get(a.restaurant.id) ?? -1))
+      : filteredPlaces;
   const selected = shown.find((p) => p.restaurant.id === selectedId) ?? null;
   const filtered =
     scope !== 'everyone' || !!params.rec || !!params.min || !!params.saved || !!params.open || !!params.list || !!params.cuisine;
@@ -196,12 +208,13 @@ export default function MapScreen() {
         </Text>
       </View>
       <ChipRow>
+        <Chip label="For you" icon="sparkles" selected={params.sort === 'for_you'} onPress={() => set({ sort: 'for_you' })} />
         {(Object.keys(sortLabels) as Sort[]).map((s) => (
           <Chip
             key={s}
             label={sortLabels[s]}
             icon={s === 'distance' ? 'navigate' : undefined}
-            selected={query.sort === s}
+            selected={params.sort !== 'for_you' && query.sort === s}
             onPress={async () => {
               if (s === 'distance' && !(await needLocation('sort by distance'))) return;
               set({ sort: s === 'recommended' ? undefined : s });

@@ -4,6 +4,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 
 import { UserListsSection } from '@/components/lists';
 import { ProfileHeader } from '@/components/profile-header';
+import { TasteCard } from '@/components/taste-card';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { VisitList } from '@/components/visit-list';
@@ -57,6 +58,7 @@ export default function UserScreen() {
     <Screen header documentTitle={p.displayName}>
       <Stack.Screen options={{ title: `@${p.username}` }} />
       <ProfileHeader profile={p} actions={friendAction} />
+      {p.taste && <TasteCard taste={p.taste} name={p.displayName} />}
       {canSee && <UserListsSection username={p.username} />}
       {canSee ? (
         <Section title="Visits">
