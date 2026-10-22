@@ -92,6 +92,8 @@ export const notificationType = pgEnum('notification_type', [
   'comment',
   'tagged',
   'ask_reply',
+  'plan_invite',
+  'plan_decided',
 ]);
 
 /**
@@ -117,6 +119,7 @@ export const notifications = pgTable(
     commentId: uuid('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
     visitId: uuid('visit_id').references(() => visits.id, { onDelete: 'cascade' }),
     askId: uuid('ask_id').references(() => asks.id, { onDelete: 'cascade' }),
+    planId: uuid('plan_id').references(() => plans.id, { onDelete: 'cascade' }),
     reaction: reactionKind('reaction'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),
@@ -245,6 +248,67 @@ export const visitCompanions = pgTable(
     linkedVisitId: uuid('linked_visit_id').references(() => visits.id, { onDelete: 'set null' }),
   },
   (t) => [primaryKey({ columns: [t.visitId, t.userId] }), index('visit_companions_user_idx').on(t.userId)],
+);
+
+export const planStatus = pgEnum('plan_status', ['open', 'decided']);
+
+/** A group dinner: friends suggest places, vote, and the creator picks the winner. */
+export const plans = pgTable('plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  creatorId: uuid('creator_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  startsAt: timestamptz('starts_at'),
+  status: planStatus('status').notNull().default('open'),
+  decidedOptionId: uuid('decided_option_id'),
+  createdAt: timestamptz('created_at').notNull().defaultNow(),
+});
+
+/** Everyone in a plan, including its creator. */
+export const planMembers = pgTable(
+  'plan_members',
+  {
+    planId: uuid('plan_id')
+      .notNull()
+      .references(() => plans.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.planId, t.userId] }), index('plan_members_user_idx').on(t.userId)],
+);
+
+export const planOptions = pgTable(
+  'plan_options',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    planId: uuid('plan_id')
+      .notNull()
+      .references(() => plans.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id')
+      .notNull()
+      .references(() => restaurants.id, { onDelete: 'cascade' }),
+    addedBy: uuid('added_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('plan_options_once_idx').on(t.planId, t.restaurantId)],
+);
+
+/** One vote per member per option; members can vote for several options. */
+export const planVotes = pgTable(
+  'plan_votes',
+  {
+    optionId: uuid('option_id')
+      .notNull()
+      .references(() => planOptions.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.optionId, t.userId] })],
 );
 
 /** "Best ramen near Union Square?": a question to your friends, open for a week by default. */

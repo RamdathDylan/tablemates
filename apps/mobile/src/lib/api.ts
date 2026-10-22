@@ -17,6 +17,8 @@ import type {
   NotificationSummary,
   Page,
   PlaceResult,
+  Plan,
+  PlanSummary,
   ReactionKind,
   Profile,
   RestaurantDetail,
@@ -196,6 +198,17 @@ export const api = {
   replyToAsk: (id: string, input: { restaurantId?: string; googlePlaceId?: string; note?: string }) =>
     request<{ id: string }>('POST', `/asks/${id}/replies`, input),
   deleteAskReply: (askId: string, id: string) => request<void>('DELETE', `/asks/${askId}/replies/${id}`),
+  plans: () => request<PlanSummary[]>('GET', '/plans'),
+  plan: (id: string) => request<Plan>('GET', `/plans/${id}`),
+  createPlan: (input: { title: string; startsAt?: string; memberIds: string[] }) =>
+    request<{ id: string }>('POST', '/plans', input),
+  addPlanOption: (planId: string, place: { restaurantId?: string; googlePlaceId?: string }) =>
+    request<{ id: string }>('POST', `/plans/${planId}/options`, place),
+  removePlanOption: (planId: string, optionId: string) => request<void>('DELETE', `/plans/${planId}/options/${optionId}`),
+  vote: (planId: string, optionId: string) => request<void>('PUT', `/plans/${planId}/options/${optionId}/vote`),
+  unvote: (planId: string, optionId: string) => request<void>('DELETE', `/plans/${planId}/options/${optionId}/vote`),
+  decidePlan: (planId: string, optionId: string) => request<void>('POST', `/plans/${planId}/decide`, { optionId }),
+  leavePlan: (planId: string) => request<void>('POST', `/plans/${planId}/leave`),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),

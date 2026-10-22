@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Fragment, useState, type ReactNode } from 'react';
 
+import { PlansSection } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api } from '@/lib/api';
@@ -77,6 +78,8 @@ function FriendsAndRequests() {
 
   return (
     <>
+      <PlansSection />
+
       {incoming.length > 0 && (
         <Section title={`Requests · ${incoming.length}`}>
           <List>

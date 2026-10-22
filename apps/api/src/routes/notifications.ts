@@ -8,7 +8,7 @@ import {
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { asks, comments, friendships, notifications, restaurants, users } from '../db/schema';
+import { asks, comments, friendships, notifications, plans, restaurants, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
 import { parse } from '../lib/errors';
@@ -76,7 +76,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         actor: { id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl },
         restaurant: { id: restaurants.id, name: restaurants.name },
         friendshipStatus: friendships.status,
-        excerpt: sql<string | null>`coalesce(${comments.body}, ${asks.question})`,
+        excerpt: sql<string | null>`coalesce(${comments.body}, ${asks.question}, ${plans.title})`,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))
@@ -84,6 +84,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
       .leftJoin(friendships, eq(notifications.friendshipId, friendships.id))
       .leftJoin(comments, eq(notifications.commentId, comments.id))
       .leftJoin(asks, eq(notifications.askId, asks.id))
+      .leftJoin(plans, eq(notifications.planId, plans.id))
       .where(and(...conditions))
       .orderBy(desc(notifications.createdAt), desc(notifications.id))
       .limit(limit + 1);
@@ -100,6 +101,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         reviewId: n.reviewId,
         pendingRequestId: n.type === 'friend_request' && friendshipStatus === 'pending' ? n.friendshipId : null,
         reaction: n.reaction,
+        planId: n.planId,
         excerpt: excerpt ? (excerpt.length > 80 ? `${excerpt.slice(0, 79)}…` : excerpt) : null,
       })),
       nextCursor: rows.length > limit && last ? encodeCursor(last.n.createdAt, last.n.id) : null,

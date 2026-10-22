@@ -19,6 +19,7 @@ export interface NotifyInput {
   commentId?: string;
   visitId?: string;
   askId?: string;
+  planId?: string;
   reaction?: 'yum' | 'going';
 }
 

@@ -104,6 +104,7 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="restaurant/[id]" options={{ title: '' }} />
           <Stack.Screen name="user/[username]" options={{ title: '' }} />
+          <Stack.Screen name="plan/[id]" options={{ title: '' }} />
           <Stack.Protected guard={__DEV__}>
             <Stack.Screen name="(dev)/styleguide" options={{ title: 'Style guide' }} />
           </Stack.Protected>

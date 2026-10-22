@@ -15,6 +15,7 @@ import { mapRoutes } from './routes/map';
 import { notificationRoutes } from './routes/notifications';
 import { savedRoutes } from './routes/saved';
 import { placeRoutes } from './routes/places';
+import { planRoutes } from './routes/plans';
 import { pushRoutes } from './routes/push';
 import { userRoutes } from './routes/users';
 import { visitRoutes } from './routes/visits';
@@ -97,6 +98,7 @@ export async function buildApp({
     feedRoutes(authed, deps);
     engagementRoutes(authed, deps);
     askRoutes(authed, deps);
+    planRoutes(authed, deps);
     mapRoutes(authed, deps);
     savedRoutes(authed, deps);
     pushRoutes(authed, deps);
