@@ -1,6 +1,7 @@
 import type {
   ApiError as ApiErrorBody,
   Ask,
+  Badge,
   Comment,
   AuthResponse,
   CreateVisitInput,
@@ -229,6 +230,7 @@ export const api = {
   forYou: (near?: { lat: number; lng: number } | null) =>
     request<ForYouItem[]>('GET', `/for-you${qs({ lat: near?.lat, lng: near?.lng })}`),
   wrapped: (year: number) => request<Wrapped>('GET', `/me/wrapped${qs({ year })}`),
+  badges: (username: string) => request<Badge[]>('GET', `/users/${encodeURIComponent(username)}/badges`),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),

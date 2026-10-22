@@ -99,6 +99,13 @@
       "when": 1792641725876,
       "tag": "0013_lists",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792642814783,
+      "tag": "0014_badges",
+      "breakpoints": true
     }
   ]
 }

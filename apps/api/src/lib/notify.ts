@@ -20,6 +20,7 @@ export interface NotifyInput {
   visitId?: string;
   askId?: string;
   planId?: string;
+  badgeKey?: string;
   reaction?: 'yum' | 'going';
 }
 
@@ -29,7 +30,8 @@ export interface NotifyInput {
  * Push delivery will hook in here.
  */
 export async function notify(tx: Tx, input: NotifyInput | NotifyInput[]) {
-  const rows = (Array.isArray(input) ? input : [input]).filter((n) => n.userId !== n.actorId);
+  // You don't notify yourself, except about your own achievements.
+  const rows = (Array.isArray(input) ? input : [input]).filter((n) => n.userId !== n.actorId || n.type === 'badge');
   if (rows.length) await tx.insert(notifications).values(rows);
 }
 

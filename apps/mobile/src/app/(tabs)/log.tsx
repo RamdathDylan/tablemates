@@ -190,6 +190,8 @@ function VisitForm({
       if (visit.audience !== me.defaultAudience) setUser({ ...me, defaultAudience: visit.audience });
       queryClient.invalidateQueries({ queryKey: qk.myVisits });
       queryClient.invalidateQueries({ queryKey: qk.myVisitsAt(visit.restaurant.id) });
+      queryClient.invalidateQueries({ queryKey: ['badges'] });
+      queryClient.invalidateQueries({ queryKey: qk.notifications });
       queryClient.invalidateQueries({ queryKey: qk.tagged });
       queryClient.invalidateQueries({ queryKey: qk.profile(me.username) });
       queryClient.invalidateQueries({ queryKey: qk.restaurant(visit.restaurant.id) });

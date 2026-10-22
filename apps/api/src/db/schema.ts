@@ -96,6 +96,7 @@ export const notificationType = pgEnum('notification_type', [
   'ask_reply',
   'plan_invite',
   'plan_decided',
+  'badge',
 ]);
 
 /**
@@ -122,6 +123,7 @@ export const notifications = pgTable(
     visitId: uuid('visit_id').references(() => visits.id, { onDelete: 'cascade' }),
     askId: uuid('ask_id').references(() => asks.id, { onDelete: 'cascade' }),
     planId: uuid('plan_id').references(() => plans.id, { onDelete: 'cascade' }),
+    badgeKey: text('badge_key'),
     reaction: reactionKind('reaction'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),
@@ -453,6 +455,19 @@ export const reviewDishes = pgTable(
     index('review_dishes_review_idx').on(t.reviewId),
     check('review_dishes_rating_range', sql`${t.rating} is null or ${t.rating} between 1 and 5`),
   ],
+);
+
+/** Badges a user has earned. Definitions live in code (lib/badges.ts). */
+export const userBadges = pgTable(
+  'user_badges',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    badgeKey: text('badge_key').notNull(),
+    earnedAt: timestamptz('earned_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.badgeKey] })],
 );
 
 export const refreshTokens = pgTable(

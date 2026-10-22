@@ -51,6 +51,7 @@ export const notificationTypes = [
   'ask_reply',
   'plan_invite',
   'plan_decided',
+  'badge',
 ] as const;
 
 export const createPlanInput = z.object({
