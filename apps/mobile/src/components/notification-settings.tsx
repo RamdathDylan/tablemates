@@ -22,6 +22,7 @@ const labels: Record<NotificationType, string> = {
   story_reaction: 'Reactions to your stories',
   plate_prompt: 'Daily plate check',
   table_invite: 'Added to a table',
+  checkin: 'Close friends out now',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

@@ -2,19 +2,21 @@ import { MapPin } from '@tablemates/ui';
 import { useEffect, useRef } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 
-import { mappable, pinKind, pinLabel, type TableMapProps } from './shared';
+import { CheckinMarker, checkinLabel } from '../out-now';
+import { framePoints, mappable, mappableCheckins, pinKind, pinLabel, type TableMapProps } from './shared';
 
 /** Native map: Apple Maps on iOS, Google Maps on Android. */
-export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser }: TableMapProps) {
+export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin }: TableMapProps) {
   const ref = useRef<MapView>(null);
   const pins = mappable(places);
-  const fitKey = pins.map((p) => p.restaurant.id).join(',');
+  const frame = framePoints(places, checkins);
+  const fitKey = frame.map((p) => p.id).join(',');
 
   // Re-frame whenever the set of pins changes (e.g. a filter changed).
   useEffect(() => {
-    if (!pins.length) return;
+    if (!frame.length) return;
     ref.current?.fitToCoordinates(
-      pins.map((p) => ({ latitude: p.restaurant.lat, longitude: p.restaurant.lng })),
+      frame.map((p) => ({ latitude: p.lat, longitude: p.lng })),
       { edgePadding: { top: 80, right: 60, bottom: 260, left: 60 }, animated: true },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -47,7 +49,7 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
       showsUserLocation={!!userLocation}
       // With no pins yet, start where the user is.
       initialRegion={
-        !pins.length && userLocation
+        !frame.length && userLocation
           ? { latitude: userLocation.lat, longitude: userLocation.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }
           : undefined
       }>
@@ -69,6 +71,22 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
           </Marker>
         );
       })}
+      {mappableCheckins(checkins).map((c) => (
+        <Marker
+          key={c.id}
+          coordinate={{ latitude: c.restaurant.lat, longitude: c.restaurant.lng }}
+          // Sit above the restaurant's own pin so both stay visible.
+          anchor={{ x: 0.5, y: 1.6 }}
+          onPress={(e) => {
+            e.stopPropagation();
+            onOpenCheckin?.(c);
+          }}
+          tracksViewChanges={false}
+          accessibilityLabel={checkinLabel(c)}
+          zIndex={3}>
+          <CheckinMarker checkin={c} />
+        </Marker>
+      ))}
     </MapView>
   );
 }

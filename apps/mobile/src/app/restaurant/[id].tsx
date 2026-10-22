@@ -7,6 +7,7 @@ import { Image, Pressable, View } from 'react-native';
 import { CommentsSheet } from '@/components/comments-sheet';
 import { EssentialActions, HoursList, OpenChip } from '@/components/essentials';
 import { AddToListSheet } from '@/components/lists';
+import { CheckInButton } from '@/components/out-now';
 import { AddToPlanSheet, AvatarStack } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { YourVisits } from '@/components/your-visits';
@@ -98,6 +99,7 @@ export default function RestaurantScreen() {
           loading={save.isPending}
           onPress={() => save.mutate({ restaurantId: r.id, saved, name: r.name })}
         />
+        <CheckInButton restaurant={r} />
         <Button title="Add to a plan" icon="calendar-outline" variant="ghost" onPress={() => setPlanning(true)} />
         <Button title="Add to list" icon="list" variant="ghost" onPress={() => setListing(true)} />
       </View>

@@ -1,4 +1,4 @@
-import type { MapPlace } from '@tablemates/shared';
+import type { Checkin, MapPlace } from '@tablemates/shared';
 import type { MapPinKind } from '@tablemates/ui';
 
 export interface TableMapProps {
@@ -9,6 +9,20 @@ export interface TableMapProps {
   userLocation?: { lat: number; lng: number } | null;
   /** Bump `key` to pan the map to the user (the "Center on me" button). */
   centerOnUser?: number;
+  /** Friends out right now, drawn as avatars at their restaurants. */
+  checkins?: Checkin[];
+  onOpenCheckin?: (checkin: Checkin) => void;
+}
+
+/** Every point the map should frame: pins, plus friends out now. */
+export function framePoints(places: MapPlace[], checkins: Checkin[] = []) {
+  return [...mappable(places), ...mappableCheckins(checkins)].map((p) => ({ id: p.restaurant.id, lat: p.restaurant.lat, lng: p.restaurant.lng }));
+}
+
+export function mappableCheckins(checkins: Checkin[] = []) {
+  return checkins.filter(
+    (c): c is Checkin & { restaurant: { lat: number; lng: number } } => c.restaurant.lat !== null && c.restaurant.lng !== null,
+  );
 }
 
 /** Places that can be drawn (Google gave us coordinates). */

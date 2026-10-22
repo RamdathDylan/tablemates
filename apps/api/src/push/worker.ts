@@ -67,6 +67,12 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         body: `It's ${n.restaurantName ?? 'decided'}!`,
         data: { type: n.type, planId: n.planId ?? '' },
       };
+    case 'checkin':
+      return {
+        title: `${n.actorName} is out now`,
+        body: `At ${n.restaurantName ?? 'a restaurant'}. Swing by?`,
+        data: { type: n.type, restaurantId: n.restaurantId ?? '' },
+      };
     case 'table_invite':
       return {
         title: n.tableName ?? 'New table',

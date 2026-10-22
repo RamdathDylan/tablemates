@@ -29,6 +29,7 @@ import { useForYou } from '@/components/for-you';
 import { FriendPicker } from '@/components/friend-picker';
 import { PlacePreview } from '@/components/map/place-preview';
 import { mapsAvailable, TableMap } from '@/components/map/table-map';
+import { useCheckins } from '@/components/out-now';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { api } from '@/lib/api';
 import { useLocation } from '@/lib/location';
@@ -110,6 +111,11 @@ export default function MapScreen() {
     placeholderData: keepPreviousData,
   });
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
+  const checkins = useCheckins();
+  // Friends out now follow the people filters: one friend, or none on "Just me" and list views.
+  const outNow = (checkins.data?.friends ?? []).filter((c) =>
+    params.list || scope === 'me' ? false : scope === 'friend' ? c.user.id === params.friend : true,
+  );
   const friendName = friends.data?.find((f) => f.id === params.friend)?.displayName;
 
   // Cuisine is filtered here so the chip list can come from the unfiltered results.
@@ -244,18 +250,21 @@ export default function MapScreen() {
     else router.push({ pathname: '/restaurant/[id]', params: { id: p.restaurant.id } });
   }
 
+  const view = mapsAvailable ? (params.view ?? 'map') : 'list';
+  // A friend out now still needs the map, even when no pins match.
+  const nothingToDraw = view === 'list' || !outNow.length;
   const body = places.isPending ? (
     <LoadingCards count={2} />
   ) : places.isError ? (
     <ErrorState error={places.error} onRetry={() => places.refetch()} />
-  ) : all.length === 0 && !filtered ? (
+  ) : all.length === 0 && !filtered && nothingToDraw ? (
     <EmptyState
       icon="map-outline"
       title="No pins yet"
       message="Places you and your friends log show up here."
       action={{ label: 'Log a visit', onPress: () => router.navigate('/log') }}
     />
-  ) : shown.length === 0 ? (
+  ) : shown.length === 0 && nothingToDraw ? (
     <EmptyState icon="funnel-outline" title="Nothing matches" message="Try fewer filters." action={{ label: 'Clear filters', onPress: clearFilters }} />
   ) : null;
 
@@ -267,6 +276,8 @@ export default function MapScreen() {
         onSelect={setSelectedId}
         userLocation={location.coords}
         centerOnUser={centerKey}
+        checkins={outNow}
+        onOpenCheckin={(c) => router.push({ pathname: '/restaurant/[id]', params: { id: c.restaurant.id } })}
       />
       <View style={{ position: 'absolute', top: space[3], right: space[3] }}>
         <IconButton
@@ -351,7 +362,6 @@ export default function MapScreen() {
     );
   }
 
-  const view = mapsAvailable ? (params.view ?? 'map') : 'list';
   const column = { width: '100%', maxWidth: maxContentWidth, alignSelf: 'center' } as const;
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
