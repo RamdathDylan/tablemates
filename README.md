@@ -50,7 +50,6 @@ A pending request grants nothing, and unfriending hides reviews again right away
 - New accounts must enter the emailed code before using the app. Until then the API returns 403 `email_unverified` for everything except `/me` and the verify and resend endpoints.
 - Codes are stored as HMACs, expire after 15 minutes, lock after 5 wrong tries, and can be resent once a minute.
 - Sign-up, login, and verify are rate-limited per IP.
-
 - Access tokens are 15-minute JWTs.
 - Refresh tokens are rotated and stored hashed. Reusing an old refresh token revokes every session for that user.
 - Native apps keep the refresh token in the Keychain or Keystore (`expo-secure-store`).
