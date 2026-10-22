@@ -23,8 +23,12 @@ export interface NotifyInput {
   tableId?: string;
   badgeKey?: string;
   emoji?: string;
+  count?: number;
   reaction?: 'yum' | 'going';
 }
+
+/** Alerts about your own account, where you are both the actor and the recipient. */
+const SYSTEM_TYPES = new Set<NotificationType>(['badge', 'plate_prompt', 'streak_nudge']);
 
 /**
  * The one way to put something in someone's activity inbox. Run it inside the
@@ -34,7 +38,7 @@ export interface NotifyInput {
 export async function notify(tx: Tx, input: NotifyInput | NotifyInput[]) {
   // You don't notify yourself, except for system alerts about your own account.
   const rows = (Array.isArray(input) ? input : [input]).filter(
-    (n) => n.userId !== n.actorId || n.type === 'badge' || n.type === 'plate_prompt',
+    (n) => n.userId !== n.actorId || SYSTEM_TYPES.has(n.type),
   );
   if (rows.length) await tx.insert(notifications).values(rows);
 }

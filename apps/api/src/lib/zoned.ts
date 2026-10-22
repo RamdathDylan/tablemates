@@ -25,6 +25,16 @@ export function localDate(timeZone: string, at: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
 }
 
+/** Day of the week (0 = Sunday) and hour (0–23) in the given zone. */
+export function localWeekdayHour(timeZone: string, at: Date): { weekday: number; hour: number } {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short', hour: '2-digit', hourCycle: 'h23' })
+      .formatToParts(at)
+      .map((p) => [p.type, p.value]),
+  );
+  return { weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.weekday!), hour: +parts.hour! };
+}
+
 /** The UTC instant of a wall-clock time on a local date in a zone (handles DST). */
 export function zonedTimeToUtc(date: string, hour: number, minute: number, timeZone: string): Date {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];

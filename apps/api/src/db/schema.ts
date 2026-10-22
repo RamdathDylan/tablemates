@@ -44,6 +44,8 @@ export const users = pgTable('users', {
   timezone: text('timezone').notNull().default('UTC'),
   /** The audience picked on the user's last logged visit, preselected next time. */
   defaultAudience: visitAudience('default_audience').notNull().default('friends'),
+  /** Monday (local) of the last week the streak job looked at this user, so it nudges at most once a week. */
+  streakNudgedWeek: date('streak_nudged_week', { mode: 'string' }),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
 });
 
@@ -106,6 +108,7 @@ export const notificationType = pgEnum('notification_type', [
   'plate_prompt',
   'table_invite',
   'checkin',
+  'streak_nudge',
 ]);
 
 /**
@@ -136,6 +139,8 @@ export const notifications = pgTable(
     badgeKey: text('badge_key'),
     /** Emoji for story reactions. */
     emoji: text('emoji'),
+    /** A number the message needs, e.g. the streak length for a nudge. */
+    count: integer('count'),
     reaction: reactionKind('reaction'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     readAt: timestamptz('read_at'),

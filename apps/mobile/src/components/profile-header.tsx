@@ -3,7 +3,10 @@ import { Avatar, Icon, space, Text } from '@tablemates/ui';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
+import { StreakChip } from './streak';
+
 export function ProfileHeader({ profile, actions }: { profile: Profile; actions?: ReactNode }) {
+  const own = profile.friendship === 'self';
   return (
     <View style={{ alignItems: 'center', gap: space[2] }}>
       <Avatar name={profile.displayName} uri={profile.avatarUrl} size="xl" />
@@ -23,6 +26,11 @@ export function ProfileHeader({ profile, actions }: { profile: Profile; actions?
         <Text align="center" style={{ maxWidth: 420 }}>
           {profile.bio}
         </Text>
+      )}
+      {!!profile.streak?.current && (
+        <View style={{ alignSelf: 'center' }}>
+          <StreakChip streak={profile.streak} own={own} />
+        </View>
       )}
       {profile.stats && (
         <View style={{ flexDirection: 'row', gap: space[8], marginTop: space[2] }}>

@@ -23,6 +23,7 @@ const labels: Record<NotificationType, string> = {
   plate_prompt: 'Daily plate check',
   table_invite: 'Added to a table',
   checkin: 'Close friends out now',
+  streak_nudge: 'Streak reminders',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

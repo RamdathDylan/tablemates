@@ -1,4 +1,4 @@
-import type { Dish, Friend, PlaceResult } from '@tablemates/shared';
+import type { Dish, Friend, PlaceResult, Streak } from '@tablemates/shared';
 import {
   Button,
   Card,
@@ -24,6 +24,7 @@ import { FriendPicker } from '@/components/friend-picker';
 import { PhotoStrip, type StripPhoto } from '@/components/photo-strip';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
+import { STREAK_MILESTONES, useStreak } from '@/components/streak';
 import { api, ApiError } from '@/lib/api';
 import { useLocation } from '@/lib/location';
 import { useAuth, useMe } from '@/lib/auth';
@@ -162,6 +163,17 @@ function VisitForm({
   const [audience, setAudience] = useState(me.defaultAudience);
   const queryClient = useQueryClient();
   const [visitedAt, setVisitedAt] = useState(tag?.date ?? localDate());
+
+  // Loaded up front so there's a "before" to compare with after saving.
+  useStreak();
+  /** Celebrates when this visit is the week's first and lands the streak on a milestone. */
+  async function celebrateStreak() {
+    const before = queryClient.getQueryData<Streak>(qk.streak);
+    const after = await queryClient.fetchQuery({ queryKey: qk.streak, queryFn: api.streak, staleTime: 0 });
+    if (before && !before.thisWeekDone && after.thisWeekDone && STREAK_MILESTONES.includes(after.current)) {
+      toast(`🔥 ${after.current}-week streak! Keep it going`, 'success');
+    }
+  }
   const [companions, setCompanions] = useState<Friend[]>([]);
   const [picking, setPicking] = useState(false);
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
@@ -204,6 +216,7 @@ function VisitForm({
         visit.audience === 'private' ? 'Saved privately' : visit.review ? 'Review shared with your friends' : 'Visit logged',
         'success',
       );
+      void celebrateStreak();
       onChangePlace();
       router.push({ pathname: '/restaurant/[id]', params: { id: visit.restaurant.id } });
     },
