@@ -230,7 +230,7 @@ export const api = {
   leavePlan: (planId: string) => request<void>('POST', `/plans/${planId}/leave`),
   myLists: () => request<{ mine: ListSummary[]; following: ListSummary[]; tables: ListSummary[] }>('GET', '/me/lists'),
   userLists: (username: string) => request<ListSummary[]>('GET', `/users/${encodeURIComponent(username)}/lists`),
-  createList: (input: { title: string; description?: string; audience: 'friends' | 'private'; tableId?: string }) =>
+  createList: (input: { title: string; description?: string; audience: 'friends' | 'private'; tableId?: string; kind?: 'list' | 'crawl' }) =>
     request<{ id: string }>('POST', '/lists', input),
   streak: () => request<Streak>('GET', '/me/streak'),
   setGoal: (year: number, target: number) => request<Goal>('PUT', `/me/goals/${year}`, { target }),
@@ -260,6 +260,7 @@ export const api = {
     request<{ id: string }>('PATCH', `/lists/${id}`, input),
   deleteList: (id: string) => request<void>('DELETE', `/lists/${id}`),
   addToList: (id: string, restaurantId: string, note = '') => request<void>('PUT', `/lists/${id}/items/${restaurantId}`, { note }),
+  reorderList: (id: string, restaurantIds: string[]) => request<void>('PUT', `/lists/${id}/order`, { restaurantIds }),
   removeFromList: (id: string, restaurantId: string) => request<void>('DELETE', `/lists/${id}/items/${restaurantId}`),
   followList: (id: string) => request<void>('PUT', `/lists/${id}/follow`),
   unfollowList: (id: string) => request<void>('DELETE', `/lists/${id}/follow`),

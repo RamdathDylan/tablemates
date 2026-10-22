@@ -113,6 +113,12 @@ export default function MapScreen() {
   });
   const friends = useQuery({ queryKey: qk.friends, queryFn: api.friends });
   const checkins = useCheckins();
+  // A crawl on the map: numbered stops joined by a dashed line.
+  const shownList = useQuery({ queryKey: qk.list(params.list ?? ''), queryFn: () => api.list(params.list!), enabled: !!params.list });
+  const route =
+    shownList.data?.kind === 'crawl'
+      ? shownList.data.items.flatMap((i) => (i.restaurant.lat !== null && i.restaurant.lng !== null ? [{ id: i.restaurant.id, lat: i.restaurant.lat, lng: i.restaurant.lng }] : []))
+      : undefined;
   const me = useMe();
   // Friends out now follow the people filters: one friend, or none on "Just me" and list views.
   const outNow = (checkins.data?.friends ?? []).filter((c) =>
@@ -280,6 +286,7 @@ export default function MapScreen() {
         centerOnUser={centerKey}
         checkins={outNow}
         viewerId={me.id}
+        route={route}
         onOpenCheckin={(c) => router.push({ pathname: '/restaurant/[id]', params: { id: c.restaurant.id } })}
       />
       <View style={{ position: 'absolute', top: space[3], right: space[3] }}>

@@ -1,5 +1,5 @@
 import { MapPin, palette } from '@tablemates/ui';
-import { AdvancedMarker, APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
+import { AdvancedMarker, APIProvider, Map, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { useEffect } from 'react';
 
 import { CheckinMarker, checkinLabel } from '../out-now';
@@ -12,7 +12,11 @@ const MAP_ID = process.env.EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 /** Web map, via the Google Maps JavaScript API. */
 export const mapsAvailable = API_KEY.length > 0;
 
-export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin, viewerId }: TableMapProps) {
+export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin, viewerId, route }: TableMapProps) {
+  const stopOf = (id: string) => {
+    const i = route?.findIndex((r) => r.id === id) ?? -1;
+    return i >= 0 ? i + 1 : undefined;
+  };
   const pins = mappable(places);
   return (
     <APIProvider apiKey={API_KEY}>
@@ -29,6 +33,7 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
         <FitToPins places={places} checkins={checkins} />
         <PanToSelected places={places} selectedId={selectedId} />
         <CenterOnUser location={userLocation} trigger={centerOnUser} />
+        {route && route.length > 1 && <RouteLine points={route} />}
         {userLocation && (
           <AdvancedMarker position={userLocation} title="You are here" zIndex={0}>
             <div
@@ -52,7 +57,7 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
               title={pinLabel(p)}
               zIndex={selected ? 2 : 1}
               onClick={() => onSelect(p.restaurant.id)}>
-              <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} crowned={!!viewerId && p.mayor?.id === viewerId} selected={selected} />
+              <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} crowned={!!viewerId && p.mayor?.id === viewerId} stop={stopOf(p.restaurant.id)} selected={selected} />
             </AdvancedMarker>
           );
         })}
@@ -103,6 +108,26 @@ function PanToSelected({ places, selectedId }: { places: TableMapProps['places']
     if (map && p) map.panTo({ lat: p.restaurant.lat, lng: p.restaurant.lng });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedId]);
+  return null;
+}
+
+/** A dashed line through a crawl's stops, in order. */
+function RouteLine({ points }: { points: { lat: number; lng: number }[] }) {
+  const map = useMap();
+  const maps = useMapsLibrary('maps');
+  const key = points.map((p) => `${p.lat},${p.lng}`).join('|');
+  useEffect(() => {
+    if (!map || !maps) return;
+    const line = new maps.Polyline({
+      map,
+      path: points,
+      strokeOpacity: 0,
+      // Dashes are drawn as repeated line symbols; a plain dashed stroke isn't supported.
+      icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: palette.tomato[600], scale: 3 }, offset: '0', repeat: '14px' }],
+    });
+    return () => line.setMap(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, maps, key]);
   return null;
 }
 

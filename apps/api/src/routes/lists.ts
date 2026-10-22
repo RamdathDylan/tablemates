@@ -2,14 +2,15 @@
  * Shareable restaurant lists. Friends see "friends" lists; private lists are the
  * owner's alone. A Table's list is visible to, and editable by, its members only.
  */
-import { listInput, listItemInput, updateListInput, type ListSummary, type RestaurantList } from '@tablemates/shared';
-import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { listInput, listItemInput, listOrderInput, updateListInput, type ListSummary, type RestaurantList } from '@tablemates/shared';
+import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { Db } from '../db/client';
 import { listFollows, listItems, lists, restaurants, savedPlaces, tableMembers, tables, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { badRequest, forbidden, notFound, parse } from '../lib/errors';
+import { haversineKm } from '../lib/geo';
 import { idParam } from '../lib/params';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
 import { isTableMember } from '../lib/tables';
@@ -29,6 +30,17 @@ async function visibleList(db: Db, viewerId: string, listId: string) {
   const [list] = await db.select().from(lists).where(eq(lists.id, listId));
   if (!list || !(await canSeeList(db, viewerId, list))) throw notFound('List not found');
   return list;
+}
+
+/** Straight-line distances between consecutive stops (skipping any without coordinates). */
+export function crawlRoute(stops: { lat: number | null; lng: number | null }[]) {
+  const legsKm: number[] = [];
+  for (let i = 1; i < stops.length; i++) {
+    const a = stops[i - 1]!;
+    const b = stops[i]!;
+    legsKm.push(a.lat !== null && a.lng !== null && b.lat !== null && b.lng !== null ? Math.round(haversineKm(a.lat, a.lng, b.lat, b.lng) * 100) / 100 : 0);
+  }
+  return { legsKm, totalKm: Math.round(legsKm.reduce((s, k) => s + k, 0) * 100) / 100 };
 }
 
 async function ownList(db: Db, viewerId: string, listId: string) {
@@ -79,6 +91,7 @@ export async function listSummaries(db: Db, viewerId: string, rows: ListRow[]): 
     following: followed.has(l.id),
     table: tableRows.find((t) => t.id === l.tableId) ?? null,
     canEdit: l.ownerId === viewerId || tableRows.some((t) => t.id === l.tableId),
+    kind: l.kind,
   }));
 }
 
@@ -149,10 +162,11 @@ export function listRoutes(app: FastifyInstance, { db }: Deps) {
         .innerJoin(restaurants, eq(listItems.restaurantId, restaurants.id))
         .leftJoin(savedPlaces, and(eq(savedPlaces.restaurantId, restaurants.id), eq(savedPlaces.userId, req.userId)))
         .where(eq(listItems.listId, list.id))
-        .orderBy(asc(listItems.addedAt)),
+        .orderBy(...(list.kind === 'crawl' ? [asc(listItems.position), asc(listItems.addedAt)] : [asc(listItems.addedAt)])),
     ]);
     return {
       ...summary!,
+      route: list.kind === 'crawl' ? crawlRoute(items.map((i) => i.restaurant)) : null,
       items: items.map(({ item, restaurant, saved }) => ({
         restaurant: toRestaurant(restaurant),
         note: item.note,
@@ -184,9 +198,14 @@ export function listRoutes(app: FastifyInstance, { db }: Deps) {
     const [exists] = await db.select({ id: restaurants.id }).from(restaurants).where(eq(restaurants.id, restaurantId));
     if (!exists) throw notFound('Restaurant not found');
     await db.transaction(async (tx) => {
+      // New stops go at the end of a crawl.
+      const [last] = await tx
+        .select({ max: sql<number>`coalesce(max(${listItems.position}), -1)::int` })
+        .from(listItems)
+        .where(eq(listItems.listId, list.id));
       await tx
         .insert(listItems)
-        .values({ listId: list.id, restaurantId, note })
+        .values({ listId: list.id, restaurantId, note, position: last!.max + 1 })
         .onConflictDoUpdate({ target: [listItems.listId, listItems.restaurantId], set: { note } });
       await tx.update(lists).set({ updatedAt: new Date() }).where(eq(lists.id, list.id));
     });
@@ -198,6 +217,23 @@ export function listRoutes(app: FastifyInstance, { db }: Deps) {
     await db
       .delete(listItems)
       .where(and(eq(listItems.listId, list.id), eq(listItems.restaurantId, idParam(req.params, 'restaurantId'))));
+    return reply.status(204).send();
+  });
+
+  /** Reorders a crawl's stops. The ids must be exactly the list's restaurants. */
+  app.put('/lists/:id/order', async (req, reply) => {
+    const list = await editableList(db, req.userId, idParam(req.params));
+    if (list.kind !== 'crawl') throw badRequest('Only crawls have an order');
+    const { restaurantIds } = parse(listOrderInput, req.body);
+    const current = await db.select({ id: listItems.restaurantId }).from(listItems).where(eq(listItems.listId, list.id));
+    const same = current.length === restaurantIds.length && new Set(restaurantIds).size === restaurantIds.length && current.every((c) => restaurantIds.includes(c.id));
+    if (!same) throw badRequest('Send every stop on the crawl exactly once');
+    await db.transaction(async (tx) => {
+      for (const [position, restaurantId] of restaurantIds.entries()) {
+        await tx.update(listItems).set({ position }).where(and(eq(listItems.listId, list.id), eq(listItems.restaurantId, restaurantId)));
+      }
+      await tx.update(lists).set({ updatedAt: new Date() }).where(eq(lists.id, list.id));
+    });
     return reply.status(204).send();
   });
 

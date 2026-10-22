@@ -7,6 +7,7 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
 import { restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
+import { haversineKm } from './geo';
 import { toPublicUser, toRestaurant } from './serialize';
 import { friendIdsOf, friendVisitFilter, visibleVisitFilter } from './visibility';
 
@@ -86,12 +87,6 @@ export async function tasteWith(db: Db, viewerId: string, friendId: string): Pro
     overlap: shared.length,
     agree: closest.map((c) => ({ restaurant: names.find((n) => n.id === c.id)!, you: c.you, them: c.them })),
   };
-}
-
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const rad = (d: number) => (d * Math.PI) / 180;
-  const a = Math.sin(rad(lat2 - lat1) / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
-  return 6371 * 2 * Math.asin(Math.sqrt(a));
 }
 
 /**

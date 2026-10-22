@@ -1,12 +1,16 @@
-import { MapPin } from '@tablemates/ui';
+import { MapPin, palette } from '@tablemates/ui';
 import { useEffect, useRef } from 'react';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import { CheckinMarker, checkinLabel } from '../out-now';
 import { framePoints, mappable, mappableCheckins, pinKind, pinLabel, type TableMapProps } from './shared';
 
 /** Native map: Apple Maps on iOS, Google Maps on Android. */
-export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin, viewerId }: TableMapProps) {
+export function TableMap({ places, selectedId, onSelect, userLocation, centerOnUser, checkins, onOpenCheckin, viewerId, route }: TableMapProps) {
+  const stopOf = (id: string) => {
+    const i = route?.findIndex((r) => r.id === id) ?? -1;
+    return i >= 0 ? i + 1 : undefined;
+  };
   const ref = useRef<MapView>(null);
   const pins = mappable(places);
   const frame = framePoints(places, checkins);
@@ -67,10 +71,18 @@ export function TableMap({ places, selectedId, onSelect, userLocation, centerOnU
             tracksViewChanges={false}
             accessibilityLabel={pinLabel(p)}
             zIndex={selected ? 2 : 1}>
-            <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} crowned={!!viewerId && p.mayor?.id === viewerId} selected={selected} />
+            <MapPin kind={pinKind(p)} rating={p.summary.averageRating} recommended={p.summary.recommends > 0} saved={p.saved} crowned={!!viewerId && p.mayor?.id === viewerId} stop={stopOf(p.restaurant.id)} selected={selected} />
           </Marker>
         );
       })}
+      {route && route.length > 1 && (
+        <Polyline
+          coordinates={route.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
+          strokeColor={palette.tomato[600]}
+          strokeWidth={3}
+          lineDashPattern={[8, 6]}
+        />
+      )}
       {mappableCheckins(checkins).map((c) => (
         <Marker
           key={c.id}

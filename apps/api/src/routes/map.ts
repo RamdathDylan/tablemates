@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { listItems, lists, restaurants, reviews, savedPlaces, users, visits } from '../db/schema';
 import type { Deps } from '../deps';
 import { forbidden, notFound, parse } from '../lib/errors';
+import { haversineKm } from '../lib/geo';
 import { mayorships } from '../lib/mayors';
 import { toPublicUser, toRestaurant } from '../lib/serialize';
 import { canSeeList } from './lists';
@@ -37,15 +38,6 @@ function selectVisits(db: Deps['db'], where: SQL | undefined) {
 
 const average = (ratings: number[]) =>
   ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null;
-
-/** Great-circle distance in km. */
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const rad = (d: number) => (d * Math.PI) / 180;
-  const a =
-    Math.sin(rad(lat2 - lat1) / 2) ** 2 +
-    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
-  return 6371 * 2 * Math.asin(Math.sqrt(a));
-}
 
 /** Rows arrive newest first, so the first row seen for anything is the most recent. */
 function summarize(rows: Row[], viewerId: string, origin?: { lat: number; lng: number }): MapPlace[] {
