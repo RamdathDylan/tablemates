@@ -3,7 +3,7 @@
 #   docker build -f apps/api/Dockerfile -t tablemates-api .
 # Base images are pinned by digest so builds are reproducible.
 
-FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
+FROM node:26.12.0-alpine@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5 AS build
 WORKDIR /repo
 RUN corepack enable
 COPY . .
@@ -12,7 +12,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile --filter @tablemates/api... \
  && pnpm --filter @tablemates/api deploy --prod --legacy /out
 
-FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+FROM node:26.12.0-alpine@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5
 ENV NODE_ENV=production PORT=4000
 # The API runs with plain node. Remove the bundled package managers, which are
 # unused at runtime and carry their own advisories.
