@@ -43,6 +43,9 @@ const icons: Record<NotificationItem['type'], IconName> = {
   streak_nudge: 'flame',
   goal_reached: 'trophy',
   mayor_lost: 'trophy-outline',
+  challenge_invite: 'flag',
+  challenge_complete: 'flag',
+  challenge_ended: 'medal',
 };
 
 function message(n: NotificationItem) {
@@ -64,6 +67,12 @@ function message(n: NotificationItem) {
       return `${who} invited you to “${n.excerpt ?? 'a dinner plan'}”`;
     case 'plan_decided':
       return `“${n.excerpt ?? 'Your plan'}” is happening at ${n.restaurant?.name ?? 'the winning spot'}`;
+    case 'challenge_invite':
+      return `${who} challenged you: “${n.excerpt ?? 'a challenge'}”`;
+    case 'challenge_complete':
+      return `🏁 You hit the target in “${n.excerpt ?? 'your challenge'}”`;
+    case 'challenge_ended':
+      return n.count ? `🏅 “${n.excerpt ?? 'Your challenge'}” is over. ${who} won with ${n.count}` : `“${n.excerpt ?? 'Your challenge'}” is over`;
     case 'mayor_lost':
       return `👑 ${who} took ${n.restaurant?.name ?? 'a place'} from you. You're no longer the mayor`;
     case 'goal_reached':
@@ -91,6 +100,7 @@ function open(n: NotificationItem) {
   if (n.type === 'tagged' || n.type === 'badge' || n.type === 'goal_reached') return router.navigate('/profile');
   if (n.type === 'streak_nudge') return router.navigate('/log');
   if (n.type === 'ask_reply' || n.type === 'story_reaction' || n.type === 'plate_prompt') return router.navigate('/');
+  if (n.challengeId) return router.push({ pathname: '/challenge/[id]', params: { id: n.challengeId } });
   if (n.tableId) return router.push({ pathname: '/table/[id]', params: { id: n.tableId } });
   if (n.planId) return router.push({ pathname: '/plan/[id]', params: { id: n.planId } });
   if (n.type !== 'friend_request' && n.type !== 'friend_accepted' && n.restaurant) {

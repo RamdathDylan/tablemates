@@ -8,7 +8,7 @@ import {
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { asks, comments, friendships, notifications, plans, restaurants, tables, users } from '../db/schema';
+import { asks, challenges, comments, friendships, notifications, plans, restaurants, tables, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { decodeCursor, encodeCursor } from '../lib/cursor';
 import { badgeTitle } from '../lib/badges';
@@ -77,7 +77,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         actor: { id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl },
         restaurant: { id: restaurants.id, name: restaurants.name },
         friendshipStatus: friendships.status,
-        excerpt: sql<string | null>`coalesce(${comments.body}, ${asks.question}, ${plans.title}, ${tables.emoji} || ' ' || ${tables.name})`,
+        excerpt: sql<string | null>`coalesce(${comments.body}, ${asks.question}, ${plans.title}, ${tables.emoji} || ' ' || ${tables.name}, ${challenges.title})`,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))
@@ -87,6 +87,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
       .leftJoin(asks, eq(notifications.askId, asks.id))
       .leftJoin(plans, eq(notifications.planId, plans.id))
       .leftJoin(tables, eq(notifications.tableId, tables.id))
+      .leftJoin(challenges, eq(notifications.challengeId, challenges.id))
       .where(and(...conditions))
       .orderBy(desc(notifications.createdAt), desc(notifications.id))
       .limit(limit + 1);
@@ -105,6 +106,7 @@ export function notificationRoutes(app: FastifyInstance, { db }: Deps) {
         reaction: n.reaction,
         planId: n.planId,
         tableId: n.tableId,
+        challengeId: n.challengeId,
         badge: n.badgeKey ? { key: n.badgeKey, title: badgeTitle(n.badgeKey) } : null,
         emoji: n.emoji,
         count: n.count,

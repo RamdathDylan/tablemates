@@ -26,6 +26,9 @@ const labels: Record<NotificationType, string> = {
   streak_nudge: 'Streak reminders',
   goal_reached: 'Goal reached',
   mayor_lost: 'Lost a mayorship',
+  challenge_invite: 'Challenge invites',
+  challenge_complete: 'Challenge targets hit',
+  challenge_ended: 'Challenge results',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

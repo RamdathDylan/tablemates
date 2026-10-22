@@ -21,6 +21,7 @@ export interface NotifyInput {
   askId?: string;
   planId?: string;
   tableId?: string;
+  challengeId?: string;
   badgeKey?: string;
   emoji?: string;
   count?: number;
@@ -28,7 +29,7 @@ export interface NotifyInput {
 }
 
 /** Alerts about your own account, where you are both the actor and the recipient. */
-const SYSTEM_TYPES = new Set<NotificationType>(['badge', 'plate_prompt', 'streak_nudge', 'goal_reached']);
+const SYSTEM_TYPES = new Set<NotificationType>(['badge', 'plate_prompt', 'streak_nudge', 'goal_reached', 'challenge_complete', 'challenge_ended']);
 
 /**
  * The one way to put something in someone's activity inbox. Run it inside the

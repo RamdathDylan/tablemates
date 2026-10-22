@@ -64,12 +64,14 @@ export function ColumnChart({ values, labels, spokenLabels = labels, unit, heigh
 export interface RankedBarsProps {
   items: { label: string; value: number }[];
   unit: string;
+  /** Scale bars to a fixed total (e.g. a challenge target) instead of the longest bar. */
+  max?: number;
 }
 
 /** Horizontal bars, longest first, each labeled with its name and value. */
-export function RankedBars({ items, unit }: RankedBarsProps) {
+export function RankedBars({ items, unit, max: fixedMax }: RankedBarsProps) {
   const { colors } = useTheme();
-  const max = Math.max(1, ...items.map((i) => i.value));
+  const max = Math.max(1, fixedMax ?? 0, ...items.map((i) => i.value));
   return (
     <View role="list" style={{ gap: space[3] }}>
       {items.map((item) => (

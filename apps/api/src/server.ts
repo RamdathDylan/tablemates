@@ -6,6 +6,7 @@ import { VerificationService } from './lib/verification';
 import { MailpitMailer, ResendMailer } from './mail/providers';
 import { GooglePlacesProvider } from './places/google';
 import { JobRunner } from './jobs/runner';
+import { runChallenges } from './lib/challenges';
 import { cleanUpPendingPhotos } from './lib/photos';
 import { runStreakNudges } from './lib/streaks';
 import { ExpoPushProvider } from './push/expo';
@@ -58,6 +59,7 @@ new JobRunner(
     { name: 'plate-prompts', intervalMs: 30 * 1000, run: () => runPlatePrompts(db) },
     { name: 'story-expiry', intervalMs: 5 * 60 * 1000, run: () => expireStories(db, storage) },
     { name: 'streak-nudges', intervalMs: 10 * 60 * 1000, run: () => runStreakNudges(db) },
+    { name: 'challenges', intervalMs: 5 * 60 * 1000, run: () => runChallenges(db) },
   ],
   app.log,
 ).start();

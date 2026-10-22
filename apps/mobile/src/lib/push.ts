@@ -74,7 +74,9 @@ export async function unregisterPush() {
 }
 
 function openFromNotification(data: Record<string, unknown> | undefined) {
-  if (typeof data?.tableId === 'string' && data.tableId) {
+  if (typeof data?.challengeId === 'string' && data.challengeId) {
+    router.push({ pathname: '/challenge/[id]', params: { id: data.challengeId } });
+  } else if (typeof data?.tableId === 'string' && data.tableId) {
     router.push({ pathname: '/table/[id]', params: { id: data.tableId } });
   } else if (typeof data?.planId === 'string' && data.planId) {
     router.push({ pathname: '/plan/[id]', params: { id: data.planId } });

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Fragment, useState, type ReactNode } from 'react';
 
+import { ChallengesSection } from '@/components/challenges';
 import { PlansSection } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { TablesSection } from '@/components/tables';
@@ -80,6 +81,7 @@ function FriendsAndRequests() {
   return (
     <>
       <TablesSection />
+      <ChallengesSection />
       <PlansSection />
 
       {incoming.length > 0 && (
