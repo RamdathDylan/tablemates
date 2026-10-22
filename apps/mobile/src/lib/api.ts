@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   CreateVisitInput,
   FeedItem,
+  ForYouItem,
   Friend,
   FriendRequest,
   FriendshipStatus,
@@ -224,6 +225,8 @@ export const api = {
   followList: (id: string) => request<void>('PUT', `/lists/${id}/follow`),
   unfollowList: (id: string) => request<void>('DELETE', `/lists/${id}/follow`),
   saveAllFromList: (id: string) => request<{ added: number }>('POST', `/lists/${id}/save-all`),
+  forYou: (near?: { lat: number; lng: number } | null) =>
+    request<ForYouItem[]>('GET', `/for-you${qs({ lat: near?.lat, lng: near?.lng })}`),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   myVisits: () => request<Visit[]>('GET', '/me/visits'),
   tagged: () => request<TaggedVisit[]>('GET', '/me/tagged'),

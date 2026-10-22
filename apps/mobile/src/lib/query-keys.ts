@@ -21,4 +21,5 @@ export const qk = {
   myLists: ['lists', 'me'] as const,
   userLists: (username: string) => ['lists', 'user', username] as const,
   list: (id: string) => ['list', id] as const,
+  forYou: (near: object | null) => ['forYou', near] as const,
 };

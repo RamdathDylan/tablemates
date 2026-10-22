@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach } from 'vitest';
 import { buildApp, type AppOptions } from '../src/app';
 import { createDb, type Db } from '../src/db/client';
 import '../src/env';
+import { clearTasteCache } from '../src/lib/taste';
 import { TokenService } from '../src/lib/tokens';
 import { VerificationService } from '../src/lib/verification';
 import type { Email, Mailer } from '../src/mail/types';
@@ -101,6 +102,7 @@ export function setupTestApp(options: Pick<AppOptions, 'authRateLimit'> = {}) {
     ctx.places.places.clear();
     ctx.places.getCalls = 0;
     ctx.mailer.sent = [];
+    clearTasteCache();
   });
 
   afterAll(async () => {

@@ -1,5 +1,5 @@
 /** Feed and restaurant detail: the friends-only reads of reviews. */
-import { feedQuery, type Dish, type FeedItem, type Page, type RestaurantDetail, type TopDish } from '@tablemates/shared';
+import { feedQuery, forYouQuery, type Dish, type ForYouItem, type FeedItem, type Page, type RestaurantDetail, type TopDish } from '@tablemates/shared';
 import { and, avg, count, desc, eq, sql, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
@@ -14,6 +14,7 @@ import { friendVisitFilter, visibleVisitFilter } from '../lib/visibility';
 import { engagementFor } from './engagement';
 import { companionsFor, withEssentials } from './visits';
 import { dishesFor } from '../lib/dishes';
+import { forYou } from '../lib/taste';
 
 async function selectFeedItems(db: Db, viewerId: string, where: SQL | undefined, limit: number) {
   const rows = await db
@@ -120,6 +121,9 @@ export function feedRoutes(app: FastifyInstance, { db, places }: Deps) {
         rows.length > limit && last ? encodeCursor(last.review.createdAt, last.review.id) : null,
     };
   });
+
+  /** Places friends you agree with loved and you haven't tried. */
+  app.get('/for-you', async (req): Promise<ForYouItem[]> => forYou(db, req.userId, parse(forYouQuery, req.query)));
 
   app.get('/restaurants/:id', async (req): Promise<RestaurantDetail> => {
     const id = idParam(req.params);

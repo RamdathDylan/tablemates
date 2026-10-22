@@ -7,6 +7,7 @@ import { closeFriends, friendships, notifications, users } from '../db/schema';
 import type { Deps } from '../deps';
 import { badRequest, conflict, isUniqueViolation, notFound, parse } from '../lib/errors';
 import { notify } from '../lib/notify';
+import { matchesFor } from '../lib/taste';
 import { canSeeActivityOf } from '../lib/visibility';
 import { idParam } from '../lib/params';
 import { toPublicUser } from '../lib/serialize';
@@ -69,7 +70,12 @@ export function friendRoutes(app: FastifyInstance, { db }: Deps) {
       .leftJoin(closeFriends, and(eq(closeFriends.ownerId, me), eq(closeFriends.friendId, users.id)))
       .where(eq(friendships.status, 'accepted'))
       .orderBy(users.displayName);
-    return rows.map((r) => ({ ...toPublicUser(r), closeFriend: r.closeFriendSince !== null }));
+    const matches = await matchesFor(db, me);
+    return rows.map((r) => ({
+      ...toPublicUser(r),
+      closeFriend: r.closeFriendSince !== null,
+      tasteMatch: matches.get(r.id) ?? null,
+    }));
   });
 
   /** Close friends see visits marked "Close friends". Only accepted friends qualify. */

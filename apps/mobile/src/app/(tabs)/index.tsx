@@ -7,6 +7,7 @@ import { FlatList, RefreshControl, View } from 'react-native';
 import { ActivityBell } from '@/components/activity-bell';
 import { AsksSection } from '@/components/asks';
 import { CommentsSheet } from '@/components/comments-sheet';
+import { ForYouCarousel } from '@/components/for-you';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { useContentStyle } from '@/components/screen';
 import { api } from '@/lib/api';
@@ -48,6 +49,7 @@ export default function FeedScreen() {
           </View>
           {bp === 'phone' && <ActivityBell />}
         </View>
+        <ForYouCarousel />
         <AsksSection />
         </View>
       }

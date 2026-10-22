@@ -118,6 +118,7 @@ function FriendsAndRequests() {
                 user={u}
                 status="friends"
                 onPress={() => openProfile(u.username)}
+                meta={u.tasteMatch !== null ? `${u.tasteMatch}% taste match` : undefined}
                 closeFriend={u.closeFriend}
                 busy={actions.toggleClose.isPending && actions.toggleClose.variables?.userId === u.id}
                 onToggleClose={() => actions.toggleClose.mutate({ userId: u.id, close: u.closeFriend, name: u.displayName })}
