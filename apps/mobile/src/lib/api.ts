@@ -2,6 +2,7 @@ import type {
   ApiError as ApiErrorBody,
   Ask,
   Badge,
+  Favorite,
   Comment,
   AuthResponse,
   CreateVisitInput,
@@ -231,6 +232,7 @@ export const api = {
     request<ForYouItem[]>('GET', `/for-you${qs({ lat: near?.lat, lng: near?.lng })}`),
   wrapped: (year: number) => request<Wrapped>('GET', `/me/wrapped${qs({ year })}`),
   badges: (username: string) => request<Badge[]>('GET', `/users/${encodeURIComponent(username)}/badges`),
+  setFavorites: (restaurantIds: string[]) => request<Favorite[]>('PUT', '/me/favorites', { restaurantIds }),
   feed: (cursor?: string) => request<Page<FeedItem>>('GET', `/feed${qs({ cursor })}`),
   requestUpload: (input: { kind: 'review' | 'avatar' | 'story' | 'plate'; contentType: string; bytes: number }) =>
     request<{ photoId: string; uploadUrl: string; headers: Record<string, string> }>('POST', '/uploads', input),

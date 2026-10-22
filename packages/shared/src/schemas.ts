@@ -234,6 +234,13 @@ export const forYouQuery = z.object({
 
 export const wrappedQuery = z.object({ year: z.coerce.number().int().min(2000).max(2100).optional() });
 
+export const favoritesInput = z.object({
+  restaurantIds: z
+    .array(z.uuid())
+    .max(4, 'Pick up to four favorites')
+    .refine((ids) => new Set(ids).size === ids.length, 'Each place can only be pinned once'),
+});
+
 export const feedQuery = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),

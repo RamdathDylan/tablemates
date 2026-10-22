@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import { Fragment, useState } from 'react';
 import { View } from 'react-native';
 
+import { FavoritesRow } from '@/components/favorites';
 import { MyListsSection } from '@/components/lists';
 import { NotificationSettings } from '@/components/notification-settings';
 import { Passport } from '@/components/passport';
@@ -53,6 +54,8 @@ export default function ProfileScreen() {
           }
         />
       )}
+
+      {profile.data && <FavoritesRow favorites={profile.data.favorites ?? []} own username={me.username} />}
 
       <Button
         title={`Your ${new Date().getFullYear()} in food`}
