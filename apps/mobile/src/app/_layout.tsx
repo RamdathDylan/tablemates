@@ -52,7 +52,9 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { colors, scheme } = useTheme();
   const ready = fontsLoaded && state.status !== 'loading';
   const signedIn = state.status === 'signedIn';
-  const onboarding = signedIn && state.onboarding;
+  const unverified = signedIn && !state.user.emailVerified;
+  const onboarding = signedIn && !unverified && state.onboarding;
+  const inApp = signedIn && !unverified && !onboarding;
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -89,13 +91,16 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
           contentStyle: { backgroundColor: colors.bg },
         }}>
         {/* Each auth state leaves exactly one group available, so guard redirects are unambiguous. */}
-        <Stack.Protected guard={signedIn && !onboarding}>
+        <Stack.Protected guard={inApp}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="restaurant/[id]" options={{ title: '' }} />
           <Stack.Screen name="user/[username]" options={{ title: '' }} />
           <Stack.Protected guard={__DEV__}>
             <Stack.Screen name="(dev)/styleguide" options={{ title: 'Style guide' }} />
           </Stack.Protected>
+        </Stack.Protected>
+        <Stack.Protected guard={unverified}>
+          <Stack.Screen name="verify-email" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={onboarding}>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />

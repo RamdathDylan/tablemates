@@ -20,6 +20,10 @@ export const loginInput = z.object({
 });
 export type LoginInput = z.infer<typeof loginInput>;
 
+export const verifyEmailInput = z.object({
+  code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from your email'),
+});
+
 export const refreshInput = z.object({
   // Native clients send the token in the body; web sends it as an httpOnly cookie.
   refreshToken: z.string().optional(),

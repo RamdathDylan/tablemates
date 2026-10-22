@@ -24,4 +24,10 @@ export const env = {
     .map((o) => o.trim())
     .filter(Boolean),
   isProduction: process.env.NODE_ENV === 'production',
+  mail: {
+    provider: (process.env.MAIL_PROVIDER ?? 'mailpit') as 'mailpit' | 'resend',
+    mailpitUrl: process.env.MAILPIT_URL ?? 'http://localhost:8025',
+    resendApiKey: process.env.RESEND_API_KEY ?? '',
+    from: process.env.MAIL_FROM ?? 'TableMates <onboarding@resend.dev>',
+  },
 };

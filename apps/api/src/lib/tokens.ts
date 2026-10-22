@@ -20,8 +20,9 @@ export class TokenService {
     this.key = new TextEncoder().encode(secret);
   }
 
-  signAccess(userId: string) {
-    return new SignJWT({})
+  /** `emailVerified` travels in the token so gated routes don't need a database lookup. */
+  signAccess(userId: string, emailVerified: boolean) {
+    return new SignJWT({ ev: emailVerified })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(userId)
       .setIssuedAt()
@@ -29,11 +30,12 @@ export class TokenService {
       .sign(this.key);
   }
 
-  async verifyAccess(token: string): Promise<string> {
+  async verifyAccess(token: string): Promise<{ userId: string; emailVerified: boolean }> {
     try {
       const { payload } = await jwtVerify(token, this.key, { algorithms: ['HS256'] });
-      if (!payload.sub) throw new Error('missing sub');
-      return payload.sub;
+      // Tokens minted before verification existed lack `ev`; a 401 makes the client refresh into a new one.
+      if (!payload.sub || typeof payload.ev !== 'boolean') throw new Error('outdated token');
+      return { userId: payload.sub, emailVerified: payload.ev };
     } catch {
       throw unauthorized('Your session has expired');
     }

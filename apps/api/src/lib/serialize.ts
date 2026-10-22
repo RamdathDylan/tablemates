@@ -21,6 +21,7 @@ export const toMe = (u: UserRow): T.Me => ({
   email: u.email,
   bio: u.bio,
   homeCity: u.homeCity,
+  emailVerified: u.emailVerifiedAt !== null,
   createdAt: u.createdAt.toISOString(),
 });
 

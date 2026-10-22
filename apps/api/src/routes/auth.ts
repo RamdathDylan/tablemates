@@ -1,11 +1,11 @@
 import { hash, verify } from '@node-rs/argon2';
-import { loginInput, refreshInput, signupInput, type AuthResponse } from '@tablemates/shared';
+import { loginInput, refreshInput, signupInput, verifyEmailInput, type AuthResponse } from '@tablemates/shared';
 import { eq, or } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import { users } from '../db/schema';
 import type { Deps } from '../deps';
-import { conflict, isUniqueViolation, parse, unauthorized } from '../lib/errors';
+import { conflict, isUniqueViolation, notFound, parse, unauthorized } from '../lib/errors';
 import { toMe } from '../lib/serialize';
 
 const REFRESH_COOKIE = 'tm_refresh';
@@ -16,7 +16,15 @@ const DUMMY_HASH = await hash('timing-safe-placeholder');
 /** Web clients keep the refresh token in an httpOnly cookie instead of JS-readable storage. */
 const isWebClient = (req: FastifyRequest) => req.headers['x-tablemates-client'] === 'web';
 
-export function authRoutes(app: FastifyInstance, { db, tokens, cookieSecure }: Deps) {
+export interface RateLimit {
+  max: number;
+  timeWindow: string;
+}
+
+export function authRoutes(app: FastifyInstance, { db, tokens, verification, cookieSecure }: Deps, limit: RateLimit) {
+  // Per-IP limits on endpoints that check secrets, to slow credential stuffing.
+  const limited = { config: { rateLimit: limit } };
+
   async function sendSession(
     req: FastifyRequest,
     reply: FastifyReply,
@@ -24,7 +32,7 @@ export function authRoutes(app: FastifyInstance, { db, tokens, cookieSecure }: D
     refreshToken?: string,
   ): Promise<AuthResponse> {
     const token = refreshToken ?? (await tokens.issueRefresh(user.id));
-    const body: AuthResponse = { user: toMe(user), accessToken: await tokens.signAccess(user.id) };
+    const body: AuthResponse = { user: toMe(user), accessToken: await tokens.signAccess(user.id, user.emailVerifiedAt !== null) };
     if (isWebClient(req)) {
       reply.setCookie(REFRESH_COOKIE, token, {
         httpOnly: true,
@@ -39,7 +47,7 @@ export function authRoutes(app: FastifyInstance, { db, tokens, cookieSecure }: D
     return body;
   }
 
-  app.post('/auth/signup', async (req, reply) => {
+  app.post('/auth/signup', limited, async (req, reply) => {
     const input = parse(signupInput, req.body);
     const [taken] = await db
       .select({ email: users.email, username: users.username })
@@ -62,6 +70,12 @@ export function authRoutes(app: FastifyInstance, { db, tokens, cookieSecure }: D
           displayName: input.displayName,
         })
         .returning();
+      try {
+        await verification.sendCode(user!);
+      } catch (err) {
+        // The account exists either way; the verify screen can resend the code.
+        req.log.error(err, 'failed to send verification email');
+      }
       reply.status(201);
       return sendSession(req, reply, user!);
     } catch (err) {
@@ -70,7 +84,7 @@ export function authRoutes(app: FastifyInstance, { db, tokens, cookieSecure }: D
     }
   });
 
-  app.post('/auth/login', async (req, reply) => {
+  app.post('/auth/login', limited, async (req, reply) => {
     const input = parse(loginInput, req.body);
     const [user] = await db.select().from(users).where(eq(users.email, input.email));
     const ok = await verify(user?.passwordHash ?? DUMMY_HASH, input.password);
@@ -91,6 +105,33 @@ export function authRoutes(app: FastifyInstance, { db, tokens, cookieSecure }: D
     const token = parse(refreshInput, req.body ?? {}).refreshToken ?? req.cookies[REFRESH_COOKIE];
     if (token) await tokens.revoke(token);
     reply.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+    return reply.status(204).send();
+  });
+}
+
+/** Authenticated: the only routes an unverified account can call (plus GET /me). */
+export function verificationRoutes(app: FastifyInstance, { db, tokens, verification }: Deps, limit: RateLimit) {
+  const limited = { config: { rateLimit: limit } };
+
+  async function currentUser(userId: string) {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw notFound('User not found');
+    return user;
+  }
+
+  app.post('/auth/verify-email', limited, async (req) => {
+    const { code } = parse(verifyEmailInput, req.body);
+    const user = await currentUser(req.userId);
+    if (!user.emailVerifiedAt) await verification.verify(user.id, code);
+    const verified = await currentUser(req.userId);
+    // A fresh access token carries the verified claim, so gated routes open immediately.
+    return { user: toMe(verified), accessToken: await tokens.signAccess(verified.id, true) };
+  });
+
+  app.post('/auth/resend-verification', limited, async (req, reply) => {
+    const user = await currentUser(req.userId);
+    if (user.emailVerifiedAt) return reply.status(204).send();
+    await verification.sendCode(user);
     return reply.status(204).send();
   });
 }
