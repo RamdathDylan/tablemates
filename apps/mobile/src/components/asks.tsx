@@ -1,4 +1,4 @@
-import type { Ask, PlaceResult } from '@tablemates/shared';
+import type { Ask } from '@tablemates/shared';
 import {
   Avatar,
   Button,
@@ -26,11 +26,11 @@ import { Fragment, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { api, ApiError } from '@/lib/api';
-import { useLocation } from '@/lib/location';
 import { useMe } from '@/lib/auth';
 import { qk } from '@/lib/query-keys';
-import { useDebounced } from '@/lib/use-debounced';
 import { useSaveToggle } from '@/lib/use-save';
+
+import { PlacePicker, type PickedPlace } from './place-picker';
 
 /** Feed header: a prompt to ask your friends, then any open asks. */
 export function AsksSection() {
@@ -187,22 +187,12 @@ function AskCard({ ask }: { ask: Ask }) {
   );
 }
 
-/** Pick one of your places or search, add a note, and send it. */
+/** Pick a place, add a note, and send it. */
 function SuggestSheet({ ask, onClose }: { ask: Ask; onClose: () => void }) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const location = useLocation();
-  const [query, setQuery] = useState('');
   const [note, setNote] = useState('');
-  const [picked, setPicked] = useState<{ restaurantId?: string; googlePlaceId?: string; name: string } | null>(null);
-  const q = useDebounced(query.trim(), 350);
-  const mine = useQuery({ queryKey: qk.myVisits, queryFn: api.myVisits });
-  const results = useQuery({
-    queryKey: [...qk.places(q), location.coords],
-    queryFn: () => api.searchPlaces(q, location.coords),
-    enabled: q.length >= 2,
-  });
-  const yourPlaces = [...new Map((mine.data ?? []).map((v) => [v.restaurant.id, v.restaurant])).values()].slice(0, 8);
+  const [picked, setPicked] = useState<PickedPlace | null>(null);
 
   const send = useMutation({
     mutationFn: () => api.replyToAsk(ask.id, { restaurantId: picked?.restaurantId, googlePlaceId: picked?.googlePlaceId, note }),
@@ -220,32 +210,7 @@ function SuggestSheet({ ask, onClose }: { ask: Ask; onClose: () => void }) {
       onClose={onClose}
       title={ask.question}
       footer={<Button title={picked ? `Suggest ${picked.name}` : 'Pick a place'} fullWidth size="lg" disabled={!picked} loading={send.isPending} onPress={() => send.mutate()} />}>
-      {yourPlaces.length > 0 && (
-        <View style={{ gap: space[2] }}>
-          <Text variant="overline" tone="muted">
-            Your places
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
-            {yourPlaces.map((r) => (
-              <Chip
-                key={r.id}
-                label={r.name}
-                selected={picked?.restaurantId === r.id}
-                onPress={() => setPicked({ restaurantId: r.id, name: r.name })}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-      <Input label="Search restaurants" hideLabel icon="search" placeholder="Search for a place" value={query} onChangeText={setQuery} />
-      {results.data?.slice(0, 5).map((p: PlaceResult) => (
-        <Chip
-          key={p.googlePlaceId}
-          label={`${p.name} · ${p.address.split(',')[0]}`}
-          selected={picked?.googlePlaceId === p.googlePlaceId}
-          onPress={() => setPicked({ googlePlaceId: p.googlePlaceId, name: p.name })}
-        />
-      ))}
+      <PlacePicker value={picked} onChange={setPicked} />
       <Input label="Why go? (optional)" placeholder="Get the spicy miso" value={note} onChangeText={setNote} maxLength={200} />
     </Sheet>
   );

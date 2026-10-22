@@ -74,7 +74,9 @@ export async function unregisterPush() {
 }
 
 function openFromNotification(data: Record<string, unknown> | undefined) {
-  if (data?.screen === 'tagged') {
+  if (typeof data?.planId === 'string' && data.planId) {
+    router.push({ pathname: '/plan/[id]', params: { id: data.planId } });
+  } else if (data?.screen === 'tagged') {
     router.navigate('/profile');
   } else if (data?.screen === 'feed') {
     router.navigate('/');

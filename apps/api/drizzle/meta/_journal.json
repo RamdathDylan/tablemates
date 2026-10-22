@@ -71,6 +71,13 @@
       "when": 1792638965337,
       "tag": "0009_asks",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792639227086,
+      "tag": "0010_plans",
+      "breakpoints": true
     }
   ]
 }

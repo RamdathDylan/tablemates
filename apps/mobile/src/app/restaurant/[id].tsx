@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { CommentsSheet } from '@/components/comments-sheet';
+import { AddToPlanSheet } from '@/components/plans';
 import { ErrorState, LoadingCards } from '@/components/query-state';
 import { Screen, Section } from '@/components/screen';
 import { api } from '@/lib/api';
@@ -18,6 +19,7 @@ export default function RestaurantScreen() {
   const save = useSaveToggle();
   const react = useReaction();
   const [thread, setThread] = useState<{ reviewId: string; title: string } | null>(null);
+  const [planning, setPlanning] = useState(false);
 
   if (detail.isPending) {
     return (
@@ -88,7 +90,9 @@ export default function RestaurantScreen() {
           loading={save.isPending}
           onPress={() => save.mutate({ restaurantId: r.id, saved, name: r.name })}
         />
+        <Button title="Add to a plan" icon="calendar-outline" variant="ghost" onPress={() => setPlanning(true)} />
       </View>
+      {planning && <AddToPlanSheet restaurant={r} onClose={() => setPlanning(false)} />}
 
       <Section title="From your table">
         {reviews.length === 0 ? (

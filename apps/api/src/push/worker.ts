@@ -1,7 +1,7 @@
 import { and, eq, gt, inArray, isNull } from 'drizzle-orm';
 
 import type { Db } from '../db/client';
-import { notifications, pushTokens, restaurants, users } from '../db/schema';
+import { notifications, plans, pushTokens, restaurants, users } from '../db/schema';
 import type { PushMessage, PushProvider } from './types';
 
 /** Alerts older than this when first seen are skipped rather than pushed late. */
@@ -15,6 +15,8 @@ type Row = {
   actorUsername: string;
   restaurantId: string | null;
   restaurantName: string | null;
+  planId: string | null;
+  planTitle: string | null;
 };
 
 /** Notification copy. Kept short: lock screens truncate. */
@@ -47,6 +49,18 @@ export function pushContent(n: Row): Pick<PushMessage, 'title' | 'body' | 'data'
         title: 'Your friends answered',
         body: `${n.actorName} suggested ${n.restaurantName ?? 'a place'}`,
         data: { type: n.type, screen: 'feed' },
+      };
+    case 'plan_invite':
+      return {
+        title: n.planTitle ?? 'Dinner plans',
+        body: `${n.actorName} invited you. Suggest a place and vote`,
+        data: { type: n.type, planId: n.planId ?? '' },
+      };
+    case 'plan_decided':
+      return {
+        title: n.planTitle ?? 'Dinner plans',
+        body: `It's ${n.restaurantName ?? 'decided'}!`,
+        data: { type: n.type, planId: n.planId ?? '' },
       };
     case 'saved_place_reviewed':
       return {
@@ -89,10 +103,13 @@ export class PushWorker {
         actorUsername: users.username,
         restaurantId: notifications.restaurantId,
         restaurantName: restaurants.name,
+        planId: notifications.planId,
+        planTitle: plans.title,
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.actorId, users.id))
       .leftJoin(restaurants, eq(notifications.restaurantId, restaurants.id))
+      .leftJoin(plans, eq(notifications.planId, plans.id))
       .where(and(isNull(notifications.pushedAt), gt(notifications.createdAt, new Date(Date.now() - MAX_AGE_MS))))
       .limit(500);
     if (!pending.length) return 0;

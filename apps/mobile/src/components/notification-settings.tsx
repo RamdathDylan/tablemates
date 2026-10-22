@@ -16,6 +16,8 @@ const labels: Record<NotificationType, string> = {
   comment: 'Comments',
   tagged: 'Tags on visits',
   ask_reply: 'Answers to your questions',
+  plan_invite: 'Dinner plan invites',
+  plan_decided: 'When a plan is decided',
 };
 
 /** Push opt-in plus per-type toggles. Native only: the web app has no push. */

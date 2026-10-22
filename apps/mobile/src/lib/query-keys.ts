@@ -16,4 +16,6 @@ export const qk = {
   saved: ['saved'] as const,
   tagged: ['tagged'] as const,
   asks: ['asks'] as const,
+  plans: ['plans'] as const,
+  plan: (id: string) => ['plan', id] as const,
 };

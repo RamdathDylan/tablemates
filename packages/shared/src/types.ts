@@ -69,7 +69,9 @@ export type NotificationType =
   | 'reaction'
   | 'comment'
   | 'tagged'
-  | 'ask_reply';
+  | 'ask_reply'
+  | 'plan_invite'
+  | 'plan_decided';
 
 export type ReactionKind = 'yum' | 'going';
 
@@ -108,8 +110,9 @@ export interface NotificationItem {
   pendingRequestId: string | null;
   /** For reaction notifications. */
   reaction: ReactionKind | null;
-  /** For comment notifications: the start of the comment. For ask replies: the question. */
+  /** For comment notifications: the start of the comment. For ask replies: the question. For plans: the title. */
   excerpt: string | null;
+  planId: string | null;
 }
 
 export interface Restaurant {
@@ -200,6 +203,34 @@ export interface Ask {
   createdAt: string;
   open: boolean;
   replies: AskReply[];
+}
+
+export interface PlanOption {
+  id: string;
+  restaurant: Restaurant;
+  addedBy: PublicUser;
+  voters: PublicUser[];
+  /** The viewer voted for it. */
+  voted: boolean;
+  /** The viewer may remove it (added it, or created the plan). */
+  canRemove: boolean;
+}
+
+export interface PlanSummary {
+  id: string;
+  title: string;
+  startsAt: string | null;
+  status: 'open' | 'decided';
+  creator: PublicUser;
+  members: PublicUser[];
+  optionCount: number;
+  /** The winning restaurant once decided. */
+  decided: Restaurant | null;
+}
+
+export interface Plan extends PlanSummary {
+  options: PlanOption[];
+  isCreator: boolean;
 }
 
 /** A visit a friend tagged you on that you haven't logged yourself yet. */

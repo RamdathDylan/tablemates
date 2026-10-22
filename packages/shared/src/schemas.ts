@@ -49,7 +49,21 @@ export const notificationTypes = [
   'comment',
   'tagged',
   'ask_reply',
+  'plan_invite',
+  'plan_decided',
 ] as const;
+
+export const createPlanInput = z.object({
+  title: z.string().trim().min(1, 'Name the plan').max(80),
+  startsAt: z.iso.datetime({ offset: true }).optional(),
+  memberIds: z.array(z.uuid()).min(1, 'Invite at least one friend').max(20),
+});
+
+export const planOptionInput = z
+  .object({ restaurantId: z.uuid().optional(), googlePlaceId: z.string().min(1).max(300).optional() })
+  .refine((o) => o.restaurantId || o.googlePlaceId, { message: 'Pick a restaurant' });
+
+export const decidePlanInput = z.object({ optionId: z.uuid() });
 
 export const askInput = z.object({
   question: z.string().trim().min(5, 'Ask a little more').max(200),
