@@ -35,7 +35,8 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+      {/* TableMates ships in light mode. Dark tokens stay in @tablemates/ui for a future opt-in setting. */}
+      <ThemeProvider scheme="light">
         <AuthProvider>
           <ToastProvider>
             <RootNavigator fontsLoaded={fontsLoaded} />
