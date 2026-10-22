@@ -41,7 +41,10 @@ export function elevation(level: 0 | 1 | 2 | 3, shadowColor: string): string | u
 export const minTouchTarget = 44;
 
 /** Max width of a content column on wide (web/tablet) screens. */
-export const maxContentWidth = 640;
+export const maxContentWidth = 720;
+
+/** Window widths where layout changes. Below `tablet` is a phone. */
+export const breakpoints = { tablet: 768, desktop: 1024 } as const;
 
 export const motion = {
   duration: { fast: 120, base: 200, slow: 320 },

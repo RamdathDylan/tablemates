@@ -1,8 +1,11 @@
 export * from './tokens';
 export { ThemeProvider, useTheme, type ColorScheme, type Theme } from './theme';
 export { formatDate, priceLabel } from './format';
+export { useBreakpoint, type Breakpoint } from './responsive';
+export { focusRing, type PressState } from './components/internal';
 
 export { Avatar, type AvatarProps, type AvatarSize } from './components/Avatar';
+export { Badge, type BadgeProps } from './components/Badge';
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './components/Button';
 export { Card, type CardProps } from './components/Card';
 export { Chip, type ChipProps, type ChipTone } from './components/Chip';

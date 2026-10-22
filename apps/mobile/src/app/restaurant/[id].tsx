@@ -31,7 +31,7 @@ export default function RestaurantScreen() {
   const price = priceLabel(r.priceLevel);
 
   return (
-    <Screen header>
+    <Screen header documentTitle={r.name}>
       <View style={{ gap: space[2] }}>
         <Text variant="display">{r.name}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[1] }}>

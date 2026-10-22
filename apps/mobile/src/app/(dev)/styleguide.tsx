@@ -4,6 +4,7 @@
  */
 import {
   Avatar,
+  Badge,
   Button,
   Card,
   Chip,
@@ -138,7 +139,7 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
         <TextArea label="Text area" placeholder="Notes for your friends…" />
       </Section>
 
-      <Section title="Avatar · chip · rating">
+      <Section title="Avatar · chip · badge · rating">
         <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'center' }}>
           <Avatar name="Maya Chen" size="sm" />
           <Avatar name="Jordan Lee" size="md" />
@@ -151,6 +152,11 @@ function Guide({ scheme, onScheme }: { scheme: ColorScheme; onScheme: (s: ColorS
           <Chip label="Tiramisu" tone="accent" />
           <Chip label="Friends" tone="success" icon="checkmark" />
           <Chip label="Open now" selected={filter} onPress={() => setFilter(!filter)} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'center' }}>
+          <Badge count={1} />
+          <Badge count={7} />
+          <Badge count={24} />
         </View>
         <Rating value={3.5} />
         <Rating value={rating} onChange={setRating} size="lg" />

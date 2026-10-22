@@ -34,7 +34,7 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <Screen>
+    <Screen documentTitle="Set up your profile">
       <View style={{ gap: space[2], marginTop: space[8] }}>
         <Text variant="overline" tone="primary">
           Step 2 of 2
