@@ -1,23 +1,51 @@
-# Weekly dependency updates. Security updates are raised as soon as advisories appear.
+# Weekly dependency updates. Security updates are raised as soon as advisories
+# appear and skip the cooldown below.
+#
+# Policy:
+# - Routine updates wait 7 days after release, so a compromised or broken
+#   release is usually caught by the ecosystem before it reaches this repository.
+# - Major versions of the database and the Node.js runtime are planned upgrades,
+#   not weekly bumps: Postgres majors need a data migration, and the API stays on
+#   a long-term-support Node.js line.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+
   - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: postgres
+        update-types: [version-update:semver-major]
+
   - package-ecosystem: docker
     directory: /apps/api
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns: ['*']
