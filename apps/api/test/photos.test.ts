@@ -106,4 +106,20 @@ describe('photos', () => {
     const left = await ctx.db.execute(sql`select id from photos`);
     expect([...left].map((r) => (r as { id: string }).id)).toEqual([kept]);
   });
+
+  it('cleans each stale upload exactly once when two instances run the job together', async () => {
+    const alice = await signup(ctx.app, 'alice');
+    for (let i = 0; i < 3; i++) await as(ctx.app, alice).post('/uploads', { kind: 'review', contentType: 'image/jpeg', bytes: 10 });
+    await ctx.db.execute(sql`update photos set created_at = now() - interval '2 days'`);
+    const deleted: string[] = [];
+    const remove = ctx.storage.delete.bind(ctx.storage);
+    ctx.storage.delete = async (keys) => {
+      deleted.push(...keys);
+      return remove(keys);
+    };
+    const counts = await Promise.all([cleanUpPendingPhotos(ctx.db, ctx.storage), cleanUpPendingPhotos(ctx.db, ctx.storage)]);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(3);
+    expect(new Set(deleted).size).toBe(deleted.length);
+    expect(deleted).toHaveLength(3);
+  });
 });

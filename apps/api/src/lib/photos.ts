@@ -52,12 +52,13 @@ export async function photosFor(db: Pick<Db, 'select'>, storage: Storage, review
 
 /** Deletes uploads never confirmed within a day (abandoned picks). */
 export async function cleanUpPendingPhotos(db: Db, storage: Storage, olderThan = new Date(Date.now() - 86_400_000)) {
+  // Deleting the rows first is the claim: with several instances, each row is
+  // returned to exactly one of them. A crash before the storage delete can
+  // leave an object with no row, which the bucket's lifecycle rule removes.
   const stale = await db
-    .select({ id: photos.id, key: photos.storageKey })
-    .from(photos)
-    .where(and(eq(photos.status, 'pending'), lt(photos.createdAt, olderThan)));
-  if (!stale.length) return 0;
-  await storage.delete(stale.map((s) => s.key));
-  await db.delete(photos).where(inArray(photos.id, stale.map((s) => s.id)));
+    .delete(photos)
+    .where(and(eq(photos.status, 'pending'), lt(photos.createdAt, olderThan)))
+    .returning({ key: photos.storageKey });
+  if (stale.length) await storage.delete(stale.map((s) => s.key));
   return stale.length;
 }

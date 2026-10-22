@@ -37,15 +37,15 @@ async function visibleStory(db: Db, viewerId: string, storyId: string) {
 
 /** Deletes expired stories and their photos. Run by the job runner. */
 export async function expireStories(db: Db, storage: Storage, now = new Date()) {
+  // Deleting the photo rows claims them, so only one instance acts on each;
+  // the delete cascades to the stories and their views. Objects are removed
+  // after the rows, so a crash leaves at most an orphaned object, never a
+  // story pointing at a missing photo.
   const expired = await db
-    .select({ id: stories.id, photoId: stories.photoId, key: photos.storageKey })
-    .from(stories)
-    .innerJoin(photos, eq(stories.photoId, photos.id))
-    .where(lt(stories.expiresAt, now));
-  if (!expired.length) return 0;
-  await storage.delete(expired.map((e) => e.key));
-  // Deleting the photos cascades to the stories and their views.
-  await db.delete(photos).where(inArray(photos.id, expired.map((e) => e.photoId)));
+    .delete(photos)
+    .where(inArray(photos.id, db.select({ id: stories.photoId }).from(stories).where(lt(stories.expiresAt, now))))
+    .returning({ key: photos.storageKey });
+  if (expired.length) await storage.delete(expired.map((e) => e.key));
   return expired.length;
 }
 
